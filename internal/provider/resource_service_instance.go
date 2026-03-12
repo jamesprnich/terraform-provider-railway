@@ -454,18 +454,16 @@ func (r *ServiceInstanceResource) readServiceInstanceState(ctx context.Context, 
 
 	data.Id = types.StringValue(fmt.Sprintf("%s:%s", data.ServiceId.ValueString(), data.EnvironmentId.ValueString()))
 
-	// Source
+	// Source — Optional-only fields: only update from API if user configured them.
+	// The source may be set at the service level (via serviceConnect) but the
+	// service_instance resource shouldn't adopt it into state unless explicitly configured.
 	if instance.Source != nil {
-		if instance.Source.Image != nil && len(*instance.Source.Image) > 0 {
+		if instance.Source.Image != nil && len(*instance.Source.Image) > 0 && !data.SourceImage.IsNull() {
 			data.SourceImage = types.StringValue(*instance.Source.Image)
-		} else if data.SourceImage.IsNull() || data.SourceImage.IsUnknown() {
-			data.SourceImage = types.StringNull()
 		}
 
-		if instance.Source.Repo != nil && len(*instance.Source.Repo) > 0 {
+		if instance.Source.Repo != nil && len(*instance.Source.Repo) > 0 && !data.SourceRepo.IsNull() {
 			data.SourceRepo = types.StringValue(*instance.Source.Repo)
-		} else if data.SourceRepo.IsNull() || data.SourceRepo.IsUnknown() {
-			data.SourceRepo = types.StringNull()
 		}
 	}
 
@@ -473,20 +471,22 @@ func (r *ServiceInstanceResource) readServiceInstanceState(ctx context.Context, 
 	// it returns a non-empty value. Never null out a user-configured value —
 	// the API may not echo these fields back immediately after a redeploy.
 
-	// Build config
-	if instance.RootDirectory != nil && len(*instance.RootDirectory) > 0 {
+	// Build config — only update from API if user configured them.
+	// These fields may be set at the service level (via railway_service) and
+	// the service_instance resource shouldn't adopt them unless explicitly configured.
+	if instance.RootDirectory != nil && len(*instance.RootDirectory) > 0 && !data.RootDirectory.IsNull() {
 		data.RootDirectory = types.StringValue(*instance.RootDirectory)
 	}
 
-	if instance.RailwayConfigFile != nil && len(*instance.RailwayConfigFile) > 0 {
+	if instance.RailwayConfigFile != nil && len(*instance.RailwayConfigFile) > 0 && !data.ConfigPath.IsNull() {
 		data.ConfigPath = types.StringValue(*instance.RailwayConfigFile)
 	}
 
-	if instance.BuildCommand != nil && len(*instance.BuildCommand) > 0 {
+	if instance.BuildCommand != nil && len(*instance.BuildCommand) > 0 && !data.BuildCommand.IsNull() {
 		data.BuildCommand = types.StringValue(*instance.BuildCommand)
 	}
 
-	if instance.StartCommand != nil && len(*instance.StartCommand) > 0 {
+	if instance.StartCommand != nil && len(*instance.StartCommand) > 0 && !data.StartCommand.IsNull() {
 		data.StartCommand = types.StringValue(*instance.StartCommand)
 	}
 
@@ -497,11 +497,11 @@ func (r *ServiceInstanceResource) readServiceInstanceState(ctx context.Context, 
 		data.Region = types.StringNull()
 	}
 
-	if instance.CronSchedule != nil && len(*instance.CronSchedule) > 0 {
+	if instance.CronSchedule != nil && len(*instance.CronSchedule) > 0 && !data.CronSchedule.IsNull() {
 		data.CronSchedule = types.StringValue(*instance.CronSchedule)
 	}
 
-	if instance.HealthcheckPath != nil && len(*instance.HealthcheckPath) > 0 {
+	if instance.HealthcheckPath != nil && len(*instance.HealthcheckPath) > 0 && !data.HealthcheckPath.IsNull() {
 		data.HealthcheckPath = types.StringValue(*instance.HealthcheckPath)
 	}
 
