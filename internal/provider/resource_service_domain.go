@@ -137,6 +137,21 @@ func (r *ServiceDomainResource) Create(ctx context.Context, req resource.CreateR
 	tflog.Trace(ctx, "created a service domain")
 
 	domain := response.ServiceDomainCreate.ServiceDomain
+
+	// Save state immediately so Terraform tracks this resource.
+	// If any subsequent step fails, the resource will be tainted
+	// and scheduled for destroy+recreate on the next apply.
+	data.Id = types.StringValue(domain.Id)
+	data.EnvironmentId = types.StringValue(domain.EnvironmentId)
+	data.ServiceId = types.StringValue(domain.ServiceId)
+	data.Suffix = types.StringValue(domain.Suffix)
+
+	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
+
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
 	domainName := data.Subdomain.ValueString() + "." + domain.Suffix
 
 	updateInput := ServiceDomainUpdateInput{

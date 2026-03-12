@@ -1,0 +1,12 @@
+query getProjectServices($projectId: String!) {
+  project(id: $projectId) {
+    services {
+      edges {
+        node {
+          id
+          name
+        }
+      }
+    }
+  }
+}

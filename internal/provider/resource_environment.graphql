@@ -32,3 +32,9 @@ mutation createEnvironment(
 mutation deleteEnvironment($id: String!) {
   environmentDelete(id: $id)
 }
+
+mutation renameEnvironment($id: String!, $input: EnvironmentRenameInput!) {
+  environmentRename(id: $id, input: $input) {
+    ...Environment
+  }
+}

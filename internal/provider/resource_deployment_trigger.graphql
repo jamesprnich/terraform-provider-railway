@@ -1,0 +1,57 @@
+fragment DeploymentTrigger on DeploymentTrigger {
+  id
+  branch
+  checkSuites
+  environmentId
+  projectId
+  provider
+  repository
+  serviceId
+}
+
+# @genqlient(for: "DeploymentTriggerCreateInput.checkSuites", omitempty: true, pointer: true)
+# @genqlient(for: "DeploymentTriggerCreateInput.rootDirectory", omitempty: true, pointer: true)
+mutation createDeploymentTrigger(
+  $input: DeploymentTriggerCreateInput!
+) {
+  deploymentTriggerCreate(input: $input) {
+    ...DeploymentTrigger
+  }
+}
+
+# @genqlient(for: "DeploymentTriggerUpdateInput.branch", omitempty: true, pointer: true)
+# @genqlient(for: "DeploymentTriggerUpdateInput.checkSuites", omitempty: true, pointer: true)
+# @genqlient(for: "DeploymentTriggerUpdateInput.repository", omitempty: true, pointer: true)
+# @genqlient(for: "DeploymentTriggerUpdateInput.rootDirectory", omitempty: true, pointer: true)
+mutation updateDeploymentTrigger(
+  $id: String!
+  $input: DeploymentTriggerUpdateInput!
+) {
+  deploymentTriggerUpdate(id: $id, input: $input) {
+    ...DeploymentTrigger
+  }
+}
+
+mutation deleteDeploymentTrigger($id: String!) {
+  deploymentTriggerDelete(id: $id)
+}
+
+# Uses a unique operation name to avoid conflict with listDeploymentTriggers
+# in resource_service.graphql (which only returns id and branch).
+query getDeploymentTriggers(
+  $environmentId: String!
+  $projectId: String!
+  $serviceId: String!
+) {
+  deploymentTriggers(
+    environmentId: $environmentId
+    projectId: $projectId
+    serviceId: $serviceId
+  ) {
+    edges {
+      node {
+        ...DeploymentTrigger
+      }
+    }
+  }
+}

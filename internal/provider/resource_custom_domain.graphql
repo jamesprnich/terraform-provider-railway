@@ -1,6 +1,7 @@
 fragment CustomDomain on CustomDomain {
   id
   domain
+  targetPort
   status {
     dnsRecords {
       hostlabel
@@ -39,4 +40,8 @@ mutation createCustomDomain(
 
 mutation deleteCustomDomain($id: String!) {
   customDomainDelete(id: $id)
+}
+
+mutation updateCustomDomain($environmentId: String!, $id: String!, $targetPort: Int) {
+  customDomainUpdate(environmentId: $environmentId, id: $id, targetPort: $targetPort)
 }

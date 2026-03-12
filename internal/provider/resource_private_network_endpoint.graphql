@@ -1,0 +1,45 @@
+fragment PrivateNetworkEndpointFields on PrivateNetworkEndpoint {
+  publicId
+  dnsName
+  privateIps
+  serviceInstanceId
+  tags
+}
+
+query getPrivateNetworkEndpoint(
+  $environmentId: String!
+  $privateNetworkId: String!
+  $serviceId: String!
+) {
+  privateNetworkEndpoint(
+    environmentId: $environmentId
+    privateNetworkId: $privateNetworkId
+    serviceId: $serviceId
+  ) {
+    ...PrivateNetworkEndpointFields
+  }
+}
+
+mutation createOrGetPrivateNetworkEndpoint(
+  $input: PrivateNetworkEndpointCreateOrGetInput!
+) {
+  privateNetworkEndpointCreateOrGet(input: $input) {
+    ...PrivateNetworkEndpointFields
+  }
+}
+
+mutation deletePrivateNetworkEndpoint($id: String!) {
+  privateNetworkEndpointDelete(id: $id)
+}
+
+mutation renamePrivateNetworkEndpoint(
+  $dnsName: String!
+  $id: String!
+  $privateNetworkId: String!
+) {
+  privateNetworkEndpointRename(
+    dnsName: $dnsName
+    id: $id
+    privateNetworkId: $privateNetworkId
+  )
+}

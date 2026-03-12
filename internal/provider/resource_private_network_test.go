@@ -1,0 +1,107 @@
+package provider
+
+import (
+	"testing"
+
+	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+)
+
+func TestPrivateNetworkResource_basic(t *testing.T) {
+	fixtures := mockFixtures{
+		"createOrGetPrivateNetwork": `{"data":{"privateNetworkCreateOrGet":{"publicId":"pn-abc","projectId":"00000000-0000-0000-0000-000000000001","environmentId":"00000000-0000-0000-0000-000000000002","name":"test-network","dnsName":"test-network.internal","networkId":42,"tags":[]}}}`,
+		"getPrivateNetworks":        `{"data":{"privateNetworks":[{"publicId":"pn-abc","projectId":"00000000-0000-0000-0000-000000000001","environmentId":"00000000-0000-0000-0000-000000000002","name":"test-network","dnsName":"test-network.internal","networkId":42,"tags":[]}]}}`,
+		"deletePrivateNetworksForEnvironment": `{"data":{"privateNetworksForEnvironmentDelete":true}}`,
+	}
+
+	server := newMockGraphQLServer(t, fixtures)
+	defer server.Close()
+
+	resource.UnitTest(t, resource.TestCase{
+		ProtoV6ProviderFactories: testUnitProtoV6ProviderFactories(),
+		Steps: []resource.TestStep{
+			{
+				Config: testUnitProviderConfig(server.URL) + `
+resource "railway_private_network" "test" {
+  project_id     = "00000000-0000-0000-0000-000000000001"
+  environment_id = "00000000-0000-0000-0000-000000000002"
+  name           = "test-network"
+}
+`,
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("railway_private_network.test", "id", "pn-abc"),
+					resource.TestCheckResourceAttr("railway_private_network.test", "dns_name", "test-network.internal"),
+					resource.TestCheckResourceAttr("railway_private_network.test", "network_id", "42"),
+					resource.TestCheckResourceAttr("railway_private_network.test", "name", "test-network"),
+				),
+			},
+		},
+	})
+}
+
+func TestPrivateNetworkResource_withTags(t *testing.T) {
+	fixtures := mockFixtures{
+		"createOrGetPrivateNetwork": `{"data":{"privateNetworkCreateOrGet":{"publicId":"pn-abc","projectId":"00000000-0000-0000-0000-000000000001","environmentId":"00000000-0000-0000-0000-000000000002","name":"test-network","dnsName":"test-network.internal","networkId":42,"tags":["tag1","tag2"]}}}`,
+		"getPrivateNetworks":        `{"data":{"privateNetworks":[{"publicId":"pn-abc","projectId":"00000000-0000-0000-0000-000000000001","environmentId":"00000000-0000-0000-0000-000000000002","name":"test-network","dnsName":"test-network.internal","networkId":42,"tags":["tag1","tag2"]}]}}`,
+		"deletePrivateNetworksForEnvironment": `{"data":{"privateNetworksForEnvironmentDelete":true}}`,
+	}
+
+	server := newMockGraphQLServer(t, fixtures)
+	defer server.Close()
+
+	resource.UnitTest(t, resource.TestCase{
+		ProtoV6ProviderFactories: testUnitProtoV6ProviderFactories(),
+		Steps: []resource.TestStep{
+			{
+				Config: testUnitProviderConfig(server.URL) + `
+resource "railway_private_network" "test" {
+  project_id     = "00000000-0000-0000-0000-000000000001"
+  environment_id = "00000000-0000-0000-0000-000000000002"
+  name           = "test-network"
+  tags           = ["tag1", "tag2"]
+}
+`,
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("railway_private_network.test", "id", "pn-abc"),
+					resource.TestCheckResourceAttr("railway_private_network.test", "dns_name", "test-network.internal"),
+					resource.TestCheckResourceAttr("railway_private_network.test", "network_id", "42"),
+					resource.TestCheckResourceAttr("railway_private_network.test", "name", "test-network"),
+					resource.TestCheckResourceAttr("railway_private_network.test", "tags.#", "2"),
+					resource.TestCheckResourceAttr("railway_private_network.test", "tags.0", "tag1"),
+					resource.TestCheckResourceAttr("railway_private_network.test", "tags.1", "tag2"),
+				),
+			},
+		},
+	})
+}
+
+func TestPrivateNetworkResource_import(t *testing.T) {
+	fixtures := mockFixtures{
+		"createOrGetPrivateNetwork": `{"data":{"privateNetworkCreateOrGet":{"publicId":"pn-abc","projectId":"00000000-0000-0000-0000-000000000001","environmentId":"00000000-0000-0000-0000-000000000002","name":"test-network","dnsName":"test-network.internal","networkId":42,"tags":[]}}}`,
+		"getPrivateNetworks":        `{"data":{"privateNetworks":[{"publicId":"pn-abc","projectId":"00000000-0000-0000-0000-000000000001","environmentId":"00000000-0000-0000-0000-000000000002","name":"test-network","dnsName":"test-network.internal","networkId":42,"tags":[]}]}}`,
+		"deletePrivateNetworksForEnvironment": `{"data":{"privateNetworksForEnvironmentDelete":true}}`,
+	}
+
+	server := newMockGraphQLServer(t, fixtures)
+	defer server.Close()
+
+	resource.UnitTest(t, resource.TestCase{
+		ProtoV6ProviderFactories: testUnitProtoV6ProviderFactories(),
+		Steps: []resource.TestStep{
+			{
+				Config: testUnitProviderConfig(server.URL) + `
+resource "railway_private_network" "test" {
+  project_id     = "00000000-0000-0000-0000-000000000001"
+  environment_id = "00000000-0000-0000-0000-000000000002"
+  name           = "test-network"
+}
+`,
+			},
+			{
+				ResourceName:      "railway_private_network.test",
+				ImportState:       true,
+				ImportStateId:     "00000000-0000-0000-0000-000000000002:pn-abc",
+				ImportStateVerify: true,
+			},
+		},
+	})
+}

@@ -33,8 +33,11 @@ type RailwayProvider struct {
 	version string
 }
 
+var defaultAPIURL = "https://backboard.railway.app/graphql/v2?source=terraform_provider_railway"
+
 type RailwayProviderModel struct {
-	Token types.String `tfsdk:"token"`
+	Token  types.String `tfsdk:"token"`
+	APIURL types.String `tfsdk:"api_url"`
 }
 
 func (p *RailwayProvider) Metadata(ctx context.Context, req provider.MetadataRequest, resp *provider.MetadataResponse) {
@@ -47,6 +50,10 @@ func (p *RailwayProvider) Schema(ctx context.Context, req provider.SchemaRequest
 		Attributes: map[string]schema.Attribute{
 			"token": schema.StringAttribute{
 				MarkdownDescription: "The token used to authenticate with Railway.",
+				Optional:            true,
+			},
+			"api_url": schema.StringAttribute{
+				MarkdownDescription: "Override the Railway API URL. Used for testing.",
 				Optional:            true,
 			},
 		},
@@ -87,7 +94,13 @@ func (p *RailwayProvider) Configure(ctx context.Context, req provider.ConfigureR
 		},
 	}
 
-	client := graphql.NewClient("https://backboard.railway.app/graphql/v2?source=terraform_provider_railway", &httpClient)
+	apiURL := defaultAPIURL
+
+	if !data.APIURL.IsNull() {
+		apiURL = data.APIURL.ValueString()
+	}
+
+	client := graphql.NewClient(apiURL, &httpClient)
 
 	resp.DataSourceData = &client
 	resp.ResourceData = &client
@@ -98,17 +111,29 @@ func (p *RailwayProvider) Resources(ctx context.Context) []func() resource.Resou
 		NewProjectResource,
 		NewEnvironmentResource,
 		NewServiceResource,
+		NewServiceInstanceResource,
+		NewVolumeResource,
+		NewVolumeBackupScheduleResource,
 		NewVariableResource,
 		NewVariableCollectionResource,
 		NewSharedVariableResource,
 		NewCustomDomainResource,
 		NewServiceDomainResource,
 		NewTcpProxyResource,
+		NewWebhookResource,
+		NewEgressGatewayResource,
+		NewPrivateNetworkResource,
+		NewPrivateNetworkEndpointResource,
+		NewDeploymentTriggerResource,
 	}
 }
 
 func (p *RailwayProvider) DataSources(ctx context.Context) []func() datasource.DataSource {
-	return []func() datasource.DataSource{}
+	return []func() datasource.DataSource{
+		NewProjectDataSource,
+		NewEnvironmentDataSource,
+		NewServiceDataSource,
+	}
 }
 
 func New(version string) func() provider.Provider {

@@ -1,0 +1,117 @@
+package provider
+
+import (
+	"testing"
+
+	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+)
+
+func TestDeploymentTriggerResource_basic(t *testing.T) {
+	srv := newMockGraphQLServer(t, mockFixtures{
+		"createDeploymentTrigger": `{"data":{"deploymentTriggerCreate":{"id":"dt-123","branch":"main","checkSuites":false,"environmentId":"00000000-0000-0000-0000-000000000002","projectId":"00000000-0000-0000-0000-000000000001","provider":"github","repository":"owner/repo","serviceId":"00000000-0000-0000-0000-000000000003"}}}`,
+		"getDeploymentTriggers":  `{"data":{"deploymentTriggers":{"edges":[{"node":{"id":"dt-123","branch":"main","checkSuites":false,"environmentId":"00000000-0000-0000-0000-000000000002","projectId":"00000000-0000-0000-0000-000000000001","provider":"github","repository":"owner/repo","serviceId":"00000000-0000-0000-0000-000000000003"}}]}}}`,
+		"deleteDeploymentTrigger": `{"data":{"deploymentTriggerDelete":true}}`,
+	})
+	defer srv.Close()
+
+	resource.UnitTest(t, resource.TestCase{
+		ProtoV6ProviderFactories: testUnitProtoV6ProviderFactories(),
+		Steps: []resource.TestStep{
+			{
+				Config: testUnitProviderConfig(srv.URL) + `
+resource "railway_deployment_trigger" "test" {
+  service_id     = "00000000-0000-0000-0000-000000000003"
+  environment_id = "00000000-0000-0000-0000-000000000002"
+  project_id     = "00000000-0000-0000-0000-000000000001"
+  repository     = "owner/repo"
+  branch         = "main"
+  source_provider = "github"
+}
+`,
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("railway_deployment_trigger.test", "id", "dt-123"),
+					resource.TestCheckResourceAttr("railway_deployment_trigger.test", "branch", "main"),
+					resource.TestCheckResourceAttr("railway_deployment_trigger.test", "repository", "owner/repo"),
+					resource.TestCheckResourceAttr("railway_deployment_trigger.test", "source_provider", "github"),
+					resource.TestCheckResourceAttr("railway_deployment_trigger.test", "check_suites", "false"),
+					resource.TestCheckResourceAttr("railway_deployment_trigger.test", "service_id", "00000000-0000-0000-0000-000000000003"),
+					resource.TestCheckResourceAttr("railway_deployment_trigger.test", "environment_id", "00000000-0000-0000-0000-000000000002"),
+					resource.TestCheckResourceAttr("railway_deployment_trigger.test", "project_id", "00000000-0000-0000-0000-000000000001"),
+				),
+			},
+		},
+	})
+}
+
+func TestDeploymentTriggerResource_withOptionalFields(t *testing.T) {
+	srv := newMockGraphQLServer(t, mockFixtures{
+		"createDeploymentTrigger": `{"data":{"deploymentTriggerCreate":{"id":"dt-456","branch":"develop","checkSuites":true,"environmentId":"00000000-0000-0000-0000-000000000002","projectId":"00000000-0000-0000-0000-000000000001","provider":"github","repository":"owner/monorepo","serviceId":"00000000-0000-0000-0000-000000000003"}}}`,
+		"getDeploymentTriggers":  `{"data":{"deploymentTriggers":{"edges":[{"node":{"id":"dt-456","branch":"develop","checkSuites":true,"environmentId":"00000000-0000-0000-0000-000000000002","projectId":"00000000-0000-0000-0000-000000000001","provider":"github","repository":"owner/monorepo","serviceId":"00000000-0000-0000-0000-000000000003"}}]}}}`,
+		"deleteDeploymentTrigger": `{"data":{"deploymentTriggerDelete":true}}`,
+	})
+	defer srv.Close()
+
+	resource.UnitTest(t, resource.TestCase{
+		ProtoV6ProviderFactories: testUnitProtoV6ProviderFactories(),
+		Steps: []resource.TestStep{
+			{
+				Config: testUnitProviderConfig(srv.URL) + `
+resource "railway_deployment_trigger" "test" {
+  service_id     = "00000000-0000-0000-0000-000000000003"
+  environment_id = "00000000-0000-0000-0000-000000000002"
+  project_id     = "00000000-0000-0000-0000-000000000001"
+  repository     = "owner/monorepo"
+  branch         = "develop"
+  source_provider = "github"
+  check_suites   = true
+  root_directory = "packages/api"
+}
+`,
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("railway_deployment_trigger.test", "id", "dt-456"),
+					resource.TestCheckResourceAttr("railway_deployment_trigger.test", "branch", "develop"),
+					resource.TestCheckResourceAttr("railway_deployment_trigger.test", "repository", "owner/monorepo"),
+					resource.TestCheckResourceAttr("railway_deployment_trigger.test", "source_provider", "github"),
+					resource.TestCheckResourceAttr("railway_deployment_trigger.test", "check_suites", "true"),
+					resource.TestCheckResourceAttr("railway_deployment_trigger.test", "root_directory", "packages/api"),
+					resource.TestCheckResourceAttr("railway_deployment_trigger.test", "service_id", "00000000-0000-0000-0000-000000000003"),
+					resource.TestCheckResourceAttr("railway_deployment_trigger.test", "environment_id", "00000000-0000-0000-0000-000000000002"),
+					resource.TestCheckResourceAttr("railway_deployment_trigger.test", "project_id", "00000000-0000-0000-0000-000000000001"),
+				),
+			},
+		},
+	})
+}
+
+func TestDeploymentTriggerResource_import(t *testing.T) {
+	srv := newMockGraphQLServer(t, mockFixtures{
+		"createDeploymentTrigger": `{"data":{"deploymentTriggerCreate":{"id":"dt-789","branch":"main","checkSuites":false,"environmentId":"00000000-0000-0000-0000-000000000002","projectId":"00000000-0000-0000-0000-000000000001","provider":"github","repository":"owner/repo","serviceId":"00000000-0000-0000-0000-000000000003"}}}`,
+		"getDeploymentTriggers":  `{"data":{"deploymentTriggers":{"edges":[{"node":{"id":"dt-789","branch":"main","checkSuites":false,"environmentId":"00000000-0000-0000-0000-000000000002","projectId":"00000000-0000-0000-0000-000000000001","provider":"github","repository":"owner/repo","serviceId":"00000000-0000-0000-0000-000000000003"}}]}}}`,
+		"deleteDeploymentTrigger": `{"data":{"deploymentTriggerDelete":true}}`,
+	})
+	defer srv.Close()
+
+	resource.UnitTest(t, resource.TestCase{
+		ProtoV6ProviderFactories: testUnitProtoV6ProviderFactories(),
+		Steps: []resource.TestStep{
+			{
+				Config: testUnitProviderConfig(srv.URL) + `
+resource "railway_deployment_trigger" "test" {
+  service_id     = "00000000-0000-0000-0000-000000000003"
+  environment_id = "00000000-0000-0000-0000-000000000002"
+  project_id     = "00000000-0000-0000-0000-000000000001"
+  repository     = "owner/repo"
+  branch         = "main"
+  source_provider = "github"
+}
+`,
+			},
+			{
+				ResourceName:      "railway_deployment_trigger.test",
+				ImportState:       true,
+				ImportStateId:     "00000000-0000-0000-0000-000000000001:00000000-0000-0000-0000-000000000002:00000000-0000-0000-0000-000000000003:dt-789",
+				ImportStateVerify: true,
+			},
+		},
+	})
+}
