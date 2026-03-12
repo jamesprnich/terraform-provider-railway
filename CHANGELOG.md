@@ -1,3 +1,11 @@
+## 0.7.0
+
+### Enhancements
+* Add `railway_volume` resource — standalone volume with environment-specific targeting, replacing the default-environment-only `volume` block on `railway_service`
+* Add `railway_service_instance` resource — per-environment service configuration including source, build, deploy settings, and resource limits (vCPUs, memory)
+* Add `serviceInstanceLimitsUpdate` GraphQL mutation support for setting CPU and memory limits
+* Add `serviceInstanceUpdate` with environment targeting (previously hardcoded to null/all environments)
+
 ## 0.6.1
 
 ### Bug fixes

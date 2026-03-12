@@ -1,0 +1,33 @@
+fragment ProjectWebhook on ProjectWebhook {
+  id
+  url
+  projectId
+  filters
+  lastStatus
+}
+
+query getWebhooks($projectId: String!) {
+  webhooks(projectId: $projectId) {
+    edges {
+      node {
+        ...ProjectWebhook
+      }
+    }
+  }
+}
+
+mutation createWebhook($input: WebhookCreateInput!) {
+  webhookCreate(input: $input) {
+    ...ProjectWebhook
+  }
+}
+
+mutation updateWebhook($id: String!, $input: WebhookUpdateInput!) {
+  webhookUpdate(id: $id, input: $input) {
+    ...ProjectWebhook
+  }
+}
+
+mutation deleteWebhook($id: String!) {
+  webhookDelete(id: $id)
+}

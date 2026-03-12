@@ -1,0 +1,23 @@
+fragment VolumeInstanceBackupSchedule on VolumeInstanceBackupSchedule {
+  id
+  kind
+  cron
+  name
+  retentionSeconds
+}
+
+query getVolumeInstanceBackupSchedules($volumeInstanceId: String!) {
+  volumeInstanceBackupScheduleList(volumeInstanceId: $volumeInstanceId) {
+    ...VolumeInstanceBackupSchedule
+  }
+}
+
+mutation updateVolumeInstanceBackupSchedule(
+  $kinds: [VolumeInstanceBackupScheduleKind!]!
+  $volumeInstanceId: String!
+) {
+  volumeInstanceBackupScheduleUpdate(
+    kinds: $kinds
+    volumeInstanceId: $volumeInstanceId
+  )
+}

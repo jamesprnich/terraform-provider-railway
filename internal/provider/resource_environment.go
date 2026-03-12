@@ -52,9 +52,6 @@ func (r *EnvironmentResource) Schema(ctx context.Context, req resource.SchemaReq
 			"name": schema.StringAttribute{
 				MarkdownDescription: "Name of the environment.",
 				Required:            true,
-				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.RequiresReplace(),
-				},
 				Validators: []validator.String{
 					stringvalidator.UTF8LengthAtLeast(1),
 				},
@@ -151,15 +148,41 @@ func (r *EnvironmentResource) Read(ctx context.Context, req resource.ReadRequest
 }
 
 func (r *EnvironmentResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
+	var plan *EnvironmentResourceModel
 	var state *EnvironmentResourceModel
 
-	resp.Diagnostics.Append(req.Plan.Get(ctx, &state)...)
+	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
 
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
+	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
+
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	if plan.Name.ValueString() != state.Name.ValueString() {
+		input := EnvironmentRenameInput{
+			Name: plan.Name.ValueString(),
+		}
+
+		response, err := renameEnvironment(ctx, *r.client, state.Id.ValueString(), input)
+
+		if err != nil {
+			resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to rename environment, got error: %s", err))
+			return
+		}
+
+		tflog.Trace(ctx, "renamed an environment")
+
+		plan.Id = types.StringValue(response.EnvironmentRename.Id)
+		plan.Name = types.StringValue(response.EnvironmentRename.Name)
+		plan.ProjecId = types.StringValue(response.EnvironmentRename.ProjectId)
+	}
+
+	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
 }
 
 func (r *EnvironmentResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {

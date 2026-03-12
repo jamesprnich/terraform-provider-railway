@@ -10,6 +10,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
@@ -34,6 +36,7 @@ type CustomDomainResourceModel struct {
 	EnvironmentId  types.String `tfsdk:"environment_id"`
 	ServiceId      types.String `tfsdk:"service_id"`
 	ProjectId      types.String `tfsdk:"project_id"`
+	TargetPort     types.Int64  `tfsdk:"target_port"`
 	HostLabel      types.String `tfsdk:"host_label"`
 	Zone           types.String `tfsdk:"zone"`
 	DNSRecordValue types.String `tfsdk:"dns_record_value"`
@@ -84,6 +87,17 @@ func (r *CustomDomainResource) Schema(ctx context.Context, req resource.SchemaRe
 			"project_id": schema.StringAttribute{
 				MarkdownDescription: "Identifier of the project the custom domain belongs to.",
 				Computed:            true,
+			},
+			"target_port": schema.Int64Attribute{
+				MarkdownDescription: "Target port for the custom domain.",
+				Optional:            true,
+				Computed:            true,
+				PlanModifiers: []planmodifier.Int64{
+					int64planmodifier.UseStateForUnknown(),
+				},
+				Validators: []validator.Int64{
+					int64validator.Between(1, 65535),
+				},
 			},
 			"host_label": schema.StringAttribute{
 				MarkdownDescription: "Host label of the custom domain.",
@@ -144,6 +158,11 @@ func (r *CustomDomainResource) Create(ctx context.Context, req resource.CreateRe
 		ProjectId:     service.Service.ProjectId,
 	}
 
+	if !data.TargetPort.IsNull() && !data.TargetPort.IsUnknown() {
+		port := int(data.TargetPort.ValueInt64())
+		input.TargetPort = &port
+	}
+
 	response, err := createCustomDomain(ctx, *r.client, input)
 
 	if err != nil {
@@ -160,6 +179,13 @@ func (r *CustomDomainResource) Create(ctx context.Context, req resource.CreateRe
 	data.EnvironmentId = types.StringValue(domain.EnvironmentId)
 	data.ServiceId = types.StringValue(domain.ServiceId)
 	data.ProjectId = types.StringValue(service.Service.ProjectId)
+
+	if domain.TargetPort != 0 {
+		data.TargetPort = types.Int64Value(int64(domain.TargetPort))
+	} else if data.TargetPort.IsNull() || data.TargetPort.IsUnknown() {
+		data.TargetPort = types.Int64Null()
+	}
+
 	data.HostLabel = types.StringValue(domain.Status.DnsRecords[0].Hostlabel)
 	data.Zone = types.StringValue(domain.Status.DnsRecords[0].Zone)
 	data.DNSRecordValue = types.StringValue(domain.Status.DnsRecords[0].RequiredValue)
@@ -201,6 +227,13 @@ func (r *CustomDomainResource) Read(ctx context.Context, req resource.ReadReques
 	data.Domain = types.StringValue(domain.Domain)
 	data.EnvironmentId = types.StringValue(domain.EnvironmentId)
 	data.ServiceId = types.StringValue(domain.ServiceId)
+
+	if domain.TargetPort != 0 {
+		data.TargetPort = types.Int64Value(int64(domain.TargetPort))
+	} else if data.TargetPort.IsNull() || data.TargetPort.IsUnknown() {
+		data.TargetPort = types.Int64Null()
+	}
+
 	data.HostLabel = types.StringValue(domain.Status.DnsRecords[0].Hostlabel)
 	data.Zone = types.StringValue(domain.Status.DnsRecords[0].Zone)
 	data.DNSRecordValue = types.StringValue(domain.Status.DnsRecords[0].RequiredValue)
@@ -218,15 +251,38 @@ func (r *CustomDomainResource) Read(ctx context.Context, req resource.ReadReques
 }
 
 func (r *CustomDomainResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
-	var data *CustomDomainResourceModel
+	var plan *CustomDomainResourceModel
+	var state *CustomDomainResourceModel
 
-	resp.Diagnostics.Append(req.Plan.Get(ctx, &data)...)
+	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
 
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
+	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
+
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	if !plan.TargetPort.Equal(state.TargetPort) {
+		targetPort := 0
+		if !plan.TargetPort.IsNull() && !plan.TargetPort.IsUnknown() {
+			targetPort = int(plan.TargetPort.ValueInt64())
+		}
+
+		_, err := updateCustomDomain(ctx, *r.client, plan.EnvironmentId.ValueString(), state.Id.ValueString(), targetPort)
+
+		if err != nil {
+			resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to update custom domain, got error: %s", err))
+			return
+		}
+
+		tflog.Trace(ctx, "updated custom domain target port")
+	}
+
+	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
 }
 
 func (r *CustomDomainResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {

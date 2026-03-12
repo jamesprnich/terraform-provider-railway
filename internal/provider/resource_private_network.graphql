@@ -1,0 +1,25 @@
+fragment PrivateNetworkFields on PrivateNetwork {
+  publicId
+  projectId
+  environmentId
+  name
+  dnsName
+  networkId
+  tags
+}
+
+query getPrivateNetworks($environmentId: String!) {
+  privateNetworks(environmentId: $environmentId) {
+    ...PrivateNetworkFields
+  }
+}
+
+mutation createOrGetPrivateNetwork($input: PrivateNetworkCreateOrGetInput!) {
+  privateNetworkCreateOrGet(input: $input) {
+    ...PrivateNetworkFields
+  }
+}
+
+mutation deletePrivateNetworksForEnvironment($environmentId: String!) {
+  privateNetworksForEnvironmentDelete(environmentId: $environmentId)
+}

@@ -1,0 +1,27 @@
+fragment EgressGateway on EgressGateway {
+  ipv4
+  region
+}
+
+query getEgressGateways(
+  $environmentId: String!
+  $serviceId: String!
+) {
+  egressGateways(environmentId: $environmentId, serviceId: $serviceId) {
+    ...EgressGateway
+  }
+}
+
+mutation createEgressGateway(
+  $input: EgressGatewayCreateInput!
+) {
+  egressGatewayAssociationCreate(input: $input) {
+    ...EgressGateway
+  }
+}
+
+mutation clearEgressGateways(
+  $input: EgressGatewayServiceTargetInput!
+) {
+  egressGatewayAssociationsClear(input: $input)
+}

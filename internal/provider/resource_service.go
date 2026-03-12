@@ -361,6 +361,15 @@ func (r *ServiceResource) Create(ctx context.Context, req resource.CreateRequest
 	data.Name = types.StringValue(service.Name)
 	data.ProjectId = types.StringValue(service.ProjectId)
 
+	// Save state immediately so Terraform tracks this resource.
+	// If any subsequent step fails, the resource will be tainted
+	// and scheduled for destroy+recreate on the next apply.
+	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
+
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
 	instanceInput := buildServiceInstanceInput(data, regionsData)
 
 	_, err = updateServiceInstance(ctx, *r.client, data.Id.ValueString(), instanceInput)

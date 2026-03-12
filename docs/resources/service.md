@@ -13,12 +13,32 @@ Railway service.
 
 > ⚠️ **NOTE:** All the other settings not specified here are recommended to be specified in the Railway config file.
 
+## Services vs Service Instances
+
+In Railway, a **Service** is a project-level resource that exists across all environments. When you set `source_image` or `source_repo` on a service, Railway immediately deploys it into the default environment and applies the same source to every environment.
+
+If you need **per-environment control** over what source, version, or resource limits each environment uses, create services without sources here and use [`railway_service_instance`](service_instance.md) to configure each environment independently.
+
+See the [Two-Layer Architecture Guide](../guides/two-layer-architecture.md) for the full pattern.
+
 ## Example Usage
+
+### Empty service (recommended for multi-environment setups)
+
+```terraform
+resource "railway_service" "backend" {
+  name       = "backend"
+  project_id = railway_project.main.id
+}
+```
+
+### Service with source (single-environment or quick start)
 
 ```terraform
 resource "railway_service" "example" {
-  name       = "api"
-  project_id = railway_project.example.id
+  name         = "api"
+  project_id   = railway_project.example.id
+  source_image = "nginx:1.27.5-alpine"
 }
 ```
 

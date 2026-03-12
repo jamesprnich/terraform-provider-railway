@@ -1,0 +1,8 @@
+# Standalone volume resource - reuses queries from resource_service.graphql:
+# - createVolume (VolumeCreateInput already has environmentId field)
+# - getVolumeInstances (query project volumes)
+# - updateVolume (update volume name)
+# - updateVolumeInstance (update mount path)
+# - deleteVolume (delete volume by ID)
+#
+# No additional GraphQL operations needed.
