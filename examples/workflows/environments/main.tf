@@ -1,8 +1,9 @@
 # =============================================================================
 # Config Layer
 # =============================================================================
-# Configures environment variables, domains, and service instance settings.
-# Safe to destroy and re-apply — no data loss, no source changes.
+# Configures environment variables, domains, volumes, and service instance
+# settings. Safe to destroy and re-apply — no source changes.
+# NOTE: Destroying this layer deletes volumes (and their data).
 #
 # Requires the infrastructure layer to be applied first.
 # Pass the environment_id from infrastructure outputs.
@@ -81,6 +82,27 @@ resource "railway_variable" "postgres_port" {
   value          = "5432"
   environment_id = var.environment_id
   service_id     = data.railway_service.postgres.id
+}
+
+# --- Postgres volume ---
+# Volume is in the config layer (not infrastructure) so it's created alongside
+# the Postgres variables. This ensures initdb runs with the correct credentials
+# when the data directory is first populated.
+
+resource "railway_volume" "pgdata" {
+  name           = "pgdata"
+  project_id     = data.railway_project.main.id
+  service_id     = data.railway_service.postgres.id
+  environment_id = var.environment_id
+  mount_path     = "/data"
+
+  depends_on = [
+    railway_variable.pgdata,
+    railway_variable.postgres_user,
+    railway_variable.postgres_password,
+    railway_variable.postgres_db,
+    railway_variable.postgres_port,
+  ]
 }
 
 # --- App variables ---

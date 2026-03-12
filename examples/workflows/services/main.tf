@@ -45,11 +45,6 @@ resource "railway_service" "postgres_dev" {
   name         = "postgres-dev"
   project_id   = railway_project.main.id
   source_image = "postgres:17.5-alpine"
-
-  volume = {
-    name       = "pgdata"
-    mount_path = "/data"
-  }
 }
 
 # --- App (dev) ---
