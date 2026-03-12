@@ -1,16 +1,20 @@
 import os
-import time
 import psycopg2
 from flask import Flask
 
 app = Flask(__name__)
+
+_db_initialized = False
 
 
 def get_db_connection():
     return psycopg2.connect(os.environ["DATABASE_URL"])
 
 
-def init_db():
+def ensure_db():
+    global _db_initialized
+    if _db_initialized:
+        return
     conn = get_db_connection()
     cur = conn.cursor()
     cur.execute(
@@ -25,22 +29,12 @@ def init_db():
     conn.commit()
     cur.close()
     conn.close()
-
-
-with app.app_context():
-    for attempt in range(30):
-        try:
-            init_db()
-            break
-        except psycopg2.OperationalError:
-            if attempt == 29:
-                raise
-            print(f"Postgres not ready - retrying in 2s (attempt {attempt + 1}/30)...")
-            time.sleep(2)
+    _db_initialized = True
 
 
 @app.route("/")
 def index():
+    ensure_db()
     conn = get_db_connection()
     cur = conn.cursor()
     cur.execute("SELECT message FROM hello LIMIT 1")
