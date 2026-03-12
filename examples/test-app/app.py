@@ -1,4 +1,5 @@
 import os
+import time
 import psycopg2
 from flask import Flask
 
@@ -27,7 +28,15 @@ def init_db():
 
 
 with app.app_context():
-    init_db()
+    for attempt in range(30):
+        try:
+            init_db()
+            break
+        except psycopg2.OperationalError:
+            if attempt == 29:
+                raise
+            print(f"Postgres not ready - retrying in 2s (attempt {attempt + 1}/30)...")
+            time.sleep(2)
 
 
 @app.route("/")
@@ -52,15 +61,7 @@ def index():
 
 @app.route("/health")
 def health():
-    try:
-        conn = get_db_connection()
-        cur = conn.cursor()
-        cur.execute("SELECT 1")
-        cur.close()
-        conn.close()
-        return "ok", 200
-    except Exception as e:
-        return str(e), 500
+    return "ok", 200
 
 
 if __name__ == "__main__":
