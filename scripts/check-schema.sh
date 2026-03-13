@@ -1,14 +1,21 @@
 #!/usr/bin/env bash
-# Fetches the current Railway GraphQL schema via introspection and compares
-# its SHA256 hash to the recorded value in schema_version.go.
+# Compares the local schema.graphql hash to the recorded value in schema_version.go.
+# Usage: ./scripts/check-schema.sh (run from repository root)
 set -euo pipefail
 
 SCHEMA_FILE="schema.graphql"
-RECORDED_HASH="214c96676337fddcad1b673bed74989ca4198a573dd7f683c9360b4529d65b8e"
+VERSION_FILE="internal/provider/schema_version.go"
+
+RECORDED_HASH=$(grep 'SchemaVersion' "$VERSION_FILE" | head -1 | sed 's/.*"\(.*\)".*/\1/')
+
+if [ -z "$RECORDED_HASH" ]; then
+  echo "ERROR: Could not extract SchemaVersion from $VERSION_FILE"
+  exit 2
+fi
 
 if [ ! -f "$SCHEMA_FILE" ]; then
   echo "ERROR: $SCHEMA_FILE not found. Run from the repository root."
-  exit 1
+  exit 2
 fi
 
 CURRENT_HASH=$(sha256sum "$SCHEMA_FILE" | awk '{print $1}')
@@ -21,6 +28,6 @@ else
   echo "  Recorded: $RECORDED_HASH"
   echo "  Current:  $CURRENT_HASH"
   echo ""
-  echo "Update SchemaVersion in internal/provider/schema_version.go and re-audit for API changes."
+  echo "Update SchemaVersion in $VERSION_FILE and re-audit for API changes."
   exit 1
 fi
