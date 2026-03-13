@@ -107,6 +107,13 @@ resource "railway_volume" "pgdata" {
 
 # --- App variables ---
 
+resource "railway_variable" "app_port" {
+  name           = "PORT"
+  value          = "8080"
+  environment_id = var.environment_id
+  service_id     = data.railway_service.app.id
+}
+
 resource "railway_variable" "database_url" {
   name           = "DATABASE_URL"
   value          = "postgresql://testapp:${var.postgres_password}@postgres-dev.railway.internal:5432/testapp"
