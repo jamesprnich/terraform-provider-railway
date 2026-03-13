@@ -48,5 +48,5 @@ resource "railway_volume" "postgres_data" {
 Import is supported using the following syntax:
 
 ```shell
-terraform import railway_volume.postgres_data <project_id>:<volume_id>
+terraform import railway_volume.postgres_data <project_id>:<volume_id>:<service_id>:<environment_id>
 ```
