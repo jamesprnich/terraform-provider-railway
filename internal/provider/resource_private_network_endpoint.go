@@ -343,7 +343,7 @@ func (r *PrivateNetworkEndpointResource) Delete(ctx context.Context, req resourc
 
 	_, err := deletePrivateNetworkEndpoint(ctx, *r.client, data.Id.ValueString())
 
-	if err != nil {
+	if err != nil && !isNotFound(err) {
 		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to delete private network endpoint, got error: %s", err))
 		return
 	}

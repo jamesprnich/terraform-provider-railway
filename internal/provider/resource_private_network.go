@@ -190,6 +190,10 @@ func (r *PrivateNetworkResource) Read(ctx context.Context, req resource.ReadRequ
 	err := r.readPrivateNetworkState(ctx, data)
 
 	if err != nil {
+		if isNotFound(err) {
+			resp.State.RemoveResource(ctx)
+			return
+		}
 		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to read private network, got error: %s", err))
 		return
 	}
@@ -264,7 +268,7 @@ func (r *PrivateNetworkResource) Delete(ctx context.Context, req resource.Delete
 
 	_, err := deletePrivateNetworksForEnvironment(ctx, *r.client, data.EnvironmentId.ValueString())
 
-	if err != nil {
+	if err != nil && !isNotFound(err) {
 		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to delete private networks, got error: %s", err))
 		return
 	}
@@ -315,5 +319,5 @@ func (r *PrivateNetworkResource) readPrivateNetworkState(ctx context.Context, da
 		return nil
 	}
 
-	return fmt.Errorf("private network %s not found in environment %s", data.Id.ValueString(), data.EnvironmentId.ValueString())
+	return &NotFoundError{ResourceType: "private network", Id: data.Id.ValueString()}
 }

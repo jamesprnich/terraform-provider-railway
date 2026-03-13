@@ -453,6 +453,10 @@ func (r *ServiceResource) Read(ctx context.Context, req resource.ReadRequest, re
 	response, err := getService(ctx, *r.client, data.Id.ValueString())
 
 	if err != nil {
+		if isNotFound(err) {
+			resp.State.RemoveResource(ctx)
+			return
+		}
 		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to read service, got error: %s", err))
 		return
 	}
@@ -669,7 +673,7 @@ func (r *ServiceResource) Delete(ctx context.Context, req resource.DeleteRequest
 
 	_, err := deleteService(ctx, *r.client, data.Id.ValueString())
 
-	if err != nil {
+	if err != nil && !isNotFound(err) {
 		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to delete service, got error: %s", err))
 		return
 	}
@@ -685,7 +689,7 @@ func (r *ServiceResource) Delete(ctx context.Context, req resource.DeleteRequest
 
 		_, err := deleteVolume(ctx, *r.client, volumeData.Id.ValueString())
 
-		if err != nil {
+		if err != nil && !isNotFound(err) {
 			resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to delete volume, got error: %s", err))
 			return
 		}

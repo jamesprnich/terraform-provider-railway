@@ -31,7 +31,7 @@ type EnvironmentResource struct {
 type EnvironmentResourceModel struct {
 	Id       types.String `tfsdk:"id"`
 	Name     types.String `tfsdk:"name"`
-	ProjecId types.String `tfsdk:"project_id"`
+	ProjectId types.String `tfsdk:"project_id"`
 }
 
 func (r *EnvironmentResource) Metadata(ctx context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
@@ -101,7 +101,7 @@ func (r *EnvironmentResource) Create(ctx context.Context, req resource.CreateReq
 
 	input := EnvironmentCreateInput{
 		Name:      data.Name.ValueString(),
-		ProjectId: data.ProjecId.ValueString(),
+		ProjectId: data.ProjectId.ValueString(),
 	}
 
 	response, err := createEnvironment(ctx, *r.client, input)
@@ -117,7 +117,7 @@ func (r *EnvironmentResource) Create(ctx context.Context, req resource.CreateReq
 
 	data.Id = types.StringValue(environment.Id)
 	data.Name = types.StringValue(environment.Name)
-	data.ProjecId = types.StringValue(environment.ProjectId)
+	data.ProjectId = types.StringValue(environment.ProjectId)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
@@ -134,6 +134,10 @@ func (r *EnvironmentResource) Read(ctx context.Context, req resource.ReadRequest
 	response, err := getEnvironment(ctx, *r.client, data.Id.ValueString())
 
 	if err != nil {
+		if isNotFound(err) {
+			resp.State.RemoveResource(ctx)
+			return
+		}
 		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to read environment, got error: %s", err))
 		return
 	}
@@ -142,7 +146,7 @@ func (r *EnvironmentResource) Read(ctx context.Context, req resource.ReadRequest
 
 	data.Id = types.StringValue(environment.Id)
 	data.Name = types.StringValue(environment.Name)
-	data.ProjecId = types.StringValue(environment.ProjectId)
+	data.ProjectId = types.StringValue(environment.ProjectId)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
@@ -179,7 +183,7 @@ func (r *EnvironmentResource) Update(ctx context.Context, req resource.UpdateReq
 
 		plan.Id = types.StringValue(response.EnvironmentRename.Id)
 		plan.Name = types.StringValue(response.EnvironmentRename.Name)
-		plan.ProjecId = types.StringValue(response.EnvironmentRename.ProjectId)
+		plan.ProjectId = types.StringValue(response.EnvironmentRename.ProjectId)
 	}
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
@@ -197,6 +201,9 @@ func (r *EnvironmentResource) Delete(ctx context.Context, req resource.DeleteReq
 	_, err := deleteEnvironment(ctx, *r.client, data.Id.ValueString())
 
 	if err != nil {
+		if isNotFound(err) {
+			return
+		}
 		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to delete environment, got error: %s", err))
 		return
 	}

@@ -208,18 +208,15 @@ func (r *ServiceInstanceResource) Create(ctx context.Context, req resource.Creat
 	}
 
 	// Set resource limits if specified.
-	// Retry once after a brief delay — the service instance may not be
-	// immediately queryable in a newly-created environment.
+	// Retry with backoff — the service instance may not be immediately
+	// queryable in a newly-created environment.
 	if !data.VCPUs.IsNull() || !data.MemoryGB.IsNull() {
-		err := r.updateLimits(ctx, data)
+		err := retryFindContext(ctx, 15*time.Second, func() error {
+			return r.updateLimits(ctx, data)
+		})
 		if err != nil {
-			tflog.Trace(ctx, "limits update failed, retrying after delay")
-			time.Sleep(2 * time.Second)
-			err = r.updateLimits(ctx, data)
-			if err != nil {
-				resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to set resource limits, got error: %s", err))
-				return
-			}
+			resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to set resource limits, got error: %s", err))
+			return
 		}
 	}
 
@@ -254,6 +251,10 @@ func (r *ServiceInstanceResource) Read(ctx context.Context, req resource.ReadReq
 	err := r.readServiceInstanceState(ctx, data)
 
 	if err != nil {
+		if isNotFound(err) {
+			resp.State.RemoveResource(ctx)
+			return
+		}
 		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to read service instance, got error: %s", err))
 		return
 	}
@@ -334,7 +335,7 @@ func (r *ServiceInstanceResource) Delete(ctx context.Context, req resource.Delet
 
 	_, err := updateServiceInstanceInEnvironment(ctx, *r.client, data.EnvironmentId.ValueString(), data.ServiceId.ValueString(), input)
 
-	if err != nil {
+	if err != nil && !isNotFound(err) {
 		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to reset service instance, got error: %s", err))
 		return
 	}

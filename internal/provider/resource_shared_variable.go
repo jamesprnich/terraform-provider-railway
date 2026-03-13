@@ -47,6 +47,9 @@ func (r *SharedVariableResource) Schema(ctx context.Context, req resource.Schema
 			"id": schema.StringAttribute{
 				MarkdownDescription: "Identifier of the variable.",
 				Computed:            true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"name": schema.StringAttribute{
 				MarkdownDescription: "Name of the variable.",
@@ -154,6 +157,10 @@ func (r *SharedVariableResource) Read(ctx context.Context, req resource.ReadRequ
 	err := getSharedVariable(ctx, *r.client, data.ProjectId.ValueString(), data.EnvironmentId.ValueString(), data.Name.ValueString(), data)
 
 	if err != nil {
+		if isNotFound(err) {
+			resp.State.RemoveResource(ctx)
+			return
+		}
 		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to read shared variable, got error: %s", err))
 		return
 	}
@@ -213,7 +220,7 @@ func (r *SharedVariableResource) Delete(ctx context.Context, req resource.Delete
 
 	_, err := deleteVariable(ctx, *r.client, input)
 
-	if err != nil {
+	if err != nil && !isNotFound(err) {
 		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to delete shared variable, got error: %s", err))
 		return
 	}
@@ -252,13 +259,16 @@ func getSharedVariable(ctx context.Context, client graphql.Client, projectId str
 		return err
 	}
 
-	if value, ok := response.Variables[name]; ok {
-		data.Id = types.StringValue(fmt.Sprintf("%s:%s:%s", projectId, environmentId, name))
-		data.Name = types.StringValue(name)
-		data.Value = types.StringValue(fmt.Sprintf("%v", value))
-		data.ProjectId = types.StringValue(projectId)
-		data.EnvironmentId = types.StringValue(environmentId)
+	value, ok := response.Variables[name]
+	if !ok {
+		return &NotFoundError{ResourceType: "shared variable", Id: name}
 	}
+
+	data.Id = types.StringValue(fmt.Sprintf("%s:%s:%s", projectId, environmentId, name))
+	data.Name = types.StringValue(name)
+	data.Value = types.StringValue(fmt.Sprintf("%v", value))
+	data.ProjectId = types.StringValue(projectId)
+	data.EnvironmentId = types.StringValue(environmentId)
 
 	return nil
 }

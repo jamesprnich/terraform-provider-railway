@@ -48,6 +48,9 @@ func (r *VariableResource) Schema(ctx context.Context, req resource.SchemaReques
 			"id": schema.StringAttribute{
 				MarkdownDescription: "Identifier of the variable.",
 				Computed:            true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"name": schema.StringAttribute{
 				MarkdownDescription: "Name of the variable.",
@@ -87,6 +90,9 @@ func (r *VariableResource) Schema(ctx context.Context, req resource.SchemaReques
 			"project_id": schema.StringAttribute{
 				MarkdownDescription: "Identifier of the project the variable belongs to.",
 				Computed:            true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 		},
 	}
@@ -181,6 +187,10 @@ func (r *VariableResource) Read(ctx context.Context, req resource.ReadRequest, r
 	err := getVariable(ctx, *r.client, data.ProjectId.ValueString(), data.EnvironmentId.ValueString(), data.ServiceId.ValueString(), data.Name.ValueString(), data)
 
 	if err != nil {
+		if isNotFound(err) {
+			resp.State.RemoveResource(ctx)
+			return
+		}
 		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to read variable, got error: %s", err))
 		return
 	}
@@ -256,14 +266,14 @@ func (r *VariableResource) Delete(ctx context.Context, req resource.DeleteReques
 
 	_, err := deleteVariable(ctx, *r.client, input)
 
-	if err != nil {
+	if err != nil && !isNotFound(err) {
 		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to delete variable, got error: %s", err))
 		return
 	}
 
 	_, err = redeployServiceInstance(ctx, *r.client, data.EnvironmentId.ValueString(), data.ServiceId.ValueString())
 
-	if err != nil {
+	if err != nil && !isNotFound(err) {
 		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to redeploy service after variable updated, got error: %s", err))
 		return
 	}
@@ -311,14 +321,17 @@ func getVariable(ctx context.Context, client graphql.Client, projectId string, e
 		return err
 	}
 
-	if value, ok := response.Variables[name]; ok {
-		data.Id = types.StringValue(fmt.Sprintf("%s:%s:%s", serviceId, environmentId, name))
-		data.Name = types.StringValue(name)
-		data.Value = types.StringValue(fmt.Sprintf("%v", value))
-		data.ProjectId = types.StringValue(projectId)
-		data.EnvironmentId = types.StringValue(environmentId)
-		data.ServiceId = types.StringValue(serviceId)
+	value, ok := response.Variables[name]
+	if !ok {
+		return &NotFoundError{ResourceType: "variable", Id: name}
 	}
+
+	data.Id = types.StringValue(fmt.Sprintf("%s:%s:%s", serviceId, environmentId, name))
+	data.Name = types.StringValue(name)
+	data.Value = types.StringValue(fmt.Sprintf("%v", value))
+	data.ProjectId = types.StringValue(projectId)
+	data.EnvironmentId = types.StringValue(environmentId)
+	data.ServiceId = types.StringValue(serviceId)
 
 	return nil
 }
