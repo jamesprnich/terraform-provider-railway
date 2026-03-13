@@ -31,6 +31,7 @@ mutation createServiceDomain(
   }
 }
 
+# @genqlient(for: "ServiceDomainUpdateInput.targetPort", omitempty: true, pointer: true)
 mutation updateServiceDomain(
   $input: ServiceDomainUpdateInput!
 ) {

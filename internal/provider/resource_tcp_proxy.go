@@ -50,6 +50,9 @@ func (r *TcpProxyResource) Schema(ctx context.Context, req resource.SchemaReques
 			"id": schema.StringAttribute{
 				MarkdownDescription: "Identifier of the TCP proxy.",
 				Computed:            true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"application_port": schema.Int64Attribute{
 				MarkdownDescription: "Port of the application the TCP proxy points to.",
@@ -85,10 +88,16 @@ func (r *TcpProxyResource) Schema(ctx context.Context, req resource.SchemaReques
 			"proxy_port": schema.Int64Attribute{
 				MarkdownDescription: "Port of the TCP proxy.",
 				Computed:            true,
+				PlanModifiers: []planmodifier.Int64{
+					int64planmodifier.UseStateForUnknown(),
+				},
 			},
 			"domain": schema.StringAttribute{
 				MarkdownDescription: "Domain of the TCP proxy.",
 				Computed:            true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 		},
 	}
@@ -176,10 +185,15 @@ func (r *TcpProxyResource) Read(ctx context.Context, req resource.ReadRequest, r
 	response, err := getTcpProxy(ctx, *r.client, data.EnvironmentId.ValueString(), data.ServiceId.ValueString())
 
 	if err != nil {
+		if isNotFound(err) {
+			resp.State.RemoveResource(ctx)
+			return
+		}
 		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to read tcp proxy, got error: %s", err))
 		return
 	}
 
+	found := false
 	for _, proxy := range response.TcpProxies {
 		if proxy.Id == data.Id.ValueString() {
 			data.Id = types.StringValue(proxy.Id)
@@ -188,7 +202,14 @@ func (r *TcpProxyResource) Read(ctx context.Context, req resource.ReadRequest, r
 			data.ServiceId = types.StringValue(proxy.ServiceId)
 			data.ProxyPort = types.Int64Value(int64(proxy.ProxyPort))
 			data.Domain = types.StringValue(proxy.Domain)
+			found = true
+			break
 		}
+	}
+
+	if !found {
+		resp.State.RemoveResource(ctx)
+		return
 	}
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
@@ -217,7 +238,7 @@ func (r *TcpProxyResource) Delete(ctx context.Context, req resource.DeleteReques
 
 	_, err := deleteTcpProxy(ctx, *r.client, data.Id.ValueString())
 
-	if err != nil {
+	if err != nil && !isNotFound(err) {
 		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to delete tcp proxy, got error: %s", err))
 		return
 	}

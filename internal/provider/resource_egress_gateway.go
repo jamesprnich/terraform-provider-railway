@@ -218,7 +218,7 @@ func (r *EgressGatewayResource) Delete(ctx context.Context, req resource.DeleteR
 
 	_, err := clearEgressGateways(ctx, *r.client, input)
 
-	if err != nil {
+	if err != nil && !isNotFound(err) {
 		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to clear egress gateways, got error: %s", err))
 		return
 	}

@@ -211,6 +211,10 @@ func (r *DeploymentTriggerResource) Read(ctx context.Context, req resource.ReadR
 	err := r.readTriggerState(ctx, data)
 
 	if err != nil {
+		if isNotFound(err) {
+			resp.State.RemoveResource(ctx)
+			return
+		}
 		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to read deployment trigger, got error: %s", err))
 		return
 	}
@@ -305,7 +309,7 @@ func (r *DeploymentTriggerResource) Delete(ctx context.Context, req resource.Del
 
 	_, err := deleteDeploymentTrigger(ctx, *r.client, data.Id.ValueString())
 
-	if err != nil {
+	if err != nil && !isNotFound(err) {
 		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to delete deployment trigger, got error: %s", err))
 		return
 	}
@@ -366,5 +370,5 @@ func (r *DeploymentTriggerResource) readTriggerState(ctx context.Context, data *
 		return nil
 	}
 
-	return fmt.Errorf("deployment trigger %s not found", data.Id.ValueString())
+	return &NotFoundError{ResourceType: "deployment trigger", Id: data.Id.ValueString()}
 }

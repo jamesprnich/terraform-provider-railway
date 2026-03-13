@@ -722,7 +722,7 @@ type ServiceDomainUpdateInput struct {
 	EnvironmentId   string `json:"environmentId"`
 	ServiceDomainId string `json:"serviceDomainId"`
 	ServiceId       string `json:"serviceId"`
-	TargetPort      int    `json:"targetPort"`
+	TargetPort      *int   `json:"targetPort,omitempty"`
 }
 
 // GetDomain returns ServiceDomainUpdateInput.Domain, and is useful for accessing the field via an interface.
@@ -738,7 +738,7 @@ func (v *ServiceDomainUpdateInput) GetServiceDomainId() string { return v.Servic
 func (v *ServiceDomainUpdateInput) GetServiceId() string { return v.ServiceId }
 
 // GetTargetPort returns ServiceDomainUpdateInput.TargetPort, and is useful for accessing the field via an interface.
-func (v *ServiceDomainUpdateInput) GetTargetPort() int { return v.TargetPort }
+func (v *ServiceDomainUpdateInput) GetTargetPort() *int { return v.TargetPort }
 
 type ServiceInstanceLimitsUpdateInput struct {
 	EnvironmentId string `json:"environmentId"`

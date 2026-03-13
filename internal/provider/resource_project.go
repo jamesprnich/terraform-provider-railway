@@ -217,6 +217,16 @@ func (r *ProjectResource) Create(ctx context.Context, req resource.CreateRequest
 	noOfEnvironments := len(project.Environments.Edges)
 
 	if noOfEnvironments != 1 {
+		// Save partial state so Terraform tracks this resource.
+		// default_environment must be set to avoid unknown values in state.
+		data.DefaultEnvironment = types.ObjectValueMust(
+			defaultEnvironmentAttrTypes,
+			map[string]attr.Value{
+				"id":   types.StringNull(),
+				"name": types.StringNull(),
+			},
+		)
+		resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Expected exactly one environment, got %d", noOfEnvironments))
 		return
 	}
@@ -244,6 +254,10 @@ func (r *ProjectResource) Read(ctx context.Context, req resource.ReadRequest, re
 	project, enviroment, err := defaultEnvironmentForProject(ctx, *r.client, data.Id.ValueString())
 
 	if err != nil {
+		if isNotFound(err) {
+			resp.State.RemoveResource(ctx)
+			return
+		}
 		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to read project, got error: %s", err))
 		return
 	}
@@ -345,6 +359,9 @@ func (r *ProjectResource) Delete(ctx context.Context, req resource.DeleteRequest
 	_, err := deleteProject(ctx, *r.client, data.Id.ValueString())
 
 	if err != nil {
+		if isNotFound(err) {
+			return
+		}
 		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to delete project, got error: %s", err))
 		return
 	}

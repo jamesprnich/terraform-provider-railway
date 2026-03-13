@@ -53,6 +53,9 @@ func (r *CustomDomainResource) Schema(ctx context.Context, req resource.SchemaRe
 			"id": schema.StringAttribute{
 				MarkdownDescription: "Identifier of the custom domain.",
 				Computed:            true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"domain": schema.StringAttribute{
 				MarkdownDescription: "Custom domain.",
@@ -87,6 +90,9 @@ func (r *CustomDomainResource) Schema(ctx context.Context, req resource.SchemaRe
 			"project_id": schema.StringAttribute{
 				MarkdownDescription: "Identifier of the project the custom domain belongs to.",
 				Computed:            true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"target_port": schema.Int64Attribute{
 				MarkdownDescription: "Target port for the custom domain.",
@@ -102,14 +108,23 @@ func (r *CustomDomainResource) Schema(ctx context.Context, req resource.SchemaRe
 			"host_label": schema.StringAttribute{
 				MarkdownDescription: "Host label of the custom domain.",
 				Computed:            true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"zone": schema.StringAttribute{
 				MarkdownDescription: "Zone of the custom domain.",
 				Computed:            true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"dns_record_value": schema.StringAttribute{
 				MarkdownDescription: "DNS record value of the custom domain.",
 				Computed:            true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 		},
 	}
@@ -186,9 +201,11 @@ func (r *CustomDomainResource) Create(ctx context.Context, req resource.CreateRe
 		data.TargetPort = types.Int64Null()
 	}
 
-	data.HostLabel = types.StringValue(domain.Status.DnsRecords[0].Hostlabel)
-	data.Zone = types.StringValue(domain.Status.DnsRecords[0].Zone)
-	data.DNSRecordValue = types.StringValue(domain.Status.DnsRecords[0].RequiredValue)
+	if len(domain.Status.DnsRecords) > 0 {
+		data.HostLabel = types.StringValue(domain.Status.DnsRecords[0].Hostlabel)
+		data.Zone = types.StringValue(domain.Status.DnsRecords[0].Zone)
+		data.DNSRecordValue = types.StringValue(domain.Status.DnsRecords[0].RequiredValue)
+	}
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
@@ -207,6 +224,10 @@ func (r *CustomDomainResource) Read(ctx context.Context, req resource.ReadReques
 	response, err := listCustomDomains(ctx, *r.client, data.EnvironmentId.ValueString(), data.ServiceId.ValueString(), data.ProjectId.ValueString())
 
 	if err != nil {
+		if isNotFound(err) {
+			resp.State.RemoveResource(ctx)
+			return
+		}
 		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to list custom domains, got error: %s", err))
 		return
 	}
@@ -219,7 +240,7 @@ func (r *CustomDomainResource) Read(ctx context.Context, req resource.ReadReques
 	}
 
 	if domain.Id == "" {
-		resp.Diagnostics.AddError("Client Error", "Unable to find custom domain")
+		resp.State.RemoveResource(ctx)
 		return
 	}
 
@@ -234,13 +255,19 @@ func (r *CustomDomainResource) Read(ctx context.Context, req resource.ReadReques
 		data.TargetPort = types.Int64Null()
 	}
 
-	data.HostLabel = types.StringValue(domain.Status.DnsRecords[0].Hostlabel)
-	data.Zone = types.StringValue(domain.Status.DnsRecords[0].Zone)
-	data.DNSRecordValue = types.StringValue(domain.Status.DnsRecords[0].RequiredValue)
+	if len(domain.Status.DnsRecords) > 0 {
+		data.HostLabel = types.StringValue(domain.Status.DnsRecords[0].Hostlabel)
+		data.Zone = types.StringValue(domain.Status.DnsRecords[0].Zone)
+		data.DNSRecordValue = types.StringValue(domain.Status.DnsRecords[0].RequiredValue)
+	}
 
 	service, err := getService(ctx, *r.client, domain.ServiceId)
 
 	if err != nil {
+		if isNotFound(err) {
+			resp.State.RemoveResource(ctx)
+			return
+		}
 		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to read service, got error: %s", err))
 		return
 	}
@@ -296,7 +323,7 @@ func (r *CustomDomainResource) Delete(ctx context.Context, req resource.DeleteRe
 
 	_, err := deleteCustomDomain(ctx, *r.client, data.Id.ValueString())
 
-	if err != nil {
+	if err != nil && !isNotFound(err) {
 		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to delete custom domain, got error: %s", err))
 		return
 	}

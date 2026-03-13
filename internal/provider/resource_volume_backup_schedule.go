@@ -143,6 +143,10 @@ func (r *VolumeBackupScheduleResource) Read(ctx context.Context, req resource.Re
 	err := r.readScheduleState(ctx, data)
 
 	if err != nil {
+		if isNotFound(err) {
+			resp.State.RemoveResource(ctx)
+			return
+		}
 		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to read volume backup schedule, got error: %s", err))
 		return
 	}
@@ -198,7 +202,7 @@ func (r *VolumeBackupScheduleResource) Delete(ctx context.Context, req resource.
 	// Delete by setting an empty kinds list
 	_, err := updateVolumeInstanceBackupSchedule(ctx, *r.client, []VolumeInstanceBackupScheduleKind{}, data.VolumeInstanceId.ValueString())
 
-	if err != nil {
+	if err != nil && !isNotFound(err) {
 		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to delete volume backup schedule, got error: %s", err))
 		return
 	}

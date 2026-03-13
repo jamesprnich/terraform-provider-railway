@@ -63,6 +63,9 @@ func (r *VariableCollectionResource) Schema(ctx context.Context, req resource.Sc
 			"id": schema.StringAttribute{
 				MarkdownDescription: "Identifier of the variable collection.",
 				Computed:            true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"variables": schema.ListNestedAttribute{
 				MarkdownDescription: "Collection of variables.",
@@ -107,6 +110,9 @@ func (r *VariableCollectionResource) Schema(ctx context.Context, req resource.Sc
 			"project_id": schema.StringAttribute{
 				MarkdownDescription: "Identifier of the project the variable collection belongs to.",
 				Computed:            true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 		},
 	}
@@ -228,6 +234,10 @@ func (r *VariableCollectionResource) Read(ctx context.Context, req resource.Read
 	err := getVariableCollection(ctx, *r.client, data.ProjectId.ValueString(), data.EnvironmentId.ValueString(), data.ServiceId.ValueString(), variableNames, data)
 
 	if err != nil {
+		if isNotFound(err) {
+			resp.State.RemoveResource(ctx)
+			return
+		}
 		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to read variable collection, got error: %s", err))
 		return
 	}
@@ -334,7 +344,7 @@ func (r *VariableCollectionResource) Delete(ctx context.Context, req resource.De
 
 	err := deleteManyVariables(ctx, *r.client, data.ProjectId.ValueString(), data.EnvironmentId.ValueString(), data.ServiceId.ValueString(), variableNames)
 
-	if err != nil {
+	if err != nil && !isNotFound(err) {
 		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to delete variable collection, got error: %s", err))
 		return
 	}
@@ -446,6 +456,10 @@ func getVariableCollection(ctx context.Context, client graphql.Client, projectId
 				return fmt.Errorf("cannot convert variable %s to string", name)
 			}
 		}
+	}
+
+	if len(variables) == 0 {
+		return &NotFoundError{ResourceType: "variable collection", Id: serviceId + ":" + environmentId}
 	}
 
 	data.Id = types.StringValue(getVariableCollectionId(ctx, serviceId, environmentId, names))

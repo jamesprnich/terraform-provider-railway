@@ -202,6 +202,10 @@ func (r *VolumeResource) Read(ctx context.Context, req resource.ReadRequest, res
 	err := r.readVolumeState(ctx, data)
 
 	if err != nil {
+		if isNotFound(err) {
+			resp.State.RemoveResource(ctx)
+			return
+		}
 		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to read volume, got error: %s", err))
 		return
 	}
@@ -277,7 +281,7 @@ func (r *VolumeResource) Delete(ctx context.Context, req resource.DeleteRequest,
 
 	_, err := deleteVolume(ctx, *r.client, data.Id.ValueString())
 
-	if err != nil {
+	if err != nil && !isNotFound(err) {
 		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to delete volume, got error: %s", err))
 		return
 	}
@@ -288,10 +292,10 @@ func (r *VolumeResource) Delete(ctx context.Context, req resource.DeleteRequest,
 func (r *VolumeResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
 	parts := strings.Split(req.ID, ":")
 
-	if len(parts) != 2 || parts[0] == "" || parts[1] == "" {
+	if len(parts) != 4 || parts[0] == "" || parts[1] == "" || parts[2] == "" || parts[3] == "" {
 		resp.Diagnostics.AddError(
 			"Unexpected Import Identifier",
-			fmt.Sprintf("Expected import identifier with format: project_id:volume_id. Got: %q", req.ID),
+			fmt.Sprintf("Expected import identifier with format: project_id:volume_id:service_id:environment_id. Got: %q", req.ID),
 		)
 
 		return
@@ -299,6 +303,8 @@ func (r *VolumeResource) ImportState(ctx context.Context, req resource.ImportSta
 
 	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("project_id"), parts[0])...)
 	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("id"), parts[1])...)
+	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("service_id"), parts[2])...)
+	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("environment_id"), parts[3])...)
 }
 
 // readVolumeState queries the project's volumes and populates the model with matching volume data.
@@ -330,8 +336,8 @@ func (r *VolumeResource) readVolumeState(ctx context.Context, data *VolumeResour
 			}
 		}
 
-		return fmt.Errorf("volume instance not found for volume %s in environment %s", data.Id.ValueString(), data.EnvironmentId.ValueString())
+		return &NotFoundError{ResourceType: "volume instance", Id: data.Id.ValueString()}
 	}
 
-	return fmt.Errorf("volume %s not found in project %s", data.Id.ValueString(), data.ProjectId.ValueString())
+	return &NotFoundError{ResourceType: "volume", Id: data.Id.ValueString()}
 }
