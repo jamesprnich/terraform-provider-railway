@@ -1,3 +1,36 @@
+## 0.8.0
+
+### BREAKING
+* Volume import format changed from `project_id:volume_id` to `project_id:volume_id:service_id:environment_id`
+* Webhook import format changed from `webhook_id` to `project_id:webhook_id`
+
+### Enhancements
+* Add `railway_webhook` resource — HTTP webhook notifications for project events
+* Add `railway_egress_gateway` resource — static egress IP for external service allowlisting
+* Add `railway_private_network` resource — private network for internal service-to-service communication
+* Add `railway_private_network_endpoint` resource — connects a service to a private network with DNS name
+* Add `railway_deployment_trigger` resource — auto-deploy from GitHub/GitLab on push (re-added after v0.5.0 removal)
+* Add `railway_volume_backup_schedule` resource — automatic backup schedules for volume instances
+* Add `data.railway_project` data source — look up project by ID or name
+* Add `data.railway_environment` data source — look up environment by ID or name
+* Add `data.railway_service` data source — look up service by ID or name
+* Add environment rename support — `railway_environment` name changes no longer force destroy/recreate
+* Add custom domain target port update — `railway_custom_domain` target_port changes no longer force destroy/recreate
+* Upgrade `terraform-plugin-framework` from v1.2.0 to v1.19.0
+* Add `UseStateForUnknown` plan modifier to all stable Computed attributes across all resources
+* Add schema version tracking (`schema_version.go` + `scripts/check-schema.sh`)
+* Add documentation for all 17 resources and 3 data sources
+
+### Bug fixes
+* Fix `railway_custom_domain` panic on empty DNS records from API
+* Fix `railway_project` Create orphaning resources when environment count is unexpected
+* Fix `railway_webhook` ImportState not setting `project_id` (Read would fail after import)
+* Fix `railway_egress_gateway` Delete failing when resource already deleted externally
+* Fix `railway_private_network_endpoint` Delete failing when resource already deleted externally
+* Fix `isNotFound` false positives on internal "not found" substrings (e.g., "serviceManifest is not found")
+* Fix `railway_environment` Go struct field typo (`ProjecId` → `ProjectId`)
+* Fix `railway_volume` import fragility — null environment/service matching accepted any volume instance
+
 ## 0.7.0
 
 ### Enhancements
