@@ -178,7 +178,7 @@ resource "railway_webhook" "test" {
 			{
 				ResourceName:      "railway_webhook.test",
 				ImportState:       true,
-				ImportStateId:     "wh-imp",
+				ImportStateId:     projectId + ":wh-imp",
 				ImportStateVerify: true,
 			},
 		},
