@@ -22,8 +22,6 @@ func (e *NotFoundError) Error() string {
 
 // isNotFound returns true if the error indicates a resource was not found.
 // Checks for NotFoundError type and common Railway GraphQL API error patterns.
-// Deliberately excludes the broad "not found" match to avoid false positives
-// on internal parsing errors (e.g. "serviceManifest is not found").
 func isNotFound(err error) bool {
 	if err == nil {
 		return false
@@ -37,7 +35,8 @@ func isNotFound(err error) bool {
 	msg := strings.ToLower(err.Error())
 	return strings.Contains(msg, "could not find") ||
 		strings.Contains(msg, "doesn't exist") ||
-		strings.Contains(msg, "does not exist")
+		strings.Contains(msg, "does not exist") ||
+		strings.Contains(msg, "not found")
 }
 
 // retryFindContext retries a function that may return NotFoundError due to

@@ -135,7 +135,7 @@ func (r *ServiceDomainResource) Create(ctx context.Context, req resource.CreateR
 	response, err := createServiceDomain(ctx, *r.client, input)
 
 	if err != nil {
-		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to create service domain, got error: %s", err))
+		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to create service domain (service_id=%s, environment_id=%s), got error: %s", data.ServiceId.ValueString(), data.EnvironmentId.ValueString(), err))
 		return
 	}
 
@@ -160,7 +160,7 @@ func (r *ServiceDomainResource) Create(ctx context.Context, req resource.CreateR
 	service, err := getService(ctx, *r.client, domain.ServiceId)
 
 	if err != nil {
-		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to read service, got error: %s", err))
+		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to read service for service domain (service_id=%s, environment_id=%s), got error: %s", data.ServiceId.ValueString(), data.EnvironmentId.ValueString(), err))
 		return
 	}
 
@@ -185,7 +185,7 @@ func (r *ServiceDomainResource) Read(ctx context.Context, req resource.ReadReque
 			resp.State.RemoveResource(ctx)
 			return
 		}
-		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to read service domain, got error: %s", err))
+		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to read service domain (id=%s, service_id=%s, environment_id=%s), got error: %s", data.Id.ValueString(), data.ServiceId.ValueString(), data.EnvironmentId.ValueString(), err))
 		return
 	}
 
@@ -212,7 +212,7 @@ func (r *ServiceDomainResource) Delete(ctx context.Context, req resource.DeleteR
 
 	_, err := deleteServiceDomain(ctx, *r.client, data.Id.ValueString())
 
-	if err != nil && !isNotFound(err) {
+	if err != nil && !isNotFound(err) && !strings.Contains(strings.ToLower(err.Error()), "operation is already in progress") {
 		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to delete service domain, got error: %s", err))
 		return
 	}

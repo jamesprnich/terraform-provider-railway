@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
 func TestVolumeResource_basic(t *testing.T) {
@@ -117,6 +118,46 @@ resource "railway_volume" "test" {
 					resource.TestCheckResourceAttr("railway_volume.test", "mount_path", "/var/lib/postgresql/data"),
 					resource.TestCheckResourceAttr("railway_volume.test", "size_mb", "2048"),
 				),
+			},
+		},
+	})
+}
+
+func TestVolumeResource_disappears(t *testing.T) {
+	projectId := "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"
+	serviceId := "11111111-2222-3333-4444-555555555555"
+	envId := "22222222-3333-4444-5555-666666666666"
+
+	volumeCreateResp := fmt.Sprintf(`{"data":{"volumeCreate":{"id":"vol-dis","name":"my-volume","projectId":"%s"}}}`, projectId)
+	volumeInstancesResp := fmt.Sprintf(`{"data":{"project":{"volumes":{"edges":[{"node":{"id":"vol-dis","name":"my-volume","volumeInstances":{"edges":[{"node":{"environmentId":"%s","serviceId":"%s","mountPath":"/data","sizeMB":1024}}]}}}]}}}}`, envId, serviceId)
+
+	srv, disappear := newDisappearsMockServer(t, mockFixtures{
+		"createVolume":       volumeCreateResp,
+		"getVolumeInstances": volumeInstancesResp,
+		"deleteVolume":       `{"data":{"volumeDelete":true}}`,
+	}, "getVolumeInstances")
+	defer srv.Close()
+
+	resource.UnitTest(t, resource.TestCase{
+		ProtoV6ProviderFactories: testUnitProtoV6ProviderFactories(),
+		Steps: []resource.TestStep{
+			{
+				Config: testUnitProviderConfig(srv.URL) + fmt.Sprintf(`
+resource "railway_volume" "test" {
+  project_id     = "%s"
+  service_id     = "%s"
+  environment_id = "%s"
+  mount_path     = "/data"
+}
+`, projectId, serviceId, envId),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("railway_volume.test", "id", "vol-dis"),
+					func(s *terraform.State) error {
+						disappear()
+						return nil
+					},
+				),
+				ExpectNonEmptyPlan: true,
 			},
 		},
 	})

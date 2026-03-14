@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
 func TestWebhookResource_basic(t *testing.T) {
@@ -146,6 +147,39 @@ resource "railway_webhook" "test" {
 					resource.TestCheckResourceAttr("railway_webhook.test", "url", "https://example.com/no-filters"),
 					resource.TestCheckResourceAttr("railway_webhook.test", "project_id", projectId),
 				),
+			},
+		},
+	})
+}
+
+func TestWebhookResource_disappears(t *testing.T) {
+	projectId := "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"
+
+	srv, disappear := newDisappearsMockServer(t, mockFixtures{
+		"createWebhook": `{"data":{"webhookCreate":{"id":"wh-dis","url":"https://example.com/hook","projectId":"` + projectId + `","filters":["deploy.completed"],"lastStatus":0}}}`,
+		"getWebhooks":   `{"data":{"webhooks":{"edges":[{"node":{"id":"wh-dis","url":"https://example.com/hook","projectId":"` + projectId + `","filters":["deploy.completed"],"lastStatus":0}}]}}}`,
+		"deleteWebhook": `{"data":{"webhookDelete":true}}`,
+	}, "getWebhooks")
+	defer srv.Close()
+
+	resource.UnitTest(t, resource.TestCase{
+		ProtoV6ProviderFactories: testUnitProtoV6ProviderFactories(),
+		Steps: []resource.TestStep{
+			{
+				Config: testUnitProviderConfig(srv.URL) + `
+resource "railway_webhook" "test" {
+  project_id = "` + projectId + `"
+  url        = "https://example.com/hook"
+  filters    = ["deploy.completed"]
+}`,
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("railway_webhook.test", "id", "wh-dis"),
+					func(s *terraform.State) error {
+						disappear()
+						return nil
+					},
+				),
+				ExpectNonEmptyPlan: true,
 			},
 		},
 	})

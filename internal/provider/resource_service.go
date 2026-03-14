@@ -17,7 +17,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
-	"github.com/hashicorp/terraform-plugin-framework/resource/schema/float64planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
@@ -195,7 +194,7 @@ func (r *ServiceResource) Schema(ctx context.Context, req resource.SchemaRequest
 						MarkdownDescription: "Identifier of the volume.",
 						Computed:            true,
 						PlanModifiers: []planmodifier.String{
-							stringplanmodifier.UseStateForUnknown(),
+							useStringStateForUnknownIfNonNull(),
 						},
 					},
 					"name": schema.StringAttribute{
@@ -216,7 +215,7 @@ func (r *ServiceResource) Schema(ctx context.Context, req resource.SchemaRequest
 						MarkdownDescription: "Size of the volume in MB.",
 						Computed:            true,
 						PlanModifiers: []planmodifier.Float64{
-							float64planmodifier.UseStateForUnknown(),
+							useFloat64StateForUnknownIfNonNull(),
 						},
 					},
 				},
@@ -349,7 +348,7 @@ func (r *ServiceResource) Create(ctx context.Context, req resource.CreateRequest
 	response, err := createService(ctx, *r.client, input)
 
 	if err != nil {
-		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to create service, got error: %s", err))
+		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to create service %q (project_id=%s), got error: %s", data.Name.ValueString(), data.ProjectId.ValueString(), err))
 		return
 	}
 
@@ -360,6 +359,15 @@ func (r *ServiceResource) Create(ctx context.Context, req resource.CreateRequest
 	data.Id = types.StringValue(service.Id)
 	data.Name = types.StringValue(service.Name)
 	data.ProjectId = types.StringValue(service.ProjectId)
+
+	// Set computed fields to null before the early state save so OpenTofu
+	// never sees unknown values in state if a subsequent step fails.
+	if data.Regions.IsUnknown() {
+		data.Regions = types.ListNull(types.ObjectType{AttrTypes: regionAttrTypes})
+	}
+	if data.Volume.IsUnknown() {
+		data.Volume = types.ObjectNull(volumeAttrTypes)
+	}
 
 	// Save state immediately so Terraform tracks this resource.
 	// If any subsequent step fails, the resource will be tainted
@@ -375,11 +383,24 @@ func (r *ServiceResource) Create(ctx context.Context, req resource.CreateRequest
 	_, err = updateServiceInstance(ctx, *r.client, data.Id.ValueString(), instanceInput)
 
 	if err != nil {
-		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to create service settings, got error: %s", err))
+		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to create service settings (id=%s, project_id=%s), got error: %s", data.Id.ValueString(), data.ProjectId.ValueString(), err))
 		return
 	}
 
 	tflog.Trace(ctx, "created service settings")
+
+	// Connect source (image/repo) before volume creation, because the
+	// Railway API may need the service's source context to provision volumes.
+	if !data.SourceRepo.IsNull() || !data.SourceImage.IsNull() {
+		connectInput := buildServiceConnectInput(data)
+
+		_, err := connectService(ctx, *r.client, data.Id.ValueString(), connectInput)
+
+		if err != nil {
+			resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to connect repo or image to service (id=%s, project_id=%s), got error: %s", data.Id.ValueString(), data.ProjectId.ValueString(), err))
+			return
+		}
+	}
 
 	if !data.Volume.IsNull() {
 		resp.Diagnostics.Append(data.Volume.As(ctx, &volumeData, basetypes.ObjectAsOptions{})...)
@@ -388,14 +409,28 @@ func (r *ServiceResource) Create(ctx context.Context, req resource.CreateRequest
 			return
 		}
 
+		// Resolve the default environment ID explicitly. Omitting environmentId
+		// triggers Railway's "deploy to all environments" path which fails for
+		// freshly-created services due to eventual consistency.
+		_, defaultEnv, envErr := defaultEnvironmentForProject(ctx, *r.client, data.ProjectId.ValueString())
+
+		if envErr != nil {
+			resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to determine default environment for volume (service_id=%s, project_id=%s), got error: %s", data.Id.ValueString(), data.ProjectId.ValueString(), envErr))
+			return
+		}
+
+		envId := defaultEnv.Id
+		serviceId := data.Id.ValueString()
+
 		volumeResponse, err := createVolume(ctx, *r.client, VolumeCreateInput{
-			MountPath: volumeData.MountPath.ValueString(),
-			ProjectId: data.ProjectId.ValueString(),
-			ServiceId: data.Id.ValueStringPointer(),
+			MountPath:     volumeData.MountPath.ValueString(),
+			ProjectId:     data.ProjectId.ValueString(),
+			ServiceId:     &serviceId,
+			EnvironmentId: &envId,
 		})
 
 		if err != nil {
-			resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to create volume, got error: %s", err))
+			resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to create volume (service_id=%s, project_id=%s, environment_id=%s), got error: %s", serviceId, data.ProjectId.ValueString(), envId, err))
 			return
 		}
 
@@ -406,35 +441,24 @@ func (r *ServiceResource) Create(ctx context.Context, req resource.CreateRequest
 		})
 
 		if err != nil {
-			resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to update volume, got error: %s", err))
+			resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to update volume (service_id=%s, project_id=%s), got error: %s", data.Id.ValueString(), data.ProjectId.ValueString(), err))
 			return
 		}
 
 		tflog.Trace(ctx, "updated a volume")
 	}
 
-	if !data.SourceRepo.IsNull() || !data.SourceImage.IsNull() {
-		connectInput := buildServiceConnectInput(data)
-
-		_, err := connectService(ctx, *r.client, data.Id.ValueString(), connectInput)
-
-		if err != nil {
-			resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to connect repo or image to service, got error: %s", err))
-			return
-		}
-	}
-
 	err = getAndBuildServiceInstance(ctx, *r.client, data.ProjectId.ValueString(), data.Id.ValueString(), data)
 
 	if err != nil {
-		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to read service settings, got error: %s", err))
+		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to read service settings (id=%s, project_id=%s), got error: %s", data.Id.ValueString(), data.ProjectId.ValueString(), err))
 		return
 	}
 
 	err = getAndBuildVolumeInstance(ctx, *r.client, data.ProjectId.ValueString(), data.Id.ValueString(), data)
 
 	if err != nil {
-		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to read volume settings, got error: %s", err))
+		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to read volume settings (service_id=%s, project_id=%s), got error: %s", data.Id.ValueString(), data.ProjectId.ValueString(), err))
 		return
 	}
 
@@ -457,7 +481,7 @@ func (r *ServiceResource) Read(ctx context.Context, req resource.ReadRequest, re
 			resp.State.RemoveResource(ctx)
 			return
 		}
-		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to read service, got error: %s", err))
+		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to read service (id=%s, name=%s, project_id=%s), got error: %s", data.Id.ValueString(), data.Name.ValueString(), data.ProjectId.ValueString(), err))
 		return
 	}
 
@@ -470,14 +494,14 @@ func (r *ServiceResource) Read(ctx context.Context, req resource.ReadRequest, re
 	err = getAndBuildServiceInstance(ctx, *r.client, data.ProjectId.ValueString(), data.Id.ValueString(), data)
 
 	if err != nil {
-		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to read service settings, got error: %s", err))
+		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to read service settings (id=%s, project_id=%s), got error: %s", data.Id.ValueString(), data.ProjectId.ValueString(), err))
 		return
 	}
 
 	err = getAndBuildVolumeInstance(ctx, *r.client, data.ProjectId.ValueString(), data.Id.ValueString(), data)
 
 	if err != nil {
-		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to read volume settings, got error: %s", err))
+		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to read volume settings (service_id=%s, project_id=%s), got error: %s", data.Id.ValueString(), data.ProjectId.ValueString(), err))
 		return
 	}
 
@@ -563,10 +587,21 @@ func (r *ServiceResource) Update(ctx context.Context, req resource.UpdateRequest
 			return
 		}
 
+		_, defaultEnv, envErr := defaultEnvironmentForProject(ctx, *r.client, data.ProjectId.ValueString())
+
+		if envErr != nil {
+			resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to determine default environment for volume, got error: %s", envErr))
+			return
+		}
+
+		envId := defaultEnv.Id
+		serviceId := data.Id.ValueString()
+
 		volumeResponse, err := createVolume(ctx, *r.client, VolumeCreateInput{
-			MountPath: volumeData.MountPath.ValueString(),
-			ProjectId: data.ProjectId.ValueString(),
-			ServiceId: data.Id.ValueStringPointer(),
+			MountPath:     volumeData.MountPath.ValueString(),
+			ProjectId:     data.ProjectId.ValueString(),
+			ServiceId:     &serviceId,
+			EnvironmentId: &envId,
 		})
 
 		if err != nil {

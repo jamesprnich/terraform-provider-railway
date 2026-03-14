@@ -27,9 +27,23 @@
 * Fix `railway_webhook` ImportState not setting `project_id` (Read would fail after import)
 * Fix `railway_egress_gateway` Delete failing when resource already deleted externally
 * Fix `railway_private_network_endpoint` Delete failing when resource already deleted externally
-* Fix `isNotFound` false positives on internal "not found" substrings (e.g., "serviceManifest is not found")
+* Fix `isNotFound` matching — add `"not found"` pattern for Railway API error messages like `"Project not found"`
 * Fix `railway_environment` Go struct field typo (`ProjecId` → `ProjectId`)
+* Fix `railway_environment` Read not detecting deleted environments (Railway returns null, not an error)
 * Fix `railway_volume` import fragility — null environment/service matching accepted any volume instance
+* Fix `railway_service` inline volume creation — pass explicit `environmentId` to avoid Railway "deploy to all environments" failure on new services
+* Fix `railway_service` inline volume creation — use local `&serviceId` variable instead of `ValueStringPointer()` for reliable pointer semantics
+* Fix `railway_service` inline volume plan modifiers — replace `UseStateForUnknown()` with custom `useStringStateForUnknownIfNonNull()` / `useFloat64StateForUnknownIfNonNull()` to prevent "inconsistent result after apply" when adding volume to existing service
+* Fix `railway_service` Create — reorder source connection (image/repo) before volume creation for API stability
+* Fix `railway_service` Create — set computed fields (regions, volume) to null instead of unknown before early state save
+* Fix `railway_variable_collection` ID instability — changed ID format from `serviceId:envId:NAME1:NAME2:...` to `serviceId:envId` so variable name changes don't break Terraform state
+* Fix `railway_environment` Read using stale `getEnvironment(id)` query — switched to authoritative `getEnvironments(projectId)` list which correctly reflects deletions
+* Fix `railway_environment` ImportState not setting `project_id` (Read would fail after import)
+* Fix `railway_environment` Delete failing when environment already deleted externally — added pre-delete existence check via project environment list
+* Fix `railway_service_domain` Delete failing with "operation already in progress" when concurrent deletes occur
+* Fix `railway_custom_domain` Delete failing with "operation already in progress" when concurrent deletes occur
+* Fix `railway_tcp_proxy` Delete failing with "operation already in progress" when concurrent deletes occur
+* Fix `railway_tcp_proxy` domain field inconsistency — normalize trailing dot between Create and Read API responses
 
 ## 0.7.0
 

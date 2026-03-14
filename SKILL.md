@@ -87,15 +87,15 @@ Key pattern:
 |---|---|---|
 | `railway_project` | Project with default environment | `<project_id>` |
 | `railway_environment` | Additional environment within a project | `<project_id>:<name>` |
-| `railway_service` | Service (image or GitHub repo), optional inline volume | `<project_id>:<service_id>` |
+| `railway_service` | Service (image or GitHub repo), optional inline volume | `<service_id>` |
 | `railway_service_instance` | Per-environment config: build/start commands, resource limits, healthcheck, region, replicas | `<service_id>:<environment_id>` |
-| `railway_variable` | Environment variable scoped to service + environment | `<project_id>:<environment_id>:<service_id>:<name>` |
-| `railway_variable_collection` | Bulk environment variables for a service + environment | `<project_id>:<environment_id>:<service_id>` |
+| `railway_variable` | Environment variable scoped to service + environment | `<service_id>:<environment_name>:<name>` |
+| `railway_variable_collection` | Bulk environment variables for a service + environment | `<service_id>:<environment_name>:<name1>:<name2>:...` |
 | `railway_shared_variable` | Shared variable scoped to project + environment (no service) | `<project_id>:<environment_name>:<name>` |
 | `railway_volume` | Standalone persistent volume attached to a service | `<project_id>:<volume_id>:<service_id>:<environment_id>` |
 | `railway_volume_backup_schedule` | Automatic backup schedule for a volume instance | `<volume_instance_id>` |
-| `railway_service_domain` | Auto-generated public `.up.railway.app` domain | `<service_id>:<environment_id>` |
-| `railway_custom_domain` | Custom domain with DNS verification | `<project_id>:<service_id>:<environment_id>:<domain>` |
+| `railway_service_domain` | Auto-generated public `.up.railway.app` domain | `<service_id>:<environment_name>:<domain>` |
+| `railway_custom_domain` | Custom domain with DNS verification | `<service_id>:<environment_name>:<domain>` |
 | `railway_tcp_proxy` | TCP proxy for non-HTTP services | `<service_id>:<environment_id>:<tcp_proxy_id>` |
 | `railway_webhook` | HTTP webhook notifications for project events | `<project_id>:<webhook_id>` |
 | `railway_deployment_trigger` | Auto-deploy from GitHub/GitLab on push | `<project_id>:<environment_id>:<service_id>:<trigger_id>` |
@@ -265,6 +265,22 @@ resource "railway_webhook" "deploy_notifications" {
 
 **Workaround:** The provider preserves these values from Terraform state/plan. Import will not capture them — you must declare them in config after import.
 
+### Stale Data on Individual Resource Queries
+
+**What happens:** After deleting a resource, querying it by ID (e.g., `environment(id: "...")`) can return the full resource data for 30+ seconds.
+
+**Why:** Railway's API caches individual resource lookups. The list endpoint (e.g., `environments(projectId: "...")`) reflects deletions much faster (~1-2 seconds).
+
+**Workaround:** The provider's Read methods use list queries filtered by ID instead of direct-by-ID queries where this is observed. Currently applied to `railway_environment`. If adding new resources, prefer list-based Read when the parent provides a list endpoint.
+
+### "Operation Already in Progress" on Delete
+
+**What happens:** Deleting a resource that is already being deleted returns `Cannot delete [resource]: an operation is already in progress`.
+
+**Why:** Railway processes deletes asynchronously. A second delete request during processing is rejected. This is NOT matched by `isNotFound()`.
+
+**Workaround:** All Delete methods treat "operation is already in progress" as successful (idempotent deletion). The disappears test helpers use `retry.RetryContext` polling to wait for deletion to complete.
+
 ## Guidelines
 
 - NEVER use `go generate` — use `go run github.com/Khan/genqlient` to regenerate the GraphQL client
@@ -272,5 +288,14 @@ resource "railway_webhook" "deploy_notifications" {
 - Resources follow the pattern: model struct → Schema() → Configure() → CRUD methods → ImportState()
 - Provider registration is in `provider.go` Resources() and DataSources() functions
 - Registry docs in `docs/resources/` and `docs/data-sources/`
-- Run `go test ./internal/provider/` to run all unit tests (mock-based, no Railway token needed)
+- Run `make test` to run all unit tests (mock-based, no Railway token needed)
+- Run `make testacc` to run acceptance tests (requires `RAILWAY_TOKEN`)
+- Both targets set the OpenTofu provider namespace env vars automatically
+- If running tests manually (not via `make`), you must set these env vars for OpenTofu compatibility:
+  ```bash
+  TF_ACC_TERRAFORM_PATH="$(which tofu)" \
+  TF_ACC_PROVIDER_NAMESPACE="hashicorp" \
+  TF_ACC_PROVIDER_HOST="registry.opentofu.org" \
+  go test ./internal/provider/ -v
+  ```
 - Run `./scripts/check-schema.sh` to verify the GraphQL schema hasn't drifted from the recorded version

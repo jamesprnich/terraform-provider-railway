@@ -126,7 +126,7 @@ func (r *WebhookResource) Create(ctx context.Context, req resource.CreateRequest
 	response, err := createWebhook(ctx, *r.client, input)
 
 	if err != nil {
-		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to create webhook, got error: %s", err))
+		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to create webhook (project_id=%s), got error: %s", data.ProjectId.ValueString(), err))
 		return
 	}
 
@@ -164,8 +164,14 @@ func (r *WebhookResource) Read(ctx context.Context, req resource.ReadRequest, re
 
 	response, err := getWebhooks(ctx, *r.client, data.ProjectId.ValueString())
 
+	if isNotFound(err) {
+		tflog.Warn(ctx, "webhooks not found, removing from state")
+		resp.State.RemoveResource(ctx)
+		return
+	}
+
 	if err != nil {
-		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to read webhooks, got error: %s", err))
+		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to read webhooks (id=%s, project_id=%s), got error: %s", data.Id.ValueString(), data.ProjectId.ValueString(), err))
 		return
 	}
 

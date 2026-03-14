@@ -153,7 +153,7 @@ func (r *PrivateNetworkResource) Create(ctx context.Context, req resource.Create
 	response, err := createOrGetPrivateNetwork(ctx, *r.client, input)
 
 	if err != nil {
-		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to create private network, got error: %s", err))
+		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to create private network %q (environment_id=%s), got error: %s", data.Name.ValueString(), data.EnvironmentId.ValueString(), err))
 		return
 	}
 
@@ -194,7 +194,7 @@ func (r *PrivateNetworkResource) Read(ctx context.Context, req resource.ReadRequ
 			resp.State.RemoveResource(ctx)
 			return
 		}
-		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to read private network, got error: %s", err))
+		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to read private network (id=%s, environment_id=%s), got error: %s", data.Id.ValueString(), data.EnvironmentId.ValueString(), err))
 		return
 	}
 
@@ -265,6 +265,12 @@ func (r *PrivateNetworkResource) Delete(ctx context.Context, req resource.Delete
 	if resp.Diagnostics.HasError() {
 		return
 	}
+
+	// WARNING: The Railway API only supports bulk deletion of all private networks
+	// in an environment (privateNetworksForEnvironmentDelete). There is no mutation
+	// to delete a single network. If multiple networks exist in the same environment,
+	// destroying one will destroy all of them.
+	tflog.Warn(ctx, "Railway API deletes ALL private networks in the environment, not just this one")
 
 	_, err := deletePrivateNetworksForEnvironment(ctx, *r.client, data.EnvironmentId.ValueString())
 

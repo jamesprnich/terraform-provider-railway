@@ -127,7 +127,7 @@ func (r *EgressGatewayResource) Create(ctx context.Context, req resource.CreateR
 	response, err := createEgressGateway(ctx, *r.client, input)
 
 	if err != nil {
-		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to create egress gateway, got error: %s", err))
+		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to create egress gateway (service_id=%s, environment_id=%s), got error: %s", data.ServiceId.ValueString(), data.EnvironmentId.ValueString(), err))
 		return
 	}
 
@@ -163,8 +163,14 @@ func (r *EgressGatewayResource) Read(ctx context.Context, req resource.ReadReque
 
 	response, err := getEgressGateways(ctx, *r.client, data.EnvironmentId.ValueString(), data.ServiceId.ValueString())
 
+	if isNotFound(err) {
+		tflog.Warn(ctx, "egress gateways not found, removing from state")
+		resp.State.RemoveResource(ctx)
+		return
+	}
+
 	if err != nil {
-		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to read egress gateways, got error: %s", err))
+		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to read egress gateways (service_id=%s, environment_id=%s), got error: %s", data.ServiceId.ValueString(), data.EnvironmentId.ValueString(), err))
 		return
 	}
 

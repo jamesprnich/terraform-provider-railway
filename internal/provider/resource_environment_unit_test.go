@@ -32,7 +32,7 @@ func TestEnvironmentResource_createAndRead(t *testing.T) {
 
 	server := newMockGraphQLServer(t, mockFixtures{
 		"createEnvironment": `{"data":{"environmentCreate":{"id":"00000000-0000-0000-0000-000000000099","name":"staging","projectId":"00000000-0000-0000-0000-000000000001"}}}`,
-		"getEnvironment":    `{"data":{"environment":{"id":"00000000-0000-0000-0000-000000000099","name":"staging","projectId":"00000000-0000-0000-0000-000000000001"}}}`,
+		"getEnvironments":   `{"data":{"environments":{"edges":[{"node":{"id":"00000000-0000-0000-0000-000000000099","name":"staging","projectId":"00000000-0000-0000-0000-000000000001"}}]}}}`,
 		"deleteEnvironment": `{"data":{"environmentDelete":true}}`,
 	})
 	defer server.Close()
