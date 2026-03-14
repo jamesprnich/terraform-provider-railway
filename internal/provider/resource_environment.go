@@ -107,7 +107,7 @@ func (r *EnvironmentResource) Create(ctx context.Context, req resource.CreateReq
 	response, err := createEnvironment(ctx, *r.client, input)
 
 	if err != nil {
-		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to create environment, got error: %s", err))
+		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to create environment %q (project_id=%s), got error: %s", data.Name.ValueString(), data.ProjectId.ValueString(), err))
 		return
 	}
 
@@ -131,22 +131,36 @@ func (r *EnvironmentResource) Read(ctx context.Context, req resource.ReadRequest
 		return
 	}
 
-	response, err := getEnvironment(ctx, *r.client, data.Id.ValueString())
+	// Use getEnvironments (project list) instead of getEnvironment (by ID).
+	// The individual environment(id:) query can return stale data for deleted
+	// environments, while the project list is authoritative.
+	envsResponse, err := getEnvironments(ctx, *r.client, data.ProjectId.ValueString())
 
 	if err != nil {
 		if isNotFound(err) {
 			resp.State.RemoveResource(ctx)
 			return
 		}
-		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to read environment, got error: %s", err))
+		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to read environments for project (id=%s, environment=%s, project_id=%s), got error: %s", data.Id.ValueString(), data.Name.ValueString(), data.ProjectId.ValueString(), err))
 		return
 	}
 
-	environment := response.Environment.Environment
+	var found bool
+	for _, edge := range envsResponse.Environments.Edges {
+		env := edge.Node.Environment
+		if env.Id == data.Id.ValueString() {
+			data.Id = types.StringValue(env.Id)
+			data.Name = types.StringValue(env.Name)
+			data.ProjectId = types.StringValue(env.ProjectId)
+			found = true
+			break
+		}
+	}
 
-	data.Id = types.StringValue(environment.Id)
-	data.Name = types.StringValue(environment.Name)
-	data.ProjectId = types.StringValue(environment.ProjectId)
+	if !found {
+		resp.State.RemoveResource(ctx)
+		return
+	}
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
@@ -198,7 +212,24 @@ func (r *EnvironmentResource) Delete(ctx context.Context, req resource.DeleteReq
 		return
 	}
 
-	_, err := deleteEnvironment(ctx, *r.client, data.Id.ValueString())
+	// Verify the environment still exists before attempting deletion.
+	// getEnvironment(id) can return stale data, so check the project list.
+	envsResponse, err := getEnvironments(ctx, *r.client, data.ProjectId.ValueString())
+	if err == nil {
+		found := false
+		for _, edge := range envsResponse.Environments.Edges {
+			if edge.Node.Environment.Id == data.Id.ValueString() {
+				found = true
+				break
+			}
+		}
+		if !found {
+			// Already deleted externally
+			return
+		}
+	}
+
+	_, err = deleteEnvironment(ctx, *r.client, data.Id.ValueString())
 
 	if err != nil {
 		if isNotFound(err) {
@@ -231,6 +262,7 @@ func (r *EnvironmentResource) ImportState(ctx context.Context, req resource.Impo
 	}
 
 	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("id"), environmentId)...)
+	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("project_id"), parts[0])...)
 }
 
 func findEnvironment(ctx context.Context, client graphql.Client, projectId string, name string) (*string, error) {

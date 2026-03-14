@@ -130,7 +130,7 @@ func (r *VariableResource) Create(ctx context.Context, req resource.CreateReques
 	service, err := getService(ctx, *r.client, data.ServiceId.ValueString())
 
 	if err != nil {
-		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to read service, got error: %s", err))
+		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to read service for variable %q (service_id=%s, environment_id=%s), got error: %s", data.Name.ValueString(), data.ServiceId.ValueString(), data.EnvironmentId.ValueString(), err))
 		return
 	}
 
@@ -145,7 +145,7 @@ func (r *VariableResource) Create(ctx context.Context, req resource.CreateReques
 	_, err = upsertVariable(ctx, *r.client, input)
 
 	if err != nil {
-		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to create variable, got error: %s", err))
+		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to create variable %q (service_id=%s, environment_id=%s), got error: %s", data.Name.ValueString(), data.ServiceId.ValueString(), data.EnvironmentId.ValueString(), err))
 		return
 	}
 
@@ -154,7 +154,7 @@ func (r *VariableResource) Create(ctx context.Context, req resource.CreateReques
 	err = getVariable(ctx, *r.client, service.Service.ProjectId, data.EnvironmentId.ValueString(), data.ServiceId.ValueString(), data.Name.ValueString(), data)
 
 	if err != nil {
-		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to read variable after creating it, got error: %s", err))
+		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to read variable %q after creating it (service_id=%s, environment_id=%s), got error: %s", data.Name.ValueString(), data.ServiceId.ValueString(), data.EnvironmentId.ValueString(), err))
 		return
 	}
 
@@ -170,7 +170,7 @@ func (r *VariableResource) Create(ctx context.Context, req resource.CreateReques
 	_, err = redeployServiceInstance(ctx, *r.client, data.EnvironmentId.ValueString(), data.ServiceId.ValueString())
 
 	if err != nil {
-		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to redeploy service after variable created, got error: %s", err))
+		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to redeploy service after variable %q created (service_id=%s, environment_id=%s), got error: %s", data.Name.ValueString(), data.ServiceId.ValueString(), data.EnvironmentId.ValueString(), err))
 		return
 	}
 }
@@ -191,7 +191,7 @@ func (r *VariableResource) Read(ctx context.Context, req resource.ReadRequest, r
 			resp.State.RemoveResource(ctx)
 			return
 		}
-		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to read variable, got error: %s", err))
+		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to read variable %q (service_id=%s, environment_id=%s), got error: %s", data.Name.ValueString(), data.ServiceId.ValueString(), data.EnvironmentId.ValueString(), err))
 		return
 	}
 

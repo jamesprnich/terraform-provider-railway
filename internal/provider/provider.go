@@ -51,6 +51,7 @@ func (p *RailwayProvider) Schema(ctx context.Context, req provider.SchemaRequest
 			"token": schema.StringAttribute{
 				MarkdownDescription: "The token used to authenticate with Railway.",
 				Optional:            true,
+				Sensitive:           true,
 			},
 			"api_url": schema.StringAttribute{
 				MarkdownDescription: "Override the Railway API URL. Used for testing.",

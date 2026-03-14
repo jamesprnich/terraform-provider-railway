@@ -183,7 +183,7 @@ func (r *ServiceInstanceResource) Create(ctx context.Context, req resource.Creat
 	_, err := updateServiceInstanceInEnvironment(ctx, *r.client, data.EnvironmentId.ValueString(), data.ServiceId.ValueString(), input)
 
 	if err != nil {
-		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to configure service instance, got error: %s", err))
+		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to configure service instance (service_id=%s, environment_id=%s), got error: %s", data.ServiceId.ValueString(), data.EnvironmentId.ValueString(), err))
 		return
 	}
 
@@ -215,7 +215,7 @@ func (r *ServiceInstanceResource) Create(ctx context.Context, req resource.Creat
 			return r.updateLimits(ctx, data)
 		})
 		if err != nil {
-			resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to set resource limits, got error: %s", err))
+			resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to set resource limits (service_id=%s, environment_id=%s), got error: %s", data.ServiceId.ValueString(), data.EnvironmentId.ValueString(), err))
 			return
 		}
 	}
@@ -224,7 +224,7 @@ func (r *ServiceInstanceResource) Create(ctx context.Context, req resource.Creat
 	_, err = deployServiceInstance(ctx, *r.client, data.EnvironmentId.ValueString(), data.ServiceId.ValueString())
 
 	if err != nil {
-		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to deploy service instance, got error: %s", err))
+		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to deploy service instance (service_id=%s, environment_id=%s), got error: %s", data.ServiceId.ValueString(), data.EnvironmentId.ValueString(), err))
 		return
 	}
 
@@ -232,7 +232,7 @@ func (r *ServiceInstanceResource) Create(ctx context.Context, req resource.Creat
 	err = r.readServiceInstanceState(ctx, data)
 
 	if err != nil {
-		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to read service instance after creation, got error: %s", err))
+		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to read service instance after creation (service_id=%s, environment_id=%s), got error: %s", data.ServiceId.ValueString(), data.EnvironmentId.ValueString(), err))
 		return
 	}
 
@@ -255,7 +255,7 @@ func (r *ServiceInstanceResource) Read(ctx context.Context, req resource.ReadReq
 			resp.State.RemoveResource(ctx)
 			return
 		}
-		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to read service instance, got error: %s", err))
+		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to read service instance (service_id=%s, environment_id=%s), got error: %s", data.ServiceId.ValueString(), data.EnvironmentId.ValueString(), err))
 		return
 	}
 

@@ -112,7 +112,7 @@ func (r *VolumeBackupScheduleResource) Create(ctx context.Context, req resource.
 	_, err = updateVolumeInstanceBackupSchedule(ctx, *r.client, kinds, data.VolumeInstanceId.ValueString())
 
 	if err != nil {
-		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to create volume backup schedule, got error: %s", err))
+		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to create volume backup schedule (volume_instance_id=%s), got error: %s", data.VolumeInstanceId.ValueString(), err))
 		return
 	}
 
@@ -124,7 +124,7 @@ func (r *VolumeBackupScheduleResource) Create(ctx context.Context, req resource.
 	err = r.readScheduleState(ctx, data)
 
 	if err != nil {
-		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to read volume backup schedule after creation, got error: %s", err))
+		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to read volume backup schedule after creation (volume_instance_id=%s), got error: %s", data.VolumeInstanceId.ValueString(), err))
 		return
 	}
 
@@ -147,7 +147,7 @@ func (r *VolumeBackupScheduleResource) Read(ctx context.Context, req resource.Re
 			resp.State.RemoveResource(ctx)
 			return
 		}
-		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to read volume backup schedule, got error: %s", err))
+		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to read volume backup schedule (volume_instance_id=%s), got error: %s", data.VolumeInstanceId.ValueString(), err))
 		return
 	}
 

@@ -176,7 +176,7 @@ func (r *DeploymentTriggerResource) Create(ctx context.Context, req resource.Cre
 	response, err := createDeploymentTrigger(ctx, *r.client, input)
 
 	if err != nil {
-		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to create deployment trigger, got error: %s", err))
+		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to create deployment trigger (service_id=%s, environment_id=%s), got error: %s", data.ServiceId.ValueString(), data.EnvironmentId.ValueString(), err))
 		return
 	}
 
@@ -215,7 +215,7 @@ func (r *DeploymentTriggerResource) Read(ctx context.Context, req resource.ReadR
 			resp.State.RemoveResource(ctx)
 			return
 		}
-		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to read deployment trigger, got error: %s", err))
+		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to read deployment trigger (service_id=%s, environment_id=%s), got error: %s", data.ServiceId.ValueString(), data.EnvironmentId.ValueString(), err))
 		return
 	}
 

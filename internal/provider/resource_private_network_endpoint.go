@@ -160,7 +160,7 @@ func (r *PrivateNetworkEndpointResource) Create(ctx context.Context, req resourc
 	response, err := createOrGetPrivateNetworkEndpoint(ctx, *r.client, input)
 
 	if err != nil {
-		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to create private network endpoint, got error: %s", err))
+		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to create private network endpoint (service_id=%s, environment_id=%s, private_network_id=%s), got error: %s", data.ServiceId.ValueString(), data.EnvironmentId.ValueString(), data.PrivateNetworkId.ValueString(), err))
 		return
 	}
 
@@ -204,7 +204,7 @@ func (r *PrivateNetworkEndpointResource) Create(ctx context.Context, req resourc
 			_, err := renamePrivateNetworkEndpoint(ctx, *r.client, planDnsName.ValueString(), data.Id.ValueString(), data.PrivateNetworkId.ValueString())
 
 			if err != nil {
-				resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to rename private network endpoint, got error: %s", err))
+				resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to rename private network endpoint (service_id=%s, environment_id=%s, private_network_id=%s), got error: %s", data.ServiceId.ValueString(), data.EnvironmentId.ValueString(), data.PrivateNetworkId.ValueString(), err))
 				return
 			}
 
@@ -228,8 +228,14 @@ func (r *PrivateNetworkEndpointResource) Read(ctx context.Context, req resource.
 
 	response, err := getPrivateNetworkEndpoint(ctx, *r.client, data.EnvironmentId.ValueString(), data.PrivateNetworkId.ValueString(), data.ServiceId.ValueString())
 
+	if isNotFound(err) {
+		tflog.Warn(ctx, "private network endpoint not found, removing from state")
+		resp.State.RemoveResource(ctx)
+		return
+	}
+
 	if err != nil {
-		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to read private network endpoint, got error: %s", err))
+		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to read private network endpoint (service_id=%s, environment_id=%s, private_network_id=%s), got error: %s", data.ServiceId.ValueString(), data.EnvironmentId.ValueString(), data.PrivateNetworkId.ValueString(), err))
 		return
 	}
 

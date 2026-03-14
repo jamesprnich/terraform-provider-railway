@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
 func TestPrivateNetworkResource_basic(t *testing.T) {
@@ -69,6 +70,38 @@ resource "railway_private_network" "test" {
 					resource.TestCheckResourceAttr("railway_private_network.test", "tags.0", "tag1"),
 					resource.TestCheckResourceAttr("railway_private_network.test", "tags.1", "tag2"),
 				),
+			},
+		},
+	})
+}
+
+func TestPrivateNetworkResource_disappears(t *testing.T) {
+	srv, disappear := newDisappearsMockServer(t, mockFixtures{
+		"createOrGetPrivateNetwork":           `{"data":{"privateNetworkCreateOrGet":{"publicId":"pn-dis","projectId":"00000000-0000-0000-0000-000000000001","environmentId":"00000000-0000-0000-0000-000000000002","name":"test-network","dnsName":"test-network.internal","networkId":42,"tags":[]}}}`,
+		"getPrivateNetworks":                  `{"data":{"privateNetworks":[{"publicId":"pn-dis","projectId":"00000000-0000-0000-0000-000000000001","environmentId":"00000000-0000-0000-0000-000000000002","name":"test-network","dnsName":"test-network.internal","networkId":42,"tags":[]}]}}`,
+		"deletePrivateNetworksForEnvironment": `{"data":{"privateNetworksForEnvironmentDelete":true}}`,
+	}, "getPrivateNetworks")
+	defer srv.Close()
+
+	resource.UnitTest(t, resource.TestCase{
+		ProtoV6ProviderFactories: testUnitProtoV6ProviderFactories(),
+		Steps: []resource.TestStep{
+			{
+				Config: testUnitProviderConfig(srv.URL) + `
+resource "railway_private_network" "test" {
+  project_id     = "00000000-0000-0000-0000-000000000001"
+  environment_id = "00000000-0000-0000-0000-000000000002"
+  name           = "test-network"
+}
+`,
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("railway_private_network.test", "id", "pn-dis"),
+					func(s *terraform.State) error {
+						disappear()
+						return nil
+					},
+				),
+				ExpectNonEmptyPlan: true,
 			},
 		},
 	})

@@ -18,7 +18,7 @@ func TestAccProjectResourceDefault(t *testing.T) {
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestMatchResourceAttr("railway_project.test", "id", uuidRegex()),
 					resource.TestCheckResourceAttr("railway_project.test", "name", "todo-app"),
-					resource.TestCheckResourceAttr("railway_project.test", "workspace_id", "ecb63be7-63fb-47fe-95fc-1585d24e172d"),
+					resource.TestCheckResourceAttr("railway_project.test", "workspace_id", testAccWorkspaceId),
 					resource.TestCheckResourceAttr("railway_project.test", "description", ""),
 					resource.TestCheckResourceAttr("railway_project.test", "private", "true"),
 					resource.TestCheckResourceAttr("railway_project.test", "has_pr_deploys", "false"),
@@ -38,7 +38,7 @@ func TestAccProjectResourceDefault(t *testing.T) {
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestMatchResourceAttr("railway_project.test", "id", uuidRegex()),
 					resource.TestCheckResourceAttr("railway_project.test", "name", "todo-app"),
-					resource.TestCheckResourceAttr("railway_project.test", "workspace_id", "ecb63be7-63fb-47fe-95fc-1585d24e172d"),
+					resource.TestCheckResourceAttr("railway_project.test", "workspace_id", testAccWorkspaceId),
 					resource.TestCheckResourceAttr("railway_project.test", "description", ""),
 					resource.TestCheckResourceAttr("railway_project.test", "private", "true"),
 					resource.TestCheckResourceAttr("railway_project.test", "has_pr_deploys", "false"),
@@ -52,7 +52,7 @@ func TestAccProjectResourceDefault(t *testing.T) {
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestMatchResourceAttr("railway_project.test", "id", uuidRegex()),
 					resource.TestCheckResourceAttr("railway_project.test", "name", "nue-todo-app"),
-					resource.TestCheckResourceAttr("railway_project.test", "workspace_id", "ecb63be7-63fb-47fe-95fc-1585d24e172d"),
+					resource.TestCheckResourceAttr("railway_project.test", "workspace_id", testAccWorkspaceId),
 					resource.TestCheckResourceAttr("railway_project.test", "description", "nice project"),
 					resource.TestCheckResourceAttr("railway_project.test", "private", "false"),
 					resource.TestCheckResourceAttr("railway_project.test", "has_pr_deploys", "true"),
@@ -82,7 +82,7 @@ func TestAccProjectResourceNonDefault(t *testing.T) {
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestMatchResourceAttr("railway_project.test", "id", uuidRegex()),
 					resource.TestCheckResourceAttr("railway_project.test", "name", "todo-app"),
-					resource.TestCheckResourceAttr("railway_project.test", "workspace_id", "ecb63be7-63fb-47fe-95fc-1585d24e172d"),
+					resource.TestCheckResourceAttr("railway_project.test", "workspace_id", testAccWorkspaceId),
 					resource.TestCheckResourceAttr("railway_project.test", "description", "nice project"),
 					resource.TestCheckResourceAttr("railway_project.test", "private", "false"),
 					resource.TestCheckResourceAttr("railway_project.test", "has_pr_deploys", "true"),
@@ -102,7 +102,7 @@ func TestAccProjectResourceNonDefault(t *testing.T) {
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestMatchResourceAttr("railway_project.test", "id", uuidRegex()),
 					resource.TestCheckResourceAttr("railway_project.test", "name", "todo-app"),
-					resource.TestCheckResourceAttr("railway_project.test", "workspace_id", "ecb63be7-63fb-47fe-95fc-1585d24e172d"),
+					resource.TestCheckResourceAttr("railway_project.test", "workspace_id", testAccWorkspaceId),
 					resource.TestCheckResourceAttr("railway_project.test", "description", "nice project"),
 					resource.TestCheckResourceAttr("railway_project.test", "private", "false"),
 					resource.TestCheckResourceAttr("railway_project.test", "has_pr_deploys", "true"),
@@ -116,7 +116,7 @@ func TestAccProjectResourceNonDefault(t *testing.T) {
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestMatchResourceAttr("railway_project.test", "id", uuidRegex()),
 					resource.TestCheckResourceAttr("railway_project.test", "name", "nue-todo-app"),
-					resource.TestCheckResourceAttr("railway_project.test", "workspace_id", "ecb63be7-63fb-47fe-95fc-1585d24e172d"),
+					resource.TestCheckResourceAttr("railway_project.test", "workspace_id", testAccWorkspaceId),
 					resource.TestCheckResourceAttr("railway_project.test", "description", ""),
 					resource.TestCheckResourceAttr("railway_project.test", "private", "true"),
 					resource.TestCheckResourceAttr("railway_project.test", "has_pr_deploys", "false"),
@@ -131,6 +131,23 @@ func TestAccProjectResourceNonDefault(t *testing.T) {
 				ImportStateVerify: true,
 			},
 			// Delete testing automatically occurs in TestCase
+		},
+	})
+}
+
+func TestAccProjectResource_disappears(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccProjectResourceConfigDefault("disappears-test"),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestMatchResourceAttr("railway_project.test", "id", uuidRegex()),
+					testAccCheckProjectDisappears("railway_project.test"),
+				),
+				ExpectNonEmptyPlan: true,
+			},
 		},
 	})
 }
@@ -159,7 +176,7 @@ func testAccProjectResourceConfigNonDefault(name string, environmentName string)
 	return fmt.Sprintf(`
 resource "railway_project" "test" {
   name = "%s"
-  workspace_id = "ecb63be7-63fb-47fe-95fc-1585d24e172d"
+  workspace_id = "%s"
   description = "nice project"
   private = false
   has_pr_deploys = true
@@ -168,5 +185,5 @@ resource "railway_project" "test" {
     name = "%s"
   }
 }
-`, name, environmentName)
+`, name, testAccWorkspaceId, environmentName)
 }

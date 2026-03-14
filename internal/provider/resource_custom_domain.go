@@ -162,7 +162,7 @@ func (r *CustomDomainResource) Create(ctx context.Context, req resource.CreateRe
 	service, err := getService(ctx, *r.client, data.ServiceId.ValueString())
 
 	if err != nil {
-		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to read service, got error: %s", err))
+		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to read service for custom domain %q (service_id=%s, environment_id=%s), got error: %s", data.Domain.ValueString(), data.ServiceId.ValueString(), data.EnvironmentId.ValueString(), err))
 		return
 	}
 
@@ -181,7 +181,7 @@ func (r *CustomDomainResource) Create(ctx context.Context, req resource.CreateRe
 	response, err := createCustomDomain(ctx, *r.client, input)
 
 	if err != nil {
-		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to create custom domain, got error: %s", err))
+		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to create custom domain %q (service_id=%s, environment_id=%s), got error: %s", data.Domain.ValueString(), data.ServiceId.ValueString(), data.EnvironmentId.ValueString(), err))
 		return
 	}
 
@@ -228,7 +228,7 @@ func (r *CustomDomainResource) Read(ctx context.Context, req resource.ReadReques
 			resp.State.RemoveResource(ctx)
 			return
 		}
-		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to list custom domains, got error: %s", err))
+		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to list custom domains for %q (service_id=%s, environment_id=%s), got error: %s", data.Domain.ValueString(), data.ServiceId.ValueString(), data.EnvironmentId.ValueString(), err))
 		return
 	}
 
@@ -268,7 +268,7 @@ func (r *CustomDomainResource) Read(ctx context.Context, req resource.ReadReques
 			resp.State.RemoveResource(ctx)
 			return
 		}
-		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to read service, got error: %s", err))
+		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to read service for custom domain %q (service_id=%s, environment_id=%s), got error: %s", data.Domain.ValueString(), data.ServiceId.ValueString(), data.EnvironmentId.ValueString(), err))
 		return
 	}
 
@@ -323,7 +323,7 @@ func (r *CustomDomainResource) Delete(ctx context.Context, req resource.DeleteRe
 
 	_, err := deleteCustomDomain(ctx, *r.client, data.Id.ValueString())
 
-	if err != nil && !isNotFound(err) {
+	if err != nil && !isNotFound(err) && !strings.Contains(strings.ToLower(err.Error()), "operation is already in progress") {
 		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to delete custom domain, got error: %s", err))
 		return
 	}

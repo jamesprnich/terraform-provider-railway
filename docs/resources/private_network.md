@@ -39,6 +39,8 @@ resource "railway_private_network" "internal" {
 - `id` (String) Identifier of the private network (publicId).
 - `network_id` (Number) Numeric network identifier.
 
+~> **Warning:** The Railway API only supports deleting all private networks in an environment at once. Destroying this resource will delete **all** private networks in the same environment, not just this one. Use caution if you have multiple private networks in the same environment.
+
 ## Import
 
 Import is supported using the following syntax:

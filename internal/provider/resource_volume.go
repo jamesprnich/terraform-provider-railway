@@ -150,7 +150,7 @@ func (r *VolumeResource) Create(ctx context.Context, req resource.CreateRequest,
 	response, err := createVolume(ctx, *r.client, input)
 
 	if err != nil {
-		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to create volume, got error: %s", err))
+		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to create volume (project_id=%s, service_id=%s), got error: %s", data.ProjectId.ValueString(), data.ServiceId.ValueString(), err))
 		return
 	}
 
@@ -165,6 +165,15 @@ func (r *VolumeResource) Create(ctx context.Context, req resource.CreateRequest,
 
 	data.Name = types.StringValue(volume.Name)
 
+	// Save state immediately so Terraform tracks this resource.
+	// If the name update or readback fails, the resource will be tainted
+	// and scheduled for destroy+recreate on the next apply.
+	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
+
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
 	// Update name if the user specified one that differs from the server default
 	if !plannedName.IsNull() && !plannedName.IsUnknown() && plannedName.ValueString() != volume.Name {
 		_, err = updateVolume(ctx, *r.client, volume.Id, VolumeUpdateInput{
@@ -172,7 +181,7 @@ func (r *VolumeResource) Create(ctx context.Context, req resource.CreateRequest,
 		})
 
 		if err != nil {
-			resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to update volume name, got error: %s", err))
+			resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to update volume name (id=%s, project_id=%s, service_id=%s), got error: %s", data.Id.ValueString(), data.ProjectId.ValueString(), data.ServiceId.ValueString(), err))
 			return
 		}
 
@@ -183,7 +192,7 @@ func (r *VolumeResource) Create(ctx context.Context, req resource.CreateRequest,
 	err = r.readVolumeState(ctx, data)
 
 	if err != nil {
-		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to read volume after creation, got error: %s", err))
+		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to read volume after creation (id=%s, project_id=%s, service_id=%s), got error: %s", data.Id.ValueString(), data.ProjectId.ValueString(), data.ServiceId.ValueString(), err))
 		return
 	}
 
@@ -206,7 +215,7 @@ func (r *VolumeResource) Read(ctx context.Context, req resource.ReadRequest, res
 			resp.State.RemoveResource(ctx)
 			return
 		}
-		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to read volume, got error: %s", err))
+		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to read volume (id=%s, project_id=%s, service_id=%s), got error: %s", data.Id.ValueString(), data.ProjectId.ValueString(), data.ServiceId.ValueString(), err))
 		return
 	}
 

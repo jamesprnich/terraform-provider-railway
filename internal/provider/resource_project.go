@@ -196,7 +196,7 @@ func (r *ProjectResource) Create(ctx context.Context, req resource.CreateRequest
 	response, err := createProject(ctx, *r.client, input)
 
 	if err != nil {
-		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to create project, got error: %s", err))
+		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to create project %q, got error: %s", data.Name.ValueString(), err))
 		return
 	}
 
@@ -258,7 +258,7 @@ func (r *ProjectResource) Read(ctx context.Context, req resource.ReadRequest, re
 			resp.State.RemoveResource(ctx)
 			return
 		}
-		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to read project, got error: %s", err))
+		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to read project (id=%s, name=%s), got error: %s", data.Id.ValueString(), data.Name.ValueString(), err))
 		return
 	}
 

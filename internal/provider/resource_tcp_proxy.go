@@ -141,7 +141,7 @@ func (r *TcpProxyResource) Create(ctx context.Context, req resource.CreateReques
 	response, err := createTcpProxy(ctx, *r.client, input)
 
 	if err != nil {
-		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to create tcp proxy, got error: %s", err))
+		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to create tcp proxy (service_id=%s, environment_id=%s), got error: %s", data.ServiceId.ValueString(), data.EnvironmentId.ValueString(), err))
 		return
 	}
 
@@ -154,7 +154,7 @@ func (r *TcpProxyResource) Create(ctx context.Context, req resource.CreateReques
 	data.EnvironmentId = types.StringValue(proxy.EnvironmentId)
 	data.ServiceId = types.StringValue(proxy.ServiceId)
 	data.ProxyPort = types.Int64Value(int64(proxy.ProxyPort))
-	data.Domain = types.StringValue(proxy.Domain)
+	data.Domain = types.StringValue(strings.TrimRight(proxy.Domain, "."))
 
 	// Save state immediately so Terraform tracks this resource.
 	// If the redeploy fails, the resource will be tainted
@@ -168,7 +168,7 @@ func (r *TcpProxyResource) Create(ctx context.Context, req resource.CreateReques
 	_, err = redeployServiceInstance(ctx, *r.client, data.EnvironmentId.ValueString(), data.ServiceId.ValueString())
 
 	if err != nil {
-		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to redeploy service after tcp proxy created, got error: %s", err))
+		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to redeploy service after tcp proxy created (service_id=%s, environment_id=%s), got error: %s", data.ServiceId.ValueString(), data.EnvironmentId.ValueString(), err))
 		return
 	}
 }
@@ -189,7 +189,7 @@ func (r *TcpProxyResource) Read(ctx context.Context, req resource.ReadRequest, r
 			resp.State.RemoveResource(ctx)
 			return
 		}
-		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to read tcp proxy, got error: %s", err))
+		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to read tcp proxy (service_id=%s, environment_id=%s), got error: %s", data.ServiceId.ValueString(), data.EnvironmentId.ValueString(), err))
 		return
 	}
 
@@ -201,7 +201,7 @@ func (r *TcpProxyResource) Read(ctx context.Context, req resource.ReadRequest, r
 			data.EnvironmentId = types.StringValue(proxy.EnvironmentId)
 			data.ServiceId = types.StringValue(proxy.ServiceId)
 			data.ProxyPort = types.Int64Value(int64(proxy.ProxyPort))
-			data.Domain = types.StringValue(proxy.Domain)
+			data.Domain = types.StringValue(strings.TrimRight(proxy.Domain, "."))
 			found = true
 			break
 		}
@@ -238,7 +238,7 @@ func (r *TcpProxyResource) Delete(ctx context.Context, req resource.DeleteReques
 
 	_, err := deleteTcpProxy(ctx, *r.client, data.Id.ValueString())
 
-	if err != nil && !isNotFound(err) {
+	if err != nil && !isNotFound(err) && !strings.Contains(strings.ToLower(err.Error()), "operation is already in progress") {
 		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to delete tcp proxy, got error: %s", err))
 		return
 	}

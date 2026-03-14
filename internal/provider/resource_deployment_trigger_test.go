@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
 func TestDeploymentTriggerResource_basic(t *testing.T) {
@@ -78,6 +79,41 @@ resource "railway_deployment_trigger" "test" {
 					resource.TestCheckResourceAttr("railway_deployment_trigger.test", "environment_id", "00000000-0000-0000-0000-000000000002"),
 					resource.TestCheckResourceAttr("railway_deployment_trigger.test", "project_id", "00000000-0000-0000-0000-000000000001"),
 				),
+			},
+		},
+	})
+}
+
+func TestDeploymentTriggerResource_disappears(t *testing.T) {
+	srv, disappear := newDisappearsMockServer(t, mockFixtures{
+		"createDeploymentTrigger":  `{"data":{"deploymentTriggerCreate":{"id":"dt-dis","branch":"main","checkSuites":false,"environmentId":"00000000-0000-0000-0000-000000000002","projectId":"00000000-0000-0000-0000-000000000001","provider":"github","repository":"owner/repo","serviceId":"00000000-0000-0000-0000-000000000003"}}}`,
+		"getDeploymentTriggers":    `{"data":{"deploymentTriggers":{"edges":[{"node":{"id":"dt-dis","branch":"main","checkSuites":false,"environmentId":"00000000-0000-0000-0000-000000000002","projectId":"00000000-0000-0000-0000-000000000001","provider":"github","repository":"owner/repo","serviceId":"00000000-0000-0000-0000-000000000003"}}]}}}`,
+		"deleteDeploymentTrigger":  `{"data":{"deploymentTriggerDelete":true}}`,
+	}, "getDeploymentTriggers")
+	defer srv.Close()
+
+	resource.UnitTest(t, resource.TestCase{
+		ProtoV6ProviderFactories: testUnitProtoV6ProviderFactories(),
+		Steps: []resource.TestStep{
+			{
+				Config: testUnitProviderConfig(srv.URL) + `
+resource "railway_deployment_trigger" "test" {
+  service_id      = "00000000-0000-0000-0000-000000000003"
+  environment_id  = "00000000-0000-0000-0000-000000000002"
+  project_id      = "00000000-0000-0000-0000-000000000001"
+  repository      = "owner/repo"
+  branch          = "main"
+  source_provider = "github"
+}
+`,
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("railway_deployment_trigger.test", "id", "dt-dis"),
+					func(s *terraform.State) error {
+						disappear()
+						return nil
+					},
+				),
+				ExpectNonEmptyPlan: true,
 			},
 		},
 	})

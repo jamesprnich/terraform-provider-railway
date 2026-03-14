@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
 func TestEgressGatewayResource_basic(t *testing.T) {
@@ -62,6 +63,36 @@ resource "railway_egress_gateway" "test" {
 					resource.TestCheckResourceAttr("railway_egress_gateway.test", "ip_addresses.#", "1"),
 					resource.TestCheckResourceAttr("railway_egress_gateway.test", "ip_addresses.0", "5.6.7.8"),
 				),
+			},
+		},
+	})
+}
+
+func TestEgressGatewayResource_disappears(t *testing.T) {
+	srv, disappear := newDisappearsMockServer(t, mockFixtures{
+		"createEgressGateway": `{"data":{"egressGatewayAssociationCreate":[{"ipv4":"1.2.3.4","region":"us-west1"}]}}`,
+		"getEgressGateways":   `{"data":{"egressGateways":[{"ipv4":"1.2.3.4","region":"us-west1"}]}}`,
+		"clearEgressGateways": `{"data":{"egressGatewayAssociationsClear":true}}`,
+	}, "getEgressGateways")
+	defer srv.Close()
+
+	resource.UnitTest(t, resource.TestCase{
+		ProtoV6ProviderFactories: testUnitProtoV6ProviderFactories(),
+		Steps: []resource.TestStep{
+			{
+				Config: testUnitProviderConfig(srv.URL) + `
+resource "railway_egress_gateway" "test" {
+  service_id     = "b5b3e3a0-1234-5678-9abc-def012345678"
+  environment_id = "c6c4f4b1-2345-6789-abcd-ef0123456789"
+}`,
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("railway_egress_gateway.test", "id", "b5b3e3a0-1234-5678-9abc-def012345678:c6c4f4b1-2345-6789-abcd-ef0123456789"),
+					func(s *terraform.State) error {
+						disappear()
+						return nil
+					},
+				),
+				ExpectNonEmptyPlan: true,
 			},
 		},
 	})

@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"sort"
 	"strings"
 
 	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
@@ -150,7 +149,7 @@ func (r *VariableCollectionResource) Create(ctx context.Context, req resource.Cr
 	service, err := getService(ctx, *r.client, data.ServiceId.ValueString())
 
 	if err != nil {
-		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to read service, got error: %s", err))
+		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to read service for variable collection (service_id=%s, environment_id=%s), got error: %s", data.ServiceId.ValueString(), data.EnvironmentId.ValueString(), err))
 		return
 	}
 
@@ -178,7 +177,7 @@ func (r *VariableCollectionResource) Create(ctx context.Context, req resource.Cr
 	_, err = upsertVariableCollection(ctx, *r.client, input)
 
 	if err != nil {
-		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to create variable collection, got error: %s", err))
+		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to create variable collection (service_id=%s, environment_id=%s), got error: %s", data.ServiceId.ValueString(), data.EnvironmentId.ValueString(), err))
 		return
 	}
 
@@ -194,7 +193,7 @@ func (r *VariableCollectionResource) Create(ctx context.Context, req resource.Cr
 	err = getVariableCollection(ctx, *r.client, service.Service.ProjectId, data.EnvironmentId.ValueString(), data.ServiceId.ValueString(), variableNames, data)
 
 	if err != nil {
-		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to read variable collection after creating it, got error: %s", err))
+		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to read variable collection after creating it (service_id=%s, environment_id=%s), got error: %s", data.ServiceId.ValueString(), data.EnvironmentId.ValueString(), err))
 		return
 	}
 
@@ -210,7 +209,7 @@ func (r *VariableCollectionResource) Create(ctx context.Context, req resource.Cr
 	_, err = redeployServiceInstance(ctx, *r.client, data.EnvironmentId.ValueString(), data.ServiceId.ValueString())
 
 	if err != nil {
-		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to redeploy service after variable collection created, got error: %s", err))
+		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to redeploy service after variable collection created (service_id=%s, environment_id=%s), got error: %s", data.ServiceId.ValueString(), data.EnvironmentId.ValueString(), err))
 		return
 	}
 }
@@ -238,7 +237,7 @@ func (r *VariableCollectionResource) Read(ctx context.Context, req resource.Read
 			resp.State.RemoveResource(ctx)
 			return
 		}
-		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to read variable collection, got error: %s", err))
+		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to read variable collection (service_id=%s, environment_id=%s), got error: %s", data.ServiceId.ValueString(), data.EnvironmentId.ValueString(), err))
 		return
 	}
 
@@ -462,7 +461,7 @@ func getVariableCollection(ctx context.Context, client graphql.Client, projectId
 		return &NotFoundError{ResourceType: "variable collection", Id: serviceId + ":" + environmentId}
 	}
 
-	data.Id = types.StringValue(getVariableCollectionId(ctx, serviceId, environmentId, names))
+	data.Id = types.StringValue(getVariableCollectionId(serviceId, environmentId))
 	data.ProjectId = types.StringValue(projectId)
 	data.EnvironmentId = types.StringValue(environmentId)
 	data.ServiceId = types.StringValue(serviceId)
@@ -471,13 +470,8 @@ func getVariableCollection(ctx context.Context, client graphql.Client, projectId
 	return nil
 }
 
-func getVariableCollectionId(ctx context.Context, serviceId, environmentId string, names []string) string {
-	// we need stable identifiers for this synthetic resource. Since order of `names` is not really defined
-	// (since they are keys of a map), I'm going to sort them first and then concat to one long id string
-	namesSortedAsc := append([]string(nil), names...)
-	sort.Strings(namesSortedAsc)
-
-	return fmt.Sprintf("%s:%s:%s", serviceId, environmentId, strings.Join(namesSortedAsc, ":"))
+func getVariableCollectionId(serviceId, environmentId string) string {
+	return fmt.Sprintf("%s:%s", serviceId, environmentId)
 }
 
 func deleteManyVariables(ctx context.Context, client graphql.Client, projectId, environmentId, serviceId string, names []string) error {
