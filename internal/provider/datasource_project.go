@@ -36,9 +36,11 @@ func (d *ProjectDataSource) Metadata(ctx context.Context, req datasource.Metadat
 func (d *ProjectDataSource) Schema(ctx context.Context, req datasource.SchemaRequest, resp *datasource.SchemaResponse) {
 	resp.Schema = schema.Schema{
 		MarkdownDescription: "Look up an existing Railway project by ID or name.",
+		Description:         "Look up an existing Railway project by ID or name.",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				MarkdownDescription: "Identifier of the project. Exactly one of `id` or `name` must be provided.",
+				Description:         "Identifier of the project. Exactly one of id or name must be provided.",
 				Optional:            true,
 				Computed:            true,
 				Validators: []validator.String{
@@ -48,6 +50,7 @@ func (d *ProjectDataSource) Schema(ctx context.Context, req datasource.SchemaReq
 			},
 			"name": schema.StringAttribute{
 				MarkdownDescription: "Name of the project. Exactly one of `id` or `name` must be provided.",
+				Description:         "Name of the project. Exactly one of id or name must be provided.",
 				Optional:            true,
 				Computed:            true,
 				Validators: []validator.String{
@@ -56,6 +59,7 @@ func (d *ProjectDataSource) Schema(ctx context.Context, req datasource.SchemaReq
 			},
 			"description": schema.StringAttribute{
 				MarkdownDescription: "Description of the project.",
+				Description:         "Description of the project.",
 				Computed:            true,
 			},
 		},

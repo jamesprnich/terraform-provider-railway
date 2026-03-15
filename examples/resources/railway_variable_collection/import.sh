@@ -1,1 +1,2 @@
-terraform import railway_variable_collection.sentry 89fa0236-2b1b-4a8c-b12d-ae3634b30d97:staging:SENTRY_KEY:SENTRY_SECRET
+# Import by service_id:environment_name:var_name1:var_name2:...
+terraform import railway_variable_collection.app_config your-service-id:production:DATABASE_URL:REDIS_URL

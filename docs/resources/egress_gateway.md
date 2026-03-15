@@ -10,6 +10,8 @@ description: |-
 
 Railway egress gateway. Associates a static egress IP with a service in a specific environment, enabling allowlisting on external services that require a fixed source IP.
 
+~> **Note:** Egress gateways require a **Pro plan** workspace. The service must have at least one deployment before the static IP can be assigned — the IP is tied to the service's deployment region. If `region` is omitted, Railway uses the service's current deployment region.
+
 ## Example Usage
 
 ```terraform

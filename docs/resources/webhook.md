@@ -10,6 +10,8 @@ description: |-
 
 Railway webhook. Sends HTTP POST notifications to a URL when events occur in a project.
 
+~> **Note:** Webhook types (`WebhookCreateInput`, `ProjectWebhook`) are not currently in Railway's public GraphQL schema. This resource is defined in the provider but live API calls may fail until Railway re-adds these types. The provider and mock tests work correctly.
+
 ## Example Usage
 
 ```terraform
@@ -25,7 +27,7 @@ resource "railway_webhook" "deploy_notifications" {
 resource "railway_webhook" "deploy_only" {
   project_id = railway_project.example.id
   url        = "https://example.com/webhooks/railway"
-  filters    = ["DEPLOY"]
+  filters    = ["deploy.completed", "deploy.started"]
 }
 ```
 

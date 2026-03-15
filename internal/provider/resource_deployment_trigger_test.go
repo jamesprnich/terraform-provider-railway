@@ -1,11 +1,86 @@
 package provider
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
+
+func TestAccDeploymentTriggerResourceDefault(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+		CheckDestroy:             testAccCheckDeploymentTriggerDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccDeploymentTriggerResourceConfig("main"),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttrSet("railway_deployment_trigger.test", "id"),
+					resource.TestCheckResourceAttr("railway_deployment_trigger.test", "service_id", testAccServiceId),
+					resource.TestCheckResourceAttr("railway_deployment_trigger.test", "environment_id", testAccEnvironmentId),
+					resource.TestCheckResourceAttr("railway_deployment_trigger.test", "project_id", testAccProjectId),
+					resource.TestCheckResourceAttr("railway_deployment_trigger.test", "repository", "jamesprnich/terraform-provider-railway"),
+					resource.TestCheckResourceAttr("railway_deployment_trigger.test", "branch", "main"),
+					resource.TestCheckResourceAttr("railway_deployment_trigger.test", "source_provider", "github"),
+				),
+			},
+			// Import
+			{
+				ResourceName: "railway_deployment_trigger.test",
+				ImportState:  true,
+				ImportStateIdFunc: func(s *terraform.State) (string, error) {
+					rs, ok := s.RootModule().Resources["railway_deployment_trigger.test"]
+					if !ok {
+						return "", fmt.Errorf("resource not found")
+					}
+					return testAccProjectId + ":" + testAccEnvironmentId + ":" + testAccServiceId + ":" + rs.Primary.ID, nil
+				},
+				ImportStateVerify: true,
+			},
+			// Update branch
+			{
+				Config: testAccDeploymentTriggerResourceConfig("develop"),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttrSet("railway_deployment_trigger.test", "id"),
+					resource.TestCheckResourceAttr("railway_deployment_trigger.test", "branch", "develop"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccDeploymentTriggerResource_disappears(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+		CheckDestroy:             testAccCheckDeploymentTriggerDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccDeploymentTriggerResourceConfig("main"),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttrSet("railway_deployment_trigger.test", "id"),
+					testAccCheckDeploymentTriggerDisappears("railway_deployment_trigger.test"),
+				),
+				ExpectNonEmptyPlan: true,
+			},
+		},
+	})
+}
+
+func testAccDeploymentTriggerResourceConfig(branch string) string {
+	return fmt.Sprintf(`
+resource "railway_deployment_trigger" "test" {
+  service_id      = "%s"
+  environment_id  = "%s"
+  project_id      = "%s"
+  repository      = "jamesprnich/terraform-provider-railway"
+  branch          = "%s"
+  source_provider = "github"
+}
+`, testAccServiceId, testAccEnvironmentId, testAccProjectId, branch)
+}
 
 func TestDeploymentTriggerResource_basic(t *testing.T) {
 	srv := newMockGraphQLServer(t, mockFixtures{

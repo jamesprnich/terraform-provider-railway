@@ -41,11 +41,11 @@ resource "railway_private_network_endpoint" "postgres" {
 - `environment_id` (String) Identifier of the environment.
 - `private_network_id` (String) Identifier of the private network to connect to.
 - `service_id` (String) Identifier of the service to connect.
-- `service_name` (String) Name of the service (required for the create input).
 
 ### Optional
 
 - `dns_name` (String) DNS name of the endpoint within the private network. Can be changed via rename.
+- `service_name` (String) Name of the service. Required for creation (used in the create API input), but not needed for import since it is not returned by the API.
 - `tags` (List of String) Tags associated with the private network endpoint.
 
 ### Read-Only

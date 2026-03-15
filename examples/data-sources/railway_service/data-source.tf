@@ -1,8 +1,10 @@
-data "railway_service" "by_name" {
+# Look up by name (requires project_id)
+data "railway_service" "api" {
   name       = "api"
   project_id = railway_project.example.id
 }
 
+# Or look up by ID
 data "railway_service" "by_id" {
-  id = "89fa0236-2b1b-4a8c-b12d-ae3634b30d97"
+  id = "your-service-id"
 }

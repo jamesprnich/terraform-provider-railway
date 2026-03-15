@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"maps"
 	"slices"
+	"time"
 
 	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
@@ -27,6 +28,8 @@ import (
 
 var _ resource.Resource = &ServiceResource{}
 var _ resource.ResourceWithImportState = &ServiceResource{}
+var _ resource.ResourceWithConfigValidators = &ServiceResource{}
+var _ resource.ResourceWithValidateConfig = &ServiceResource{}
 
 func NewServiceResource() resource.Resource {
 	return &ServiceResource{}
@@ -87,10 +90,13 @@ func (r *ServiceResource) Metadata(ctx context.Context, req resource.MetadataReq
 
 func (r *ServiceResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
+		Version:             1,
 		MarkdownDescription: "Railway service.\n\n> ⚠️ **NOTE:** All the other settings not specified here are recommended to be specified in the Railway config file.",
+		Description:         "Railway service. NOTE: All the other settings not specified here are recommended to be specified in the Railway config file.",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				MarkdownDescription: "Identifier of the service.",
+				Description:         "Identifier of the service.",
 				Computed:            true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
@@ -98,13 +104,15 @@ func (r *ServiceResource) Schema(ctx context.Context, req resource.SchemaRequest
 			},
 			"name": schema.StringAttribute{
 				MarkdownDescription: "Name of the service.",
+				Description:         "Name of the service.",
 				Required:            true,
 				Validators: []validator.String{
 					stringvalidator.UTF8LengthAtLeast(1),
 				},
 			},
 			"project_id": schema.StringAttribute{
-				MarkdownDescription: "Identifier of the project the service belongs to.",
+				MarkdownDescription: "Identifier of the project the service belongs to. ~> **Warning:** Changing this forces resource destruction and recreation.",
+				Description:         "Identifier of the project the service belongs to. Warning: Changing this forces resource destruction and recreation.",
 				Required:            true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
@@ -115,6 +123,7 @@ func (r *ServiceResource) Schema(ctx context.Context, req resource.SchemaRequest
 			},
 			"cron_schedule": schema.StringAttribute{
 				MarkdownDescription: "Cron schedule of the service. Only allowed when total number of replicas across all regions is `1`.",
+				Description:         "Cron schedule of the service. Only allowed when total number of replicas across all regions is 1.",
 				Optional:            true,
 				Validators: []validator.String{
 					stringvalidator.UTF8LengthAtLeast(9),
@@ -122,6 +131,7 @@ func (r *ServiceResource) Schema(ctx context.Context, req resource.SchemaRequest
 			},
 			"source_image": schema.StringAttribute{
 				MarkdownDescription: "Source image of the service. Conflicts with `source_repo`, `source_repo_branch`, `root_directory` and `config_path`.",
+				Description:         "Source image of the service. Conflicts with source_repo, source_repo_branch, root_directory and config_path.",
 				Optional:            true,
 				Validators: []validator.String{
 					stringvalidator.UTF8LengthAtLeast(1),
@@ -133,6 +143,7 @@ func (r *ServiceResource) Schema(ctx context.Context, req resource.SchemaRequest
 			},
 			"source_image_registry_username": schema.StringAttribute{
 				MarkdownDescription: "Private Docker registry credentials.",
+				Description:         "Private Docker registry credentials.",
 				Optional:            true,
 				Validators: []validator.String{
 					stringvalidator.UTF8LengthAtLeast(1),
@@ -145,6 +156,7 @@ func (r *ServiceResource) Schema(ctx context.Context, req resource.SchemaRequest
 			},
 			"source_image_registry_password": schema.StringAttribute{
 				MarkdownDescription: "Private Docker registry credentials.",
+				Description:         "Private Docker registry credentials.",
 				Optional:            true,
 				Sensitive:           true,
 				Validators: []validator.String{
@@ -158,6 +170,7 @@ func (r *ServiceResource) Schema(ctx context.Context, req resource.SchemaRequest
 			},
 			"source_repo": schema.StringAttribute{
 				MarkdownDescription: "Source repository of the service. Conflicts with `source_image`.",
+				Description:         "Source repository of the service. Conflicts with source_image.",
 				Optional:            true,
 				Validators: []validator.String{
 					stringvalidator.UTF8LengthAtLeast(3),
@@ -166,6 +179,7 @@ func (r *ServiceResource) Schema(ctx context.Context, req resource.SchemaRequest
 			},
 			"source_repo_branch": schema.StringAttribute{
 				MarkdownDescription: "Source repository branch to be used with `source_repo`. Must be specified if `source_repo` is specified.",
+				Description:         "Source repository branch to be used with source_repo. Must be specified if source_repo is specified.",
 				Optional:            true,
 				Validators: []validator.String{
 					stringvalidator.UTF8LengthAtLeast(1),
@@ -173,7 +187,8 @@ func (r *ServiceResource) Schema(ctx context.Context, req resource.SchemaRequest
 				},
 			},
 			"root_directory": schema.StringAttribute{
-				MarkdownDescription: "Directory to user for the service. Conflicts with `source_image`.",
+				MarkdownDescription: "Directory to use for the service. Conflicts with `source_image`.",
+				Description:         "Directory to use for the service. Conflicts with source_image.",
 				Optional:            true,
 				Validators: []validator.String{
 					stringvalidator.UTF8LengthAtLeast(1),
@@ -181,6 +196,7 @@ func (r *ServiceResource) Schema(ctx context.Context, req resource.SchemaRequest
 			},
 			"config_path": schema.StringAttribute{
 				MarkdownDescription: "Path to the Railway config file. Conflicts with `source_image`.",
+				Description:         "Path to the Railway config file. Conflicts with source_image.",
 				Optional:            true,
 				Validators: []validator.String{
 					stringvalidator.UTF8LengthAtLeast(1),
@@ -188,10 +204,12 @@ func (r *ServiceResource) Schema(ctx context.Context, req resource.SchemaRequest
 			},
 			"volume": schema.SingleNestedAttribute{
 				MarkdownDescription: "Volume connected to the service.",
+				Description:         "Volume connected to the service.",
 				Optional:            true,
 				Attributes: map[string]schema.Attribute{
 					"id": schema.StringAttribute{
 						MarkdownDescription: "Identifier of the volume.",
+						Description:         "Identifier of the volume.",
 						Computed:            true,
 						PlanModifiers: []planmodifier.String{
 							useStringStateForUnknownIfNonNull(),
@@ -199,6 +217,7 @@ func (r *ServiceResource) Schema(ctx context.Context, req resource.SchemaRequest
 					},
 					"name": schema.StringAttribute{
 						MarkdownDescription: "Name of the volume.",
+						Description:         "Name of the volume.",
 						Required:            true,
 						Validators: []validator.String{
 							stringvalidator.UTF8LengthAtLeast(1),
@@ -206,6 +225,7 @@ func (r *ServiceResource) Schema(ctx context.Context, req resource.SchemaRequest
 					},
 					"mount_path": schema.StringAttribute{
 						MarkdownDescription: "Mount path of the volume.",
+						Description:         "Mount path of the volume.",
 						Required:            true,
 						Validators: []validator.String{
 							stringvalidator.UTF8LengthAtLeast(1),
@@ -213,6 +233,7 @@ func (r *ServiceResource) Schema(ctx context.Context, req resource.SchemaRequest
 					},
 					"size": schema.Float64Attribute{
 						MarkdownDescription: "Size of the volume in MB.",
+						Description:         "Size of the volume in MB.",
 						Computed:            true,
 						PlanModifiers: []planmodifier.Float64{
 							useFloat64StateForUnknownIfNonNull(),
@@ -222,6 +243,7 @@ func (r *ServiceResource) Schema(ctx context.Context, req resource.SchemaRequest
 			},
 			"regions": schema.ListNestedAttribute{
 				MarkdownDescription: "Regions with replicas to deploy service in.",
+				Description:         "Regions with replicas to deploy service in.",
 				Optional:            true,
 				Computed:            true,
 				Validators: []validator.List{
@@ -231,11 +253,13 @@ func (r *ServiceResource) Schema(ctx context.Context, req resource.SchemaRequest
 					Attributes: map[string]schema.Attribute{
 						"region": schema.StringAttribute{
 							MarkdownDescription: "Region to deploy in.",
+							Description:         "Region to deploy in.",
 							Optional:            true,
 							Computed:            true,
 						},
 						"num_replicas": schema.Int64Attribute{
 							MarkdownDescription: "Number of replicas to deploy. **Default** `1`.",
+							Description:         "Number of replicas to deploy. Default 1.",
 							Optional:            true,
 							Computed:            true,
 							Default:             int64default.StaticInt64(1),
@@ -308,6 +332,35 @@ func (v cronScheduleReplicasValidator) ValidateResource(ctx context.Context, req
 	}
 }
 
+func (r *ServiceResource) ValidateConfig(ctx context.Context, req resource.ValidateConfigRequest, resp *resource.ValidateConfigResponse) {
+	var data ServiceResourceModel
+
+	resp.Diagnostics.Append(req.Config.Get(ctx, &data)...)
+
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	// source_image_registry_username and source_image_registry_password require source_image.
+	// The AlsoRequires validator on these attributes ensures they are paired together,
+	// but they also require source_image to be set (they are only valid for Docker image sources).
+	if !data.SourceImagePrivateRegistryUsername.IsNull() && !data.SourceImagePrivateRegistryUsername.IsUnknown() && (data.SourceImage.IsNull() || data.SourceImage.IsUnknown()) {
+		resp.Diagnostics.AddAttributeError(
+			path.Root("source_image_registry_username"),
+			"Missing Required Attribute",
+			"`source_image_registry_username` requires `source_image` to be set. Registry credentials are only valid for Docker image sources.",
+		)
+	}
+
+	if !data.SourceImagePrivateRegistryPassword.IsNull() && !data.SourceImagePrivateRegistryPassword.IsUnknown() && (data.SourceImage.IsNull() || data.SourceImage.IsUnknown()) {
+		resp.Diagnostics.AddAttributeError(
+			path.Root("source_image_registry_password"),
+			"Missing Required Attribute",
+			"`source_image_registry_password` requires `source_image` to be set. Registry credentials are only valid for Docker image sources.",
+		)
+	}
+}
+
 func (r *ServiceResource) Configure(ctx context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
 	// Prevent panic if the provider has not been configured.
 	if req.ProviderData == nil {
@@ -352,7 +405,7 @@ func (r *ServiceResource) Create(ctx context.Context, req resource.CreateRequest
 		return
 	}
 
-	tflog.Trace(ctx, "created a service")
+	tflog.Debug(ctx, "created a service")
 
 	service := response.ServiceCreate.Service
 
@@ -360,14 +413,26 @@ func (r *ServiceResource) Create(ctx context.Context, req resource.CreateRequest
 	data.Name = types.StringValue(service.Name)
 	data.ProjectId = types.StringValue(service.ProjectId)
 
+	// Extract volume plan data before nulling it for the early state save.
+	// The volume hasn't been created yet, so we must not store unknown
+	// computed sub-fields (id, size) in state — that causes
+	// "Provider returned invalid result object after apply" errors.
+	hasPlannedVolume := !data.Volume.IsNull() && !data.Volume.IsUnknown()
+
+	if hasPlannedVolume {
+		resp.Diagnostics.Append(data.Volume.As(ctx, &volumeData, basetypes.ObjectAsOptions{})...)
+
+		if resp.Diagnostics.HasError() {
+			return
+		}
+	}
+
 	// Set computed fields to null before the early state save so OpenTofu
 	// never sees unknown values in state if a subsequent step fails.
 	if data.Regions.IsUnknown() {
 		data.Regions = types.ListNull(types.ObjectType{AttrTypes: regionAttrTypes})
 	}
-	if data.Volume.IsUnknown() {
-		data.Volume = types.ObjectNull(volumeAttrTypes)
-	}
+	data.Volume = types.ObjectNull(volumeAttrTypes)
 
 	// Save state immediately so Terraform tracks this resource.
 	// If any subsequent step fails, the resource will be tainted
@@ -387,7 +452,7 @@ func (r *ServiceResource) Create(ctx context.Context, req resource.CreateRequest
 		return
 	}
 
-	tflog.Trace(ctx, "created service settings")
+	tflog.Debug(ctx, "created service settings")
 
 	// Connect source (image/repo) before volume creation, because the
 	// Railway API may need the service's source context to provision volumes.
@@ -402,13 +467,7 @@ func (r *ServiceResource) Create(ctx context.Context, req resource.CreateRequest
 		}
 	}
 
-	if !data.Volume.IsNull() {
-		resp.Diagnostics.Append(data.Volume.As(ctx, &volumeData, basetypes.ObjectAsOptions{})...)
-
-		if resp.Diagnostics.HasError() {
-			return
-		}
-
+	if hasPlannedVolume {
 		// Resolve the default environment ID explicitly. Omitting environmentId
 		// triggers Railway's "deploy to all environments" path which fails for
 		// freshly-created services due to eventual consistency.
@@ -422,11 +481,18 @@ func (r *ServiceResource) Create(ctx context.Context, req resource.CreateRequest
 		envId := defaultEnv.Id
 		serviceId := data.Id.ValueString()
 
-		volumeResponse, err := createVolume(ctx, *r.client, VolumeCreateInput{
-			MountPath:     volumeData.MountPath.ValueString(),
-			ProjectId:     data.ProjectId.ValueString(),
-			ServiceId:     &serviceId,
-			EnvironmentId: &envId,
+		// Retry volume creation — Railway's API may return "Problem processing
+		// request" on newly created services due to eventual consistency.
+		var volumeResponse *createVolumeResponse
+		err = retryCreateContext(ctx, 30*time.Second, func() error {
+			var createErr error
+			volumeResponse, createErr = createVolume(ctx, *r.client, VolumeCreateInput{
+				MountPath:     volumeData.MountPath.ValueString(),
+				ProjectId:     data.ProjectId.ValueString(),
+				ServiceId:     &serviceId,
+				EnvironmentId: &envId,
+			})
+			return createErr
 		})
 
 		if err != nil {
@@ -434,18 +500,24 @@ func (r *ServiceResource) Create(ctx context.Context, req resource.CreateRequest
 			return
 		}
 
-		tflog.Trace(ctx, "created a volume")
+		tflog.Debug(ctx, "created a volume")
 
-		_, err = updateVolume(ctx, *r.client, volumeResponse.VolumeCreate.Volume.Id, VolumeUpdateInput{
+		volId := volumeResponse.VolumeCreate.Volume.Id
+
+		_, err = updateVolume(ctx, *r.client, volId, VolumeUpdateInput{
 			Name: volumeData.Name.ValueString(),
 		})
 
 		if err != nil {
-			resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to update volume (service_id=%s, project_id=%s), got error: %s", data.Id.ValueString(), data.ProjectId.ValueString(), err))
+			// Clean up the orphaned volume we just created so it doesn't leak.
+			if _, delErr := deleteVolume(ctx, *r.client, volId); delErr != nil {
+				tflog.Warn(ctx, fmt.Sprintf("failed to clean up orphaned volume %s: %s", volId, delErr))
+			}
+			resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to rename volume (service_id=%s, project_id=%s), got error: %s", data.Id.ValueString(), data.ProjectId.ValueString(), err))
 			return
 		}
 
-		tflog.Trace(ctx, "updated a volume")
+		tflog.Debug(ctx, "updated a volume")
 	}
 
 	err = getAndBuildServiceInstance(ctx, *r.client, data.ProjectId.ValueString(), data.Id.ValueString(), data)
@@ -515,9 +587,9 @@ func (r *ServiceResource) Update(ctx context.Context, req resource.UpdateRequest
 
 	var state *ServiceResourceModel
 	var volumeState *ServiceResourceVolumeModel
-	// var regionsState *[]ServiceResourceRegionModel
 
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &data)...)
+	resp.Diagnostics.Append(data.Regions.ElementsAs(ctx, &regionsData, true)...)
 
 	if resp.Diagnostics.HasError() {
 		return
@@ -537,11 +609,11 @@ func (r *ServiceResource) Update(ctx context.Context, req resource.UpdateRequest
 		response, err := updateService(ctx, *r.client, data.Id.ValueString(), input)
 
 		if err != nil {
-			resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to update service, got error: %s", err))
+			resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to update service (id=%s), got error: %s", data.Id.ValueString(), err))
 			return
 		}
 
-		tflog.Trace(ctx, "updated a service")
+		tflog.Debug(ctx, "updated a service")
 
 		service := response.ServiceUpdate.Service
 
@@ -559,7 +631,7 @@ func (r *ServiceResource) Update(ctx context.Context, req resource.UpdateRequest
 		return
 	}
 
-	tflog.Trace(ctx, "updated service settings")
+	tflog.Debug(ctx, "updated service settings")
 
 	// Delete volume if it was removed
 	if data.Volume.IsNull() && !state.Volume.IsNull() {
@@ -576,7 +648,7 @@ func (r *ServiceResource) Update(ctx context.Context, req resource.UpdateRequest
 			return
 		}
 
-		tflog.Trace(ctx, "deleted a volume")
+		tflog.Debug(ctx, "deleted a volume")
 	}
 
 	// Create volume if it was added
@@ -597,11 +669,18 @@ func (r *ServiceResource) Update(ctx context.Context, req resource.UpdateRequest
 		envId := defaultEnv.Id
 		serviceId := data.Id.ValueString()
 
-		volumeResponse, err := createVolume(ctx, *r.client, VolumeCreateInput{
-			MountPath:     volumeData.MountPath.ValueString(),
-			ProjectId:     data.ProjectId.ValueString(),
-			ServiceId:     &serviceId,
-			EnvironmentId: &envId,
+		// Retry volume creation — Railway's API may return "Problem processing
+		// request" due to eventual consistency.
+		var volumeResponse *createVolumeResponse
+		err := retryCreateContext(ctx, 30*time.Second, func() error {
+			var createErr error
+			volumeResponse, createErr = createVolume(ctx, *r.client, VolumeCreateInput{
+				MountPath:     volumeData.MountPath.ValueString(),
+				ProjectId:     data.ProjectId.ValueString(),
+				ServiceId:     &serviceId,
+				EnvironmentId: &envId,
+			})
+			return createErr
 		})
 
 		if err != nil {
@@ -609,18 +688,24 @@ func (r *ServiceResource) Update(ctx context.Context, req resource.UpdateRequest
 			return
 		}
 
-		tflog.Trace(ctx, "created a volume")
+		tflog.Debug(ctx, "created a volume")
 
-		_, err = updateVolume(ctx, *r.client, volumeResponse.VolumeCreate.Volume.Id, VolumeUpdateInput{
+		volId := volumeResponse.VolumeCreate.Volume.Id
+
+		_, err = updateVolume(ctx, *r.client, volId, VolumeUpdateInput{
 			Name: volumeData.Name.ValueString(),
 		})
 
 		if err != nil {
-			resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to update volume, got error: %s", err))
+			// Clean up the orphaned volume we just created so it doesn't leak.
+			if _, delErr := deleteVolume(ctx, *r.client, volId); delErr != nil {
+				tflog.Warn(ctx, fmt.Sprintf("failed to clean up orphaned volume %s: %s", volId, delErr))
+			}
+			resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to rename volume, got error: %s", err))
 			return
 		}
 
-		tflog.Trace(ctx, "updated a volume")
+		tflog.Debug(ctx, "updated a volume")
 	}
 
 	// Update volume if it was changed
@@ -647,7 +732,7 @@ func (r *ServiceResource) Update(ctx context.Context, req resource.UpdateRequest
 				return
 			}
 
-			tflog.Trace(ctx, "updated a volume")
+			tflog.Debug(ctx, "updated a volume")
 		}
 
 		if volumeState.MountPath != volumeData.MountPath {
@@ -661,22 +746,30 @@ func (r *ServiceResource) Update(ctx context.Context, req resource.UpdateRequest
 				return
 			}
 
-			tflog.Trace(ctx, "updated a volume instance")
+			tflog.Debug(ctx, "updated a volume instance")
 		}
 	}
 
 	// Handling service connection with source repo or docker image
+	sourceChanged := !state.SourceRepo.Equal(data.SourceRepo) || !state.SourceRepoBranch.Equal(data.SourceRepoBranch) || !state.SourceImage.Equal(data.SourceImage)
+
 	err = updateServiceConnection(ctx, *r.client, data.Id.ValueString(), data, state)
 
 	if err != nil {
 		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to update service repo or image connection, got error: %s", err))
+		return
 	}
 
-	err = redeployAllInstances(ctx, *r.client, data.Id.ValueString())
+	// Only redeploy when the source connection changed (source_image, source_repo,
+	// or source_repo_branch). Name-only changes and service instance setting changes
+	// do not require a redeploy — Railway handles those automatically.
+	if sourceChanged {
+		err = redeployAllInstances(ctx, *r.client, data.Id.ValueString())
 
-	if err != nil {
-		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to redeploy services after update, got error: %s", err))
-		return
+		if err != nil {
+			resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to redeploy services after update, got error: %s", err))
+			return
+		}
 	}
 
 	err = getAndBuildServiceInstance(ctx, *r.client, data.ProjectId.ValueString(), data.Id.ValueString(), data)
@@ -708,12 +801,12 @@ func (r *ServiceResource) Delete(ctx context.Context, req resource.DeleteRequest
 
 	_, err := deleteService(ctx, *r.client, data.Id.ValueString())
 
-	if err != nil && !isNotFound(err) {
+	if err != nil && !isNotFoundOrGone(err) {
 		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to delete service, got error: %s", err))
 		return
 	}
 
-	tflog.Trace(ctx, "deleted a service")
+	tflog.Debug(ctx, "deleted a service")
 
 	if !data.Volume.IsNull() {
 		resp.Diagnostics.Append(data.Volume.As(ctx, &volumeData, basetypes.ObjectAsOptions{})...)
@@ -724,12 +817,12 @@ func (r *ServiceResource) Delete(ctx context.Context, req resource.DeleteRequest
 
 		_, err := deleteVolume(ctx, *r.client, volumeData.Id.ValueString())
 
-		if err != nil && !isNotFound(err) {
+		if err != nil && !isNotFoundOrGone(err) {
 			resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to delete volume, got error: %s", err))
 			return
 		}
 
-		tflog.Trace(ctx, "deleted a volume")
+		tflog.Debug(ctx, "deleted a volume")
 	}
 }
 
@@ -882,9 +975,14 @@ func getRegionsFromLatestDeployment(latestDeployment getServiceInstanceServiceIn
 			return nil, fmt.Errorf("numReplicas is not found")
 		}
 
+		numReplicasFloat, ok := numReplicas.(float64)
+		if !ok {
+			return nil, fmt.Errorf("numReplicas for region %s is not a number", region)
+		}
+
 		regions = append(regions, types.ObjectValueMust(regionAttrTypes, map[string]attr.Value{
 			"region":       types.StringValue(region),
-			"num_replicas": types.Int64Value(int64(numReplicas.(float64))),
+			"num_replicas": types.Int64Value(int64(numReplicasFloat)),
 		}))
 	}
 
@@ -978,7 +1076,7 @@ func redeployAllInstances(ctx context.Context, client graphql.Client, serviceId 
 		}
 	}
 
-	tflog.Trace(ctx, "redeployed all service instances")
+	tflog.Debug(ctx, "redeployed all service instances")
 
 	return nil
 }

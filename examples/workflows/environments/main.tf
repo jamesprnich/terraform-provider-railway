@@ -20,7 +20,7 @@ terraform {
   required_providers {
     railway = {
       source  = "terraform-community-providers/railway"
-      version = "~> 0.7.0"
+      version = "~> 0.8.0"
     }
   }
 }
@@ -141,7 +141,6 @@ resource "railway_service_instance" "app" {
 # --- Public domain for the app ---
 
 resource "railway_service_domain" "app" {
-  subdomain      = "test-app-dev"
   service_id     = data.railway_service.app.id
   environment_id = var.environment_id
 

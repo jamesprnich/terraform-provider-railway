@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"os"
 	"regexp"
+	"time"
 
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/provider"
@@ -20,8 +21,10 @@ var (
 	errMissingAuthToken = "Required token could not be found. Please set the token using an input variable in the provider configuration block or by using the `" + envVarName + "` environment variable."
 )
 
+var uuidRegexp = regexp.MustCompile("^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$")
+
 func uuidRegex() *regexp.Regexp {
-	return regexp.MustCompile("^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$")
+	return uuidRegexp
 }
 
 var _ provider.Provider = &RailwayProvider{}
@@ -47,14 +50,18 @@ func (p *RailwayProvider) Metadata(ctx context.Context, req provider.MetadataReq
 
 func (p *RailwayProvider) Schema(ctx context.Context, req provider.SchemaRequest, resp *provider.SchemaResponse) {
 	resp.Schema = schema.Schema{
+		MarkdownDescription: "Railway provider configuration.",
+		Description:         "Railway provider configuration.",
 		Attributes: map[string]schema.Attribute{
 			"token": schema.StringAttribute{
 				MarkdownDescription: "The token used to authenticate with Railway.",
+				Description:         "The token used to authenticate with Railway.",
 				Optional:            true,
 				Sensitive:           true,
 			},
 			"api_url": schema.StringAttribute{
 				MarkdownDescription: "Override the Railway API URL. Used for testing.",
+				Description:         "Override the Railway API URL. Used for testing.",
 				Optional:            true,
 			},
 		},
@@ -89,9 +96,11 @@ func (p *RailwayProvider) Configure(ctx context.Context, req provider.ConfigureR
 	}
 
 	httpClient := http.Client{
+		Timeout: 30 * time.Second,
 		Transport: &authedTransport{
-			token:   token,
-			wrapped: http.DefaultTransport,
+			token:     token,
+			userAgent: "terraform-provider-railway/" + p.version,
+			wrapped:   http.DefaultTransport,
 		},
 	}
 

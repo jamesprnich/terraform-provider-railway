@@ -12,6 +12,7 @@ query getEgressGateways(
   }
 }
 
+# @genqlient(for: "EgressGatewayCreateInput.region", omitempty: true, pointer: true)
 mutation createEgressGateway(
   $input: EgressGatewayCreateInput!
 ) {

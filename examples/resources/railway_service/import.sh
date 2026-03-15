@@ -1,1 +1,2 @@
-terraform import railway_service.example 89fa0236-2b1b-4a8c-b12d-ae3634b30d97
+# Import by service ID
+terraform import railway_service.api your-service-id

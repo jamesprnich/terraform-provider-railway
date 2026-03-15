@@ -1,6 +1,6 @@
-resource "railway_variable" "example" {
-  name           = "SENTRY_KEY"
-  value          = "1234567890"
+resource "railway_variable" "database_url" {
+  name           = "DATABASE_URL"
+  value          = "postgres://user:pass@host:5432/db"
   environment_id = railway_project.example.default_environment.id
-  service_id     = railway_service.example.id
+  service_id     = railway_service.api.id
 }

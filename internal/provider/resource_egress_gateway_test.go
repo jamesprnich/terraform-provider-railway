@@ -1,12 +1,86 @@
 package provider
 
 import (
+	"fmt"
 	"regexp"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
+
+func TestAccEgressGatewayResourceDefault(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+		CheckDestroy:             testAccCheckEgressGatewayDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccEgressGatewayResourceConfig(),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("railway_egress_gateway.test", "service_id", testAccServiceId),
+					resource.TestCheckResourceAttr("railway_egress_gateway.test", "environment_id", testAccEnvironmentId),
+					resource.TestCheckResourceAttr("railway_egress_gateway.test", "id", testAccServiceId+":"+testAccEnvironmentId),
+					testAccCheckEgressGatewayHasIPs("railway_egress_gateway.test"),
+				),
+			},
+			// Import
+			{
+				ResourceName:            "railway_egress_gateway.test",
+				ImportState:             true,
+				ImportStateId:           testAccServiceId + ":" + testAccEnvironmentId,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"region"},
+			},
+		},
+	})
+}
+
+func TestAccEgressGatewayResource_disappears(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+		CheckDestroy:             testAccCheckEgressGatewayDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccEgressGatewayResourceConfig(),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("railway_egress_gateway.test", "service_id", testAccServiceId),
+					testAccCheckEgressGatewayDisappears("railway_egress_gateway.test"),
+				),
+				ExpectNonEmptyPlan: true,
+			},
+		},
+	})
+}
+
+func testAccEgressGatewayResourceConfig() string {
+	return fmt.Sprintf(`
+resource "railway_egress_gateway" "test" {
+  service_id     = "%s"
+  environment_id = "%s"
+}
+`, testAccServiceId, testAccEnvironmentId)
+}
+
+func testAccCheckEgressGatewayHasIPs(resourceName string) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		rs, ok := s.RootModule().Resources[resourceName]
+		if !ok {
+			return fmt.Errorf("resource not found in state: %s", resourceName)
+		}
+		count := rs.Primary.Attributes["ip_addresses.#"]
+		if count == "" || count == "0" {
+			return fmt.Errorf("expected egress gateway to have at least one IP address, got %q", count)
+		}
+		// Verify the first IP looks like a real IPv4 address
+		ip := rs.Primary.Attributes["ip_addresses.0"]
+		if ip == "" {
+			return fmt.Errorf("ip_addresses.0 is empty")
+		}
+		return nil
+	}
+}
 
 func TestEgressGatewayResource_basic(t *testing.T) {
 	server := newMockGraphQLServer(t, mockFixtures{

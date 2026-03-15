@@ -1,1 +1,2 @@
-terraform import railway_environment.example 0bb01547-570d-4109-a5e8-138691f6a2d1:staging
+# Import by project_id:environment_name
+terraform import railway_environment.staging your-project-id:staging

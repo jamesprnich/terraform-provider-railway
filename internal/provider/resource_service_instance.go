@@ -7,10 +7,13 @@ import (
 	"time"
 
 	"github.com/Khan/genqlient/graphql"
+	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
+	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
@@ -20,6 +23,7 @@ import (
 
 var _ resource.Resource = &ServiceInstanceResource{}
 var _ resource.ResourceWithImportState = &ServiceInstanceResource{}
+var _ resource.ResourceWithValidateConfig = &ServiceInstanceResource{}
 
 func NewServiceInstanceResource() resource.Resource {
 	return &ServiceInstanceResource{}
@@ -45,7 +49,15 @@ type ServiceInstanceResourceModel struct {
 	NumReplicas      types.Int64   `tfsdk:"num_replicas"`
 	VCPUs            types.Float64 `tfsdk:"vcpus"`
 	MemoryGB         types.Float64 `tfsdk:"memory_gb"`
-	SleepApplication types.Bool    `tfsdk:"sleep_application"`
+	SleepApplication       types.Bool    `tfsdk:"sleep_application"`
+	OverlapSeconds         types.Int64   `tfsdk:"overlap_seconds"`
+	DrainingSeconds        types.Int64   `tfsdk:"draining_seconds"`
+	HealthcheckTimeout     types.Int64   `tfsdk:"healthcheck_timeout"`
+	RestartPolicyType      types.String  `tfsdk:"restart_policy_type"`
+	RestartPolicyMaxRetries types.Int64  `tfsdk:"restart_policy_max_retries"`
+	PreDeployCommand       types.List    `tfsdk:"pre_deploy_command"`
+	WatchPatterns          types.List    `tfsdk:"watch_patterns"`
+	Builder                types.String  `tfsdk:"builder"`
 }
 
 func (r *ServiceInstanceResource) Metadata(ctx context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
@@ -54,17 +66,21 @@ func (r *ServiceInstanceResource) Metadata(ctx context.Context, req resource.Met
 
 func (r *ServiceInstanceResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
+		Version:             1,
 		MarkdownDescription: "Railway service instance. Configures a service in a specific environment, including source, build, deploy settings, and resource limits.",
+		Description:         "Railway service instance. Configures a service in a specific environment, including source, build, deploy settings, and resource limits.",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				MarkdownDescription: "Identifier of the service instance (service_id:environment_id).",
+				Description:         "Identifier of the service instance (service_id:environment_id).",
 				Computed:            true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
 			"service_id": schema.StringAttribute{
-				MarkdownDescription: "Identifier of the service.",
+				MarkdownDescription: "Identifier of the service. ~> **Warning:** Changing this forces resource destruction and recreation.",
+				Description:         "Identifier of the service. Warning: Changing this forces resource destruction and recreation.",
 				Required:            true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
@@ -74,7 +90,8 @@ func (r *ServiceInstanceResource) Schema(ctx context.Context, req resource.Schem
 				},
 			},
 			"environment_id": schema.StringAttribute{
-				MarkdownDescription: "Identifier of the environment.",
+				MarkdownDescription: "Identifier of the environment. ~> **Warning:** Changing this forces resource destruction and recreation.",
+				Description:         "Identifier of the environment. Warning: Changing this forces resource destruction and recreation.",
 				Required:            true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
@@ -85,6 +102,7 @@ func (r *ServiceInstanceResource) Schema(ctx context.Context, req resource.Schem
 			},
 			"source_image": schema.StringAttribute{
 				MarkdownDescription: "Docker image to use as the source (e.g. `postgres:17`). Conflicts with `source_repo`.",
+				Description:         "Docker image to use as the source (e.g. postgres:17). Conflicts with source_repo.",
 				Optional:            true,
 				Validators: []validator.String{
 					stringvalidator.UTF8LengthAtLeast(1),
@@ -93,6 +111,7 @@ func (r *ServiceInstanceResource) Schema(ctx context.Context, req resource.Schem
 			},
 			"source_repo": schema.StringAttribute{
 				MarkdownDescription: "GitHub repository to use as the source (e.g. `owner/repo`). Conflicts with `source_image`.",
+				Description:         "GitHub repository to use as the source (e.g. owner/repo). Conflicts with source_image.",
 				Optional:            true,
 				Validators: []validator.String{
 					stringvalidator.UTF8LengthAtLeast(3),
@@ -100,51 +119,176 @@ func (r *ServiceInstanceResource) Schema(ctx context.Context, req resource.Schem
 			},
 			"root_directory": schema.StringAttribute{
 				MarkdownDescription: "Root directory for the service within the repository.",
+				Description:         "Root directory for the service within the repository.",
 				Optional:            true,
 			},
 			"config_path": schema.StringAttribute{
 				MarkdownDescription: "Path to the Railway config file (e.g. `backend/railway.toml`).",
+				Description:         "Path to the Railway config file (e.g. backend/railway.toml).",
 				Optional:            true,
 			},
 			"build_command": schema.StringAttribute{
 				MarkdownDescription: "Custom build command.",
+				Description:         "Custom build command.",
 				Optional:            true,
 			},
 			"start_command": schema.StringAttribute{
 				MarkdownDescription: "Custom start command.",
+				Description:         "Custom start command.",
 				Optional:            true,
 			},
 			"region": schema.StringAttribute{
 				MarkdownDescription: "Region to deploy the service instance in.",
+				Description:         "Region to deploy the service instance in.",
 				Optional:            true,
 				Computed:            true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"cron_schedule": schema.StringAttribute{
-				MarkdownDescription: "Cron schedule for the service.",
+				MarkdownDescription: "Cron schedule for the service. Can only be set when `num_replicas` is 1.",
+				Description:         "Cron schedule for the service. Can only be set when num_replicas is 1.",
 				Optional:            true,
 			},
 			"healthcheck_path": schema.StringAttribute{
 				MarkdownDescription: "HTTP path for health checks.",
+				Description:         "HTTP path for health checks.",
 				Optional:            true,
 			},
 			"num_replicas": schema.Int64Attribute{
 				MarkdownDescription: "Number of replicas.",
+				Description:         "Number of replicas.",
 				Optional:            true,
 				Computed:            true,
+				PlanModifiers: []planmodifier.Int64{
+					int64planmodifier.UseStateForUnknown(),
+				},
 			},
 			"vcpus": schema.Float64Attribute{
 				MarkdownDescription: "Number of vCPUs to allocate (e.g. `0.5`, `1`, `2`). Maps to Railway's container CPU limit.",
+				Description:         "Number of vCPUs to allocate (e.g. 0.5, 1, 2). Maps to Railway's container CPU limit.",
 				Optional:            true,
 			},
 			"memory_gb": schema.Float64Attribute{
 				MarkdownDescription: "Amount of memory in GB to allocate (e.g. `0.5`, `1`, `2`). Maps to Railway's container memory limit.",
+				Description:         "Amount of memory in GB to allocate (e.g. 0.5, 1, 2). Maps to Railway's container memory limit.",
 				Optional:            true,
 			},
 			"sleep_application": schema.BoolAttribute{
 				MarkdownDescription: "Whether the service should sleep when inactive.",
+				Description:         "Whether the service should sleep when inactive.",
 				Optional:            true,
 			},
+			"overlap_seconds": schema.Int64Attribute{
+				MarkdownDescription: "Number of seconds to keep the old deployment running alongside the new one during a rollout.",
+				Description:         "Number of seconds to keep the old deployment running alongside the new one during a rollout.",
+				Optional:            true,
+			},
+			"draining_seconds": schema.Int64Attribute{
+				MarkdownDescription: "Number of seconds to drain connections before stopping the old deployment.",
+				Description:         "Number of seconds to drain connections before stopping the old deployment.",
+				Optional:            true,
+			},
+			"healthcheck_timeout": schema.Int64Attribute{
+				MarkdownDescription: "Healthcheck timeout in seconds.",
+				Description:         "Healthcheck timeout in seconds.",
+				Optional:            true,
+				Validators: []validator.Int64{
+					int64validator.AtLeast(1),
+				},
+			},
+			"restart_policy_type": schema.StringAttribute{
+				MarkdownDescription: "Restart policy type. Valid values: `ALWAYS`, `ON_FAILURE`, `NEVER`.",
+				Description:         "Restart policy type. Valid values: ALWAYS, ON_FAILURE, NEVER.",
+				Optional:            true,
+				Validators: []validator.String{
+					stringvalidator.OneOf("ALWAYS", "ON_FAILURE", "NEVER"),
+				},
+			},
+			"restart_policy_max_retries": schema.Int64Attribute{
+				MarkdownDescription: "Maximum number of restart retries when `restart_policy_type` is `ON_FAILURE`.",
+				Description:         "Maximum number of restart retries when restart_policy_type is ON_FAILURE.",
+				Optional:            true,
+				Validators: []validator.Int64{
+					int64validator.AtLeast(0),
+				},
+			},
+			"pre_deploy_command": schema.ListAttribute{
+				MarkdownDescription: "Pre-deploy command(s) to run before starting the service.",
+				Description:         "Pre-deploy command(s) to run before starting the service.",
+				Optional:            true,
+				ElementType:         types.StringType,
+				Validators: []validator.List{
+					listvalidator.SizeAtLeast(1),
+				},
+			},
+			"watch_patterns": schema.ListAttribute{
+				MarkdownDescription: "File patterns to watch for changes to trigger rebuilds (e.g. `[\"server/**\"]`).",
+				Description:         "File patterns to watch for changes to trigger rebuilds (e.g. [\"server/**\"]).",
+				Optional:            true,
+				ElementType:         types.StringType,
+			},
+			"builder": schema.StringAttribute{
+				MarkdownDescription: "Builder to use. Valid values: `HEROKU`, `NIXPACKS`, `PAKETO`, `RAILPACK`.",
+				Description:         "Builder to use. Valid values: HEROKU, NIXPACKS, PAKETO, RAILPACK.",
+				Optional:            true,
+				Validators: []validator.String{
+					stringvalidator.OneOf("HEROKU", "NIXPACKS", "PAKETO", "RAILPACK"),
+				},
+			},
 		},
+	}
+}
+
+func (r *ServiceInstanceResource) ValidateConfig(ctx context.Context, req resource.ValidateConfigRequest, resp *resource.ValidateConfigResponse) {
+	var data ServiceInstanceResourceModel
+
+	resp.Diagnostics.Append(req.Config.Get(ctx, &data)...)
+
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	hasSourceImage := !data.SourceImage.IsNull() && !data.SourceImage.IsUnknown()
+
+	// build_command is only valid for repo-based builds, not Docker image sources.
+	if hasSourceImage && !data.BuildCommand.IsNull() && !data.BuildCommand.IsUnknown() {
+		resp.Diagnostics.AddAttributeError(
+			path.Root("build_command"),
+			"Conflicting Attributes",
+			"`build_command` cannot be set when `source_image` is specified. Build commands are only valid for repository-based sources.",
+		)
+	}
+
+	// root_directory is only valid for repo-based builds, not Docker image sources.
+	if hasSourceImage && !data.RootDirectory.IsNull() && !data.RootDirectory.IsUnknown() {
+		resp.Diagnostics.AddAttributeError(
+			path.Root("root_directory"),
+			"Conflicting Attributes",
+			"`root_directory` cannot be set when `source_image` is specified. Root directory is only valid for repository-based sources.",
+		)
+	}
+
+	// config_path is only valid for repo-based builds, not Docker image sources.
+	if hasSourceImage && !data.ConfigPath.IsNull() && !data.ConfigPath.IsUnknown() {
+		resp.Diagnostics.AddAttributeError(
+			path.Root("config_path"),
+			"Conflicting Attributes",
+			"`config_path` cannot be set when `source_image` is specified. Config path is only valid for repository-based sources.",
+		)
+	}
+
+	// cron_schedule requires exactly 1 replica — Railway runs cron jobs on a single instance.
+	hasCronSchedule := !data.CronSchedule.IsNull() && !data.CronSchedule.IsUnknown()
+	hasMultipleReplicas := !data.NumReplicas.IsNull() && !data.NumReplicas.IsUnknown() && data.NumReplicas.ValueInt64() > 1
+
+	if hasCronSchedule && hasMultipleReplicas {
+		resp.Diagnostics.AddAttributeError(
+			path.Root("cron_schedule"),
+			"Invalid Configuration",
+			"`cron_schedule` can only be set when `num_replicas` is 1. Cron jobs must run on a single instance.",
+		)
 	}
 }
 
@@ -187,7 +331,7 @@ func (r *ServiceInstanceResource) Create(ctx context.Context, req resource.Creat
 		return
 	}
 
-	tflog.Trace(ctx, "configured service instance")
+	tflog.Debug(ctx, "created service instance")
 
 	// Resolve Unknown computed values before saving state.
 	// New service instances may not have these set yet.
@@ -289,7 +433,7 @@ func (r *ServiceInstanceResource) Update(ctx context.Context, req resource.Updat
 		return
 	}
 
-	tflog.Trace(ctx, "updated service instance")
+	tflog.Debug(ctx, "updated service instance")
 
 	// Update resource limits if changed
 	limitsChanged := !state.VCPUs.Equal(data.VCPUs) || !state.MemoryGB.Equal(data.MemoryGB)
@@ -335,12 +479,12 @@ func (r *ServiceInstanceResource) Delete(ctx context.Context, req resource.Delet
 
 	_, err := updateServiceInstanceInEnvironment(ctx, *r.client, data.EnvironmentId.ValueString(), data.ServiceId.ValueString(), input)
 
-	if err != nil && !isNotFound(err) {
+	if err != nil && !isNotFoundOrGone(err) && !isOperationInProgress(err) {
 		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to reset service instance, got error: %s", err))
 		return
 	}
 
-	tflog.Trace(ctx, "reset service instance to defaults")
+	tflog.Debug(ctx, "deleted service instance (reset to defaults)")
 }
 
 func (r *ServiceInstanceResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
@@ -383,7 +527,7 @@ func (r *ServiceInstanceResource) updateLimits(ctx context.Context, data *Servic
 		return err
 	}
 
-	tflog.Trace(ctx, "updated resource limits")
+	tflog.Debug(ctx, "updated resource limits")
 	return nil
 }
 
@@ -411,13 +555,22 @@ func buildServiceInstanceUpdateInput(data *ServiceInstanceResourceModel) Service
 		input.StartCommand = data.StartCommand.ValueStringPointer()
 	}
 
+	// Region and num_replicas are managed via multiRegionConfig.
+	// The top-level `region` field on ServiceInstanceUpdateInput does NOT
+	// actually change the deployment region — only multiRegionConfig works.
 	if !data.Region.IsNull() && !data.Region.IsUnknown() {
-		input.Region = data.Region.ValueStringPointer()
-	}
-
-	if !data.NumReplicas.IsNull() && !data.NumReplicas.IsUnknown() {
-		numReplicas := int(data.NumReplicas.ValueInt64())
-		input.NumReplicas = &numReplicas
+		var replicaCount int64 = 1
+		if !data.NumReplicas.IsNull() && !data.NumReplicas.IsUnknown() {
+			replicaCount = data.NumReplicas.ValueInt64()
+		}
+		multiRegionConfig := map[string]interface{}{
+			data.Region.ValueString(): numReplicas{NumReplicas: replicaCount},
+		}
+		input.MultiRegionConfig = &multiRegionConfig
+	} else if !data.NumReplicas.IsNull() && !data.NumReplicas.IsUnknown() {
+		// num_replicas without region: use legacy field (changes count in current region)
+		nr := int(data.NumReplicas.ValueInt64())
+		input.NumReplicas = &nr
 	}
 
 	if !data.HealthcheckPath.IsNull() {
@@ -427,6 +580,48 @@ func buildServiceInstanceUpdateInput(data *ServiceInstanceResourceModel) Service
 	if !data.SleepApplication.IsNull() {
 		sleepApp := data.SleepApplication.ValueBool()
 		input.SleepApplication = &sleepApp
+	}
+
+	if !data.OverlapSeconds.IsNull() {
+		overlap := int(data.OverlapSeconds.ValueInt64())
+		input.OverlapSeconds = &overlap
+	}
+
+	if !data.DrainingSeconds.IsNull() {
+		draining := int(data.DrainingSeconds.ValueInt64())
+		input.DrainingSeconds = &draining
+	}
+
+	if !data.HealthcheckTimeout.IsNull() {
+		timeout := int(data.HealthcheckTimeout.ValueInt64())
+		input.HealthcheckTimeout = &timeout
+	}
+
+	if !data.RestartPolicyType.IsNull() {
+		rpt := RestartPolicyType(data.RestartPolicyType.ValueString())
+		input.RestartPolicyType = &rpt
+	}
+
+	if !data.RestartPolicyMaxRetries.IsNull() {
+		retries := int(data.RestartPolicyMaxRetries.ValueInt64())
+		input.RestartPolicyMaxRetries = &retries
+	}
+
+	if !data.PreDeployCommand.IsNull() {
+		var cmds []string
+		data.PreDeployCommand.ElementsAs(context.Background(), &cmds, false)
+		input.PreDeployCommand = &cmds
+	}
+
+	if !data.WatchPatterns.IsNull() {
+		var patterns []string
+		data.WatchPatterns.ElementsAs(context.Background(), &patterns, false)
+		input.WatchPatterns = &patterns
+	}
+
+	if !data.Builder.IsNull() {
+		b := Builder(data.Builder.ValueString())
+		input.Builder = &b
 	}
 
 	// Handle source via environment-scoped Source input (not serviceConnect, which is service-level)
@@ -491,11 +686,22 @@ func (r *ServiceInstanceResource) readServiceInstanceState(ctx context.Context, 
 		data.StartCommand = types.StringValue(*instance.StartCommand)
 	}
 
-	// Deploy config — region and num_replicas are Computed, so resolve Unknowns
-	if instance.Region != nil && len(*instance.Region) > 0 {
-		data.Region = types.StringValue(*instance.Region)
+	// Deploy config — region and num_replicas come from latestDeployment metadata,
+	// NOT from the ServiceInstance.region field (which returns null).
+	regionRead, numReplicasRead := readRegionFromDeploymentMeta(instance.LatestDeployment.Meta)
+	if regionRead != "" {
+		data.Region = types.StringValue(regionRead)
 	} else if data.Region.IsUnknown() {
 		data.Region = types.StringNull()
+	}
+
+	if numReplicasRead > 0 {
+		data.NumReplicas = types.Int64Value(numReplicasRead)
+	} else if instance.NumReplicas != nil {
+		// Fallback to the direct field if deployment meta didn't have it
+		data.NumReplicas = types.Int64Value(int64(*instance.NumReplicas))
+	} else if data.NumReplicas.IsUnknown() {
+		data.NumReplicas = types.Int64Null()
 	}
 
 	if instance.CronSchedule != nil && len(*instance.CronSchedule) > 0 && !data.CronSchedule.IsNull() {
@@ -506,19 +712,86 @@ func (r *ServiceInstanceResource) readServiceInstanceState(ctx context.Context, 
 		data.HealthcheckPath = types.StringValue(*instance.HealthcheckPath)
 	}
 
-	if instance.NumReplicas != nil {
-		data.NumReplicas = types.Int64Value(int64(*instance.NumReplicas))
-	} else if data.NumReplicas.IsUnknown() {
-		data.NumReplicas = types.Int64Null()
-	}
-
 	if instance.SleepApplication != nil && !data.SleepApplication.IsNull() {
 		data.SleepApplication = types.BoolValue(*instance.SleepApplication)
 	}
+
+	if instance.OverlapSeconds != nil && !data.OverlapSeconds.IsNull() {
+		data.OverlapSeconds = types.Int64Value(int64(*instance.OverlapSeconds))
+	}
+
+	if instance.DrainingSeconds != nil && !data.DrainingSeconds.IsNull() {
+		data.DrainingSeconds = types.Int64Value(int64(*instance.DrainingSeconds))
+	}
+
+	if instance.HealthcheckTimeout != nil && !data.HealthcheckTimeout.IsNull() {
+		data.HealthcheckTimeout = types.Int64Value(int64(*instance.HealthcheckTimeout))
+	}
+
+	if instance.RestartPolicyType != nil && !data.RestartPolicyType.IsNull() {
+		data.RestartPolicyType = types.StringValue(string(*instance.RestartPolicyType))
+	}
+
+	if instance.RestartPolicyMaxRetries != nil && !data.RestartPolicyMaxRetries.IsNull() {
+		data.RestartPolicyMaxRetries = types.Int64Value(int64(*instance.RestartPolicyMaxRetries))
+	}
+
+	if instance.Builder != nil && !data.Builder.IsNull() {
+		data.Builder = types.StringValue(string(*instance.Builder))
+	}
+
+	// PreDeployCommand and WatchPatterns: preserve user-configured values.
+	// The API returns these but they are Optional-only, so only update if user set them.
 
 	// vCPUs and memory_gb are write-only via serviceInstanceLimitsUpdate.
 	// The ServiceInstance type does not expose these fields in reads,
 	// so we preserve the values from Terraform state/plan.
 
 	return nil
+}
+
+// readRegionFromDeploymentMeta extracts the region name and replica count from
+// the latestDeployment.meta.serviceManifest.deploy.multiRegionConfig blob.
+// Returns ("", 0) if the metadata is missing or has an unexpected shape.
+func readRegionFromDeploymentMeta(meta map[string]interface{}) (string, int64) {
+	if meta == nil {
+		return "", 0
+	}
+
+	serviceManifest, ok := meta["serviceManifest"].(map[string]interface{})
+	if !ok {
+		return "", 0
+	}
+
+	deploy, ok := serviceManifest["deploy"].(map[string]interface{})
+	if !ok {
+		return "", 0
+	}
+
+	multiRegionConfig, ok := deploy["multiRegionConfig"].(map[string]interface{})
+	if !ok {
+		return "", 0
+	}
+
+	// For service_instance (single-region), take the first region entry.
+	for regionName, v := range multiRegionConfig {
+		regionData, ok := v.(map[string]interface{})
+		if !ok {
+			return regionName, 1
+		}
+
+		numReplicas, exists := regionData["numReplicas"]
+		if !exists {
+			return regionName, 1
+		}
+
+		numReplicasFloat, ok := numReplicas.(float64)
+		if !ok {
+			return regionName, 1
+		}
+
+		return regionName, int64(numReplicasFloat)
+	}
+
+	return "", 0
 }

@@ -199,16 +199,16 @@ func (v *EgressGateway) GetIpv4() string { return v.Ipv4 }
 func (v *EgressGateway) GetRegion() string { return v.Region }
 
 type EgressGatewayCreateInput struct {
-	EnvironmentId string `json:"environmentId"`
-	Region        string `json:"region"`
-	ServiceId     string `json:"serviceId"`
+	EnvironmentId string  `json:"environmentId"`
+	Region        *string `json:"region,omitempty"`
+	ServiceId     string  `json:"serviceId"`
 }
 
 // GetEnvironmentId returns EgressGatewayCreateInput.EnvironmentId, and is useful for accessing the field via an interface.
 func (v *EgressGatewayCreateInput) GetEnvironmentId() string { return v.EnvironmentId }
 
 // GetRegion returns EgressGatewayCreateInput.Region, and is useful for accessing the field via an interface.
-func (v *EgressGatewayCreateInput) GetRegion() string { return v.Region }
+func (v *EgressGatewayCreateInput) GetRegion() *string { return v.Region }
 
 // GetServiceId returns EgressGatewayCreateInput.ServiceId, and is useful for accessing the field via an interface.
 func (v *EgressGatewayCreateInput) GetServiceId() string { return v.ServiceId }
@@ -765,13 +765,13 @@ type ServiceInstanceUpdateInput struct {
 	BuildCommand            *string                   `json:"buildCommand,omitempty"`
 	Builder                 *Builder                  `json:"builder,omitempty"`
 	CronSchedule            *string                   `json:"cronSchedule"`
-	DrainingSeconds         int                       `json:"drainingSeconds"`
+	DrainingSeconds         *int                      `json:"drainingSeconds,omitempty"`
 	HealthcheckPath         *string                   `json:"healthcheckPath,omitempty"`
 	HealthcheckTimeout      *int                      `json:"healthcheckTimeout,omitempty"`
 	MultiRegionConfig       *map[string]interface{}   `json:"multiRegionConfig,omitempty"`
 	NixpacksPlan            *map[string]interface{}   `json:"nixpacksPlan,omitempty"`
 	NumReplicas             *int                      `json:"numReplicas,omitempty"`
-	OverlapSeconds          int                       `json:"overlapSeconds"`
+	OverlapSeconds          *int                      `json:"overlapSeconds,omitempty"`
 	PreDeployCommand        *[]string                 `json:"preDeployCommand,omitempty"`
 	RailwayConfigFile       *string                   `json:"railwayConfigFile,omitempty"`
 	Region                  *string                   `json:"region,omitempty"`
@@ -795,7 +795,7 @@ func (v *ServiceInstanceUpdateInput) GetBuilder() *Builder { return v.Builder }
 func (v *ServiceInstanceUpdateInput) GetCronSchedule() *string { return v.CronSchedule }
 
 // GetDrainingSeconds returns ServiceInstanceUpdateInput.DrainingSeconds, and is useful for accessing the field via an interface.
-func (v *ServiceInstanceUpdateInput) GetDrainingSeconds() int { return v.DrainingSeconds }
+func (v *ServiceInstanceUpdateInput) GetDrainingSeconds() *int { return v.DrainingSeconds }
 
 // GetHealthcheckPath returns ServiceInstanceUpdateInput.HealthcheckPath, and is useful for accessing the field via an interface.
 func (v *ServiceInstanceUpdateInput) GetHealthcheckPath() *string { return v.HealthcheckPath }
@@ -815,7 +815,7 @@ func (v *ServiceInstanceUpdateInput) GetNixpacksPlan() *map[string]interface{} {
 func (v *ServiceInstanceUpdateInput) GetNumReplicas() *int { return v.NumReplicas }
 
 // GetOverlapSeconds returns ServiceInstanceUpdateInput.OverlapSeconds, and is useful for accessing the field via an interface.
-func (v *ServiceInstanceUpdateInput) GetOverlapSeconds() int { return v.OverlapSeconds }
+func (v *ServiceInstanceUpdateInput) GetOverlapSeconds() *int { return v.OverlapSeconds }
 
 // GetPreDeployCommand returns ServiceInstanceUpdateInput.PreDeployCommand, and is useful for accessing the field via an interface.
 func (v *ServiceInstanceUpdateInput) GetPreDeployCommand() *[]string { return v.PreDeployCommand }
@@ -4010,6 +4010,11 @@ type getServiceInstanceDetailedServiceInstance struct {
 	RestartPolicyMaxRetries *int                                                          `json:"restartPolicyMaxRetries"`
 	SleepApplication        *bool                                                         `json:"sleepApplication"`
 	Builder                 *Builder                                                      `json:"builder"`
+	OverlapSeconds          *int                                                          `json:"overlapSeconds"`
+	DrainingSeconds         *int                                                          `json:"drainingSeconds"`
+	PreDeployCommand        *map[string]interface{}                                       `json:"preDeployCommand"`
+	WatchPatterns           []string                                                      `json:"watchPatterns"`
+	LatestDeployment        getServiceInstanceDetailedServiceInstanceLatestDeployment     `json:"latestDeployment"`
 }
 
 // GetSource returns getServiceInstanceDetailedServiceInstance.Source, and is useful for accessing the field via an interface.
@@ -4069,6 +4074,39 @@ func (v *getServiceInstanceDetailedServiceInstance) GetSleepApplication() *bool 
 
 // GetBuilder returns getServiceInstanceDetailedServiceInstance.Builder, and is useful for accessing the field via an interface.
 func (v *getServiceInstanceDetailedServiceInstance) GetBuilder() *Builder { return v.Builder }
+
+// GetOverlapSeconds returns getServiceInstanceDetailedServiceInstance.OverlapSeconds, and is useful for accessing the field via an interface.
+func (v *getServiceInstanceDetailedServiceInstance) GetOverlapSeconds() *int { return v.OverlapSeconds }
+
+// GetDrainingSeconds returns getServiceInstanceDetailedServiceInstance.DrainingSeconds, and is useful for accessing the field via an interface.
+func (v *getServiceInstanceDetailedServiceInstance) GetDrainingSeconds() *int {
+	return v.DrainingSeconds
+}
+
+// GetPreDeployCommand returns getServiceInstanceDetailedServiceInstance.PreDeployCommand, and is useful for accessing the field via an interface.
+func (v *getServiceInstanceDetailedServiceInstance) GetPreDeployCommand() *map[string]interface{} {
+	return v.PreDeployCommand
+}
+
+// GetWatchPatterns returns getServiceInstanceDetailedServiceInstance.WatchPatterns, and is useful for accessing the field via an interface.
+func (v *getServiceInstanceDetailedServiceInstance) GetWatchPatterns() []string {
+	return v.WatchPatterns
+}
+
+// GetLatestDeployment returns getServiceInstanceDetailedServiceInstance.LatestDeployment, and is useful for accessing the field via an interface.
+func (v *getServiceInstanceDetailedServiceInstance) GetLatestDeployment() getServiceInstanceDetailedServiceInstanceLatestDeployment {
+	return v.LatestDeployment
+}
+
+// getServiceInstanceDetailedServiceInstanceLatestDeployment includes the requested fields of the GraphQL type Deployment.
+type getServiceInstanceDetailedServiceInstanceLatestDeployment struct {
+	Meta map[string]interface{} `json:"meta"`
+}
+
+// GetMeta returns getServiceInstanceDetailedServiceInstanceLatestDeployment.Meta, and is useful for accessing the field via an interface.
+func (v *getServiceInstanceDetailedServiceInstanceLatestDeployment) GetMeta() map[string]interface{} {
+	return v.Meta
+}
 
 // getServiceInstanceDetailedServiceInstanceSourceServiceSource includes the requested fields of the GraphQL type ServiceSource.
 type getServiceInstanceDetailedServiceInstanceSourceServiceSource struct {
@@ -7125,6 +7163,13 @@ query getServiceInstanceDetailed ($environmentId: String!, $serviceId: String!) 
 		restartPolicyMaxRetries
 		sleepApplication
 		builder
+		overlapSeconds
+		drainingSeconds
+		preDeployCommand
+		watchPatterns
+		latestDeployment {
+			meta
+		}
 	}
 }
 `,

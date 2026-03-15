@@ -1,11 +1,74 @@
 package provider
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
+
+func TestAccPrivateNetworkResourceDefault(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+		CheckDestroy:             testAccCheckPrivateNetworkDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccPrivateNetworkResourceConfig("acc-test-network"),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttrSet("railway_private_network.test", "id"),
+					resource.TestCheckResourceAttr("railway_private_network.test", "name", "acc-test-network"),
+					resource.TestCheckResourceAttr("railway_private_network.test", "environment_id", testAccEnvironmentId),
+					resource.TestCheckResourceAttr("railway_private_network.test", "project_id", testAccProjectId),
+					resource.TestCheckResourceAttrSet("railway_private_network.test", "dns_name"),
+					resource.TestCheckResourceAttrSet("railway_private_network.test", "network_id"),
+				),
+			},
+			// Import
+			{
+				ResourceName: "railway_private_network.test",
+				ImportState:  true,
+				ImportStateIdFunc: func(s *terraform.State) (string, error) {
+					rs, ok := s.RootModule().Resources["railway_private_network.test"]
+					if !ok {
+						return "", fmt.Errorf("resource not found")
+					}
+					return testAccEnvironmentId + ":" + rs.Primary.ID, nil
+				},
+				ImportStateVerify: true,
+			},
+		},
+	})
+}
+
+func TestAccPrivateNetworkResource_disappears(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+		CheckDestroy:             testAccCheckPrivateNetworkDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccPrivateNetworkResourceConfig("acc-disappears-network"),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttrSet("railway_private_network.test", "id"),
+					testAccCheckPrivateNetworkDisappears("railway_private_network.test"),
+				),
+				ExpectNonEmptyPlan: true,
+			},
+		},
+	})
+}
+
+func testAccPrivateNetworkResourceConfig(name string) string {
+	return fmt.Sprintf(`
+resource "railway_private_network" "test" {
+  project_id     = "%s"
+  environment_id = "%s"
+  name           = "%s"
+}
+`, testAccProjectId, testAccEnvironmentId, name)
+}
 
 func TestPrivateNetworkResource_basic(t *testing.T) {
 	fixtures := mockFixtures{

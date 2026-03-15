@@ -11,6 +11,7 @@ func TestAccCustomDomainResourceDefault(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+		CheckDestroy:             testAccCheckCustomDomainDestroy,
 		Steps: []resource.TestStep{
 			// Create and Read testing
 			{
@@ -56,6 +57,7 @@ func TestAccCustomDomainResource_disappears(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+		CheckDestroy:             testAccCheckCustomDomainDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccCustomDomainResourceConfigDefault("terraform-disappears.example.com"),

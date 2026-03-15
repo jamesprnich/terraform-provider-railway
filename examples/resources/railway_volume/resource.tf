@@ -1,7 +1,9 @@
-resource "railway_volume" "postgres_data" {
+resource "railway_volume" "data" {
   project_id     = railway_project.example.id
   service_id     = railway_service.postgres.id
-  environment_id = railway_environment.dev.id
+  environment_id = railway_project.example.default_environment.id
   mount_path     = "/var/lib/postgresql/data"
-  name           = "postgres-data"
+
+  # Optional
+  # name = "postgres-data"
 }

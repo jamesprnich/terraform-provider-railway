@@ -11,6 +11,7 @@ func TestAccVariableResourceDefault(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+		CheckDestroy:             testAccCheckVariableDestroy,
 		Steps: []resource.TestStep{
 			// Create and Read testing
 			{
@@ -71,6 +72,7 @@ func TestAccVariableResource_disappears(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+		CheckDestroy:             testAccCheckVariableDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccVariableResourceConfigDefault("disappears-value"),

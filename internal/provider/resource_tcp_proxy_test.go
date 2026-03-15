@@ -12,6 +12,7 @@ func TestAccTcpProxyResourceDefault(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+		CheckDestroy:             testAccCheckTcpProxyDestroy,
 		Steps: []resource.TestStep{
 			// Create and Read testing
 			{
@@ -53,6 +54,7 @@ func TestAccTcpProxyResource_disappears(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+		CheckDestroy:             testAccCheckTcpProxyDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccTcpProxyResourceConfigDefault(5432),

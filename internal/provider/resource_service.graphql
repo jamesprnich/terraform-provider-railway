@@ -93,6 +93,8 @@ query getServiceInstances(
 # @genqlient(for: "ServiceInstanceUpdateInput.restartPolicyType", omitempty: true, pointer: true)
 # @genqlient(for: "ServiceInstanceUpdateInput.restartPolicyMaxRetries", omitempty: true, pointer: true)
 # @genqlient(for: "ServiceInstanceUpdateInput.sleepApplication", omitempty: true, pointer: true)
+# @genqlient(for: "ServiceInstanceUpdateInput.overlapSeconds", omitempty: true, pointer: true)
+# @genqlient(for: "ServiceInstanceUpdateInput.drainingSeconds", omitempty: true, pointer: true)
 mutation updateServiceInstance(
   $serviceId: String!
   $input: ServiceInstanceUpdateInput!

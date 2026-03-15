@@ -1,7 +1,9 @@
+# Look up by name
 data "railway_project" "by_name" {
   name = "my-project"
 }
 
+# Or look up by ID
 data "railway_project" "by_id" {
-  id = "0bb01547-570d-4109-a5e8-138691f6a2d1"
+  id = "your-project-id"
 }

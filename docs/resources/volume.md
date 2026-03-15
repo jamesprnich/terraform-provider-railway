@@ -42,6 +42,7 @@ resource "railway_volume" "postgres_data" {
 
 - `id` (String) Identifier of the volume.
 - `size_mb` (Number) Size of the volume in MB.
+- `volume_instance_id` (String) Identifier of the volume instance. Use this to reference the volume in `railway_volume_backup_schedule`.
 
 ## Import
 
