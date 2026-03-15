@@ -17,7 +17,7 @@ terraform {
   required_providers {
     railway = {
       source  = "terraform-community-providers/railway"
-      version = "~> 0.7.0"
+      version = "~> 0.8.0"
     }
   }
 }

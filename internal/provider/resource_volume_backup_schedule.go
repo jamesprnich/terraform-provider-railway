@@ -40,17 +40,21 @@ func (r *VolumeBackupScheduleResource) Metadata(ctx context.Context, req resourc
 
 func (r *VolumeBackupScheduleResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
+		Version:             1,
 		MarkdownDescription: "Railway volume backup schedule. Manages the backup schedule for a volume instance.",
+		Description:         "Railway volume backup schedule. Manages the backup schedule for a volume instance.",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				MarkdownDescription: "Identifier of the volume backup schedule (same as volume_instance_id).",
+				Description:         "Identifier of the volume backup schedule (same as volume_instance_id).",
 				Computed:            true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
 			"volume_instance_id": schema.StringAttribute{
-				MarkdownDescription: "Identifier of the volume instance.",
+				MarkdownDescription: "Identifier of the volume instance. ~> **Warning:** Changing this forces resource destruction and recreation.",
+				Description:         "Identifier of the volume instance. Warning: Changing this forces resource destruction and recreation.",
 				Required:            true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
@@ -61,6 +65,7 @@ func (r *VolumeBackupScheduleResource) Schema(ctx context.Context, req resource.
 			},
 			"kinds": schema.ListAttribute{
 				MarkdownDescription: "List of backup schedule kinds to enable. Valid values: `DAILY`, `WEEKLY`, `MONTHLY`.",
+				Description:         "List of backup schedule kinds to enable. Valid values: DAILY, WEEKLY, MONTHLY.",
 				Required:            true,
 				ElementType:         types.StringType,
 				Validators: []validator.List{
@@ -116,9 +121,16 @@ func (r *VolumeBackupScheduleResource) Create(ctx context.Context, req resource.
 		return
 	}
 
-	tflog.Trace(ctx, "created volume backup schedule")
+	tflog.Debug(ctx, "created volume backup schedule")
 
-	data.Id = data.VolumeInstanceId
+	// Save state immediately so Terraform can track (and destroy) the resource
+	// even if the read-back call fails or the process crashes.
+	data.Id = types.StringValue(data.VolumeInstanceId.ValueString())
+
+	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
 
 	// Read back to verify
 	err = r.readScheduleState(ctx, data)
@@ -177,7 +189,7 @@ func (r *VolumeBackupScheduleResource) Update(ctx context.Context, req resource.
 		return
 	}
 
-	tflog.Trace(ctx, "updated volume backup schedule")
+	tflog.Debug(ctx, "updated volume backup schedule")
 
 	// Read back to verify
 	err = r.readScheduleState(ctx, data)
@@ -202,12 +214,12 @@ func (r *VolumeBackupScheduleResource) Delete(ctx context.Context, req resource.
 	// Delete by setting an empty kinds list
 	_, err := updateVolumeInstanceBackupSchedule(ctx, *r.client, []VolumeInstanceBackupScheduleKind{}, data.VolumeInstanceId.ValueString())
 
-	if err != nil && !isNotFound(err) {
+	if err != nil && !isNotFoundOrGone(err) {
 		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to delete volume backup schedule, got error: %s", err))
 		return
 	}
 
-	tflog.Trace(ctx, "deleted volume backup schedule")
+	tflog.Debug(ctx, "deleted volume backup schedule")
 }
 
 func (r *VolumeBackupScheduleResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {

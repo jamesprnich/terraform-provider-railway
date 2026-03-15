@@ -14,7 +14,7 @@ Railway volume backup schedule. Manages the backup schedule for a volume instanc
 
 ```terraform
 resource "railway_volume_backup_schedule" "postgres_data" {
-  volume_instance_id = railway_volume.postgres_data.id
+  volume_instance_id = railway_volume.postgres_data.volume_instance_id
   kinds              = ["DAILY", "WEEKLY"]
 }
 ```

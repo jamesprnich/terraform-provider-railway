@@ -45,10 +45,13 @@ func (r *TcpProxyResource) Metadata(ctx context.Context, req resource.MetadataRe
 
 func (r *TcpProxyResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
+		Version:             1,
 		MarkdownDescription: "Railway TCP proxy.",
+		Description:         "Railway TCP proxy.",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				MarkdownDescription: "Identifier of the TCP proxy.",
+				Description:         "Identifier of the TCP proxy.",
 				Computed:            true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
@@ -56,6 +59,7 @@ func (r *TcpProxyResource) Schema(ctx context.Context, req resource.SchemaReques
 			},
 			"application_port": schema.Int64Attribute{
 				MarkdownDescription: "Port of the application the TCP proxy points to.",
+				Description:         "Port of the application the TCP proxy points to.",
 				Required:            true,
 				PlanModifiers: []planmodifier.Int64{
 					int64planmodifier.RequiresReplace(),
@@ -67,6 +71,7 @@ func (r *TcpProxyResource) Schema(ctx context.Context, req resource.SchemaReques
 			},
 			"environment_id": schema.StringAttribute{
 				MarkdownDescription: "Identifier of the environment the TCP proxy belongs to.",
+				Description:         "Identifier of the environment the TCP proxy belongs to.",
 				Required:            true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
@@ -77,6 +82,7 @@ func (r *TcpProxyResource) Schema(ctx context.Context, req resource.SchemaReques
 			},
 			"service_id": schema.StringAttribute{
 				MarkdownDescription: "Identifier of the service the TCP proxy belongs to.",
+				Description:         "Identifier of the service the TCP proxy belongs to.",
 				Required:            true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
@@ -87,6 +93,7 @@ func (r *TcpProxyResource) Schema(ctx context.Context, req resource.SchemaReques
 			},
 			"proxy_port": schema.Int64Attribute{
 				MarkdownDescription: "Port of the TCP proxy.",
+				Description:         "Port of the TCP proxy.",
 				Computed:            true,
 				PlanModifiers: []planmodifier.Int64{
 					int64planmodifier.UseStateForUnknown(),
@@ -94,6 +101,7 @@ func (r *TcpProxyResource) Schema(ctx context.Context, req resource.SchemaReques
 			},
 			"domain": schema.StringAttribute{
 				MarkdownDescription: "Domain of the TCP proxy.",
+				Description:         "Domain of the TCP proxy.",
 				Computed:            true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
@@ -145,7 +153,7 @@ func (r *TcpProxyResource) Create(ctx context.Context, req resource.CreateReques
 		return
 	}
 
-	tflog.Trace(ctx, "created a tcp proxy")
+	tflog.Debug(ctx, "created a tcp proxy")
 
 	proxy := response.TcpProxyCreate.TCPProxy
 
@@ -238,12 +246,12 @@ func (r *TcpProxyResource) Delete(ctx context.Context, req resource.DeleteReques
 
 	_, err := deleteTcpProxy(ctx, *r.client, data.Id.ValueString())
 
-	if err != nil && !isNotFound(err) && !strings.Contains(strings.ToLower(err.Error()), "operation is already in progress") {
+	if err != nil && !isNotFoundOrGone(err) && !isOperationInProgress(err) {
 		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to delete tcp proxy, got error: %s", err))
 		return
 	}
 
-	tflog.Trace(ctx, "deleted a tcp proxy")
+	tflog.Debug(ctx, "deleted a tcp proxy")
 }
 
 func (r *TcpProxyResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {

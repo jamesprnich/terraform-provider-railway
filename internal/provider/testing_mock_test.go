@@ -12,8 +12,9 @@ import (
 	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
 )
 
-// graphqlRequest is the structure of a GraphQL request body.
-type graphqlRequest struct {
+// mockGraphqlRequest is the structure of a GraphQL request body for mock tests.
+// Named differently from the graphqlRequest in client.go to avoid redeclaration.
+type mockGraphqlRequest struct {
 	OperationName string          `json:"operationName"`
 	Query         string          `json:"query"`
 	Variables     json.RawMessage `json:"variables"`
@@ -29,7 +30,7 @@ func newMockGraphQLServer(t *testing.T, fixtures mockFixtures) *httptest.Server 
 	t.Helper()
 
 	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		var req graphqlRequest
+		var req mockGraphqlRequest
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 			t.Errorf("mock server: failed to decode request body: %s", err)
 			w.WriteHeader(http.StatusBadRequest)
@@ -66,7 +67,7 @@ func newDisappearsMockServer(t *testing.T, fixtures mockFixtures, readOperation 
 	var disappeared int32
 
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		var req graphqlRequest
+		var req mockGraphqlRequest
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 			t.Errorf("mock server: failed to decode request body: %s", err)
 			w.WriteHeader(http.StatusBadRequest)

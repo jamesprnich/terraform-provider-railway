@@ -16,12 +16,23 @@ func TestAllResourcesHaveSchemas(t *testing.T) {
 		name    string
 		factory func() fwresource.Resource
 	}{
+		{"railway_project", NewProjectResource},
+		{"railway_environment", NewEnvironmentResource},
+		{"railway_service", NewServiceResource},
+		{"railway_service_instance", NewServiceInstanceResource},
+		{"railway_variable", NewVariableResource},
+		{"railway_variable_collection", NewVariableCollectionResource},
+		{"railway_shared_variable", NewSharedVariableResource},
+		{"railway_volume", NewVolumeResource},
+		{"railway_volume_backup_schedule", NewVolumeBackupScheduleResource},
+		{"railway_service_domain", NewServiceDomainResource},
+		{"railway_custom_domain", NewCustomDomainResource},
+		{"railway_tcp_proxy", NewTcpProxyResource},
 		{"railway_webhook", NewWebhookResource},
+		{"railway_deployment_trigger", NewDeploymentTriggerResource},
 		{"railway_egress_gateway", NewEgressGatewayResource},
 		{"railway_private_network", NewPrivateNetworkResource},
 		{"railway_private_network_endpoint", NewPrivateNetworkEndpointResource},
-		{"railway_deployment_trigger", NewDeploymentTriggerResource},
-		{"railway_volume_backup_schedule", NewVolumeBackupScheduleResource},
 	}
 
 	for _, tc := range resources {

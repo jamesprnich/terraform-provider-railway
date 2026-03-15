@@ -1,1 +1,2 @@
-terraform import railway_private_network.example d0519b29-5d12-4857-a5dd-76fa7418336c:abc123def456
+# Import by environment_id:network_public_id
+terraform import railway_private_network.internal your-environment-id:your-network-public-id

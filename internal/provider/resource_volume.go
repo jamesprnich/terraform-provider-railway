@@ -30,13 +30,14 @@ type VolumeResource struct {
 }
 
 type VolumeResourceModel struct {
-	Id            types.String  `tfsdk:"id"`
-	Name          types.String  `tfsdk:"name"`
-	ProjectId     types.String  `tfsdk:"project_id"`
-	ServiceId     types.String  `tfsdk:"service_id"`
-	EnvironmentId types.String  `tfsdk:"environment_id"`
-	MountPath     types.String  `tfsdk:"mount_path"`
-	SizeMB        types.Float64 `tfsdk:"size_mb"`
+	Id               types.String  `tfsdk:"id"`
+	VolumeInstanceId types.String  `tfsdk:"volume_instance_id"`
+	Name             types.String  `tfsdk:"name"`
+	ProjectId        types.String  `tfsdk:"project_id"`
+	ServiceId        types.String  `tfsdk:"service_id"`
+	EnvironmentId    types.String  `tfsdk:"environment_id"`
+	MountPath        types.String  `tfsdk:"mount_path"`
+	SizeMB           types.Float64 `tfsdk:"size_mb"`
 }
 
 func (r *VolumeResource) Metadata(ctx context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
@@ -45,10 +46,21 @@ func (r *VolumeResource) Metadata(ctx context.Context, req resource.MetadataRequ
 
 func (r *VolumeResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
+		Version:             1,
 		MarkdownDescription: "Railway volume. Creates a persistent volume attached to a service in a specific environment.",
+		Description:         "Railway volume. Creates a persistent volume attached to a service in a specific environment.",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				MarkdownDescription: "Identifier of the volume.",
+				Description:         "Identifier of the volume.",
+				Computed:            true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
+			},
+			"volume_instance_id": schema.StringAttribute{
+				MarkdownDescription: "Identifier of the volume instance. Use this to reference the volume in `railway_volume_backup_schedule`.",
+				Description:         "Identifier of the volume instance. Use this to reference the volume in railway_volume_backup_schedule.",
 				Computed:            true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
@@ -56,6 +68,7 @@ func (r *VolumeResource) Schema(ctx context.Context, req resource.SchemaRequest,
 			},
 			"name": schema.StringAttribute{
 				MarkdownDescription: "Name of the volume.",
+				Description:         "Name of the volume.",
 				Optional:            true,
 				Computed:            true,
 				PlanModifiers: []planmodifier.String{
@@ -63,7 +76,8 @@ func (r *VolumeResource) Schema(ctx context.Context, req resource.SchemaRequest,
 				},
 			},
 			"project_id": schema.StringAttribute{
-				MarkdownDescription: "Identifier of the project the volume belongs to.",
+				MarkdownDescription: "Identifier of the project the volume belongs to. ~> **Warning:** Changing this forces resource destruction and recreation.",
+				Description:         "Identifier of the project the volume belongs to. Warning: Changing this forces resource destruction and recreation.",
 				Required:            true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
@@ -73,7 +87,8 @@ func (r *VolumeResource) Schema(ctx context.Context, req resource.SchemaRequest,
 				},
 			},
 			"service_id": schema.StringAttribute{
-				MarkdownDescription: "Identifier of the service the volume is attached to.",
+				MarkdownDescription: "Identifier of the service the volume is attached to. ~> **Warning:** Changing this forces resource destruction and recreation.",
+				Description:         "Identifier of the service the volume is attached to. Warning: Changing this forces resource destruction and recreation.",
 				Required:            true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
@@ -83,7 +98,8 @@ func (r *VolumeResource) Schema(ctx context.Context, req resource.SchemaRequest,
 				},
 			},
 			"environment_id": schema.StringAttribute{
-				MarkdownDescription: "Identifier of the environment the volume belongs to.",
+				MarkdownDescription: "Identifier of the environment the volume belongs to. ~> **Warning:** Changing this forces resource destruction and recreation.",
+				Description:         "Identifier of the environment the volume belongs to. Warning: Changing this forces resource destruction and recreation.",
 				Required:            true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
@@ -94,6 +110,7 @@ func (r *VolumeResource) Schema(ctx context.Context, req resource.SchemaRequest,
 			},
 			"mount_path": schema.StringAttribute{
 				MarkdownDescription: "Mount path of the volume in the container.",
+				Description:         "Mount path of the volume in the container.",
 				Required:            true,
 				Validators: []validator.String{
 					stringvalidator.UTF8LengthAtLeast(1),
@@ -101,6 +118,7 @@ func (r *VolumeResource) Schema(ctx context.Context, req resource.SchemaRequest,
 			},
 			"size_mb": schema.Float64Attribute{
 				MarkdownDescription: "Size of the volume in MB.",
+				Description:         "Size of the volume in MB.",
 				Computed:            true,
 				PlanModifiers: []planmodifier.Float64{
 					float64planmodifier.UseStateForUnknown(),
@@ -154,7 +172,7 @@ func (r *VolumeResource) Create(ctx context.Context, req resource.CreateRequest,
 		return
 	}
 
-	tflog.Trace(ctx, "created a volume")
+	tflog.Debug(ctx, "created a volume")
 
 	volume := response.VolumeCreate.Volume
 
@@ -185,7 +203,7 @@ func (r *VolumeResource) Create(ctx context.Context, req resource.CreateRequest,
 			return
 		}
 
-		tflog.Trace(ctx, "updated volume name")
+		tflog.Debug(ctx, "updated volume name")
 	}
 
 	// Read back to get the final state
@@ -249,7 +267,7 @@ func (r *VolumeResource) Update(ctx context.Context, req resource.UpdateRequest,
 			return
 		}
 
-		tflog.Trace(ctx, "updated volume name")
+		tflog.Debug(ctx, "updated volume name")
 	}
 
 	// Update mount path if changed
@@ -264,7 +282,7 @@ func (r *VolumeResource) Update(ctx context.Context, req resource.UpdateRequest,
 			return
 		}
 
-		tflog.Trace(ctx, "updated volume mount path")
+		tflog.Debug(ctx, "updated volume mount path")
 	}
 
 	// Read back to get the final state
@@ -290,12 +308,12 @@ func (r *VolumeResource) Delete(ctx context.Context, req resource.DeleteRequest,
 
 	_, err := deleteVolume(ctx, *r.client, data.Id.ValueString())
 
-	if err != nil && !isNotFound(err) {
+	if err != nil && !isNotFoundOrGone(err) {
 		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to delete volume, got error: %s", err))
 		return
 	}
 
-	tflog.Trace(ctx, "deleted a volume")
+	tflog.Debug(ctx, "deleted a volume")
 }
 
 func (r *VolumeResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
@@ -337,6 +355,7 @@ func (r *VolumeResource) readVolumeState(ctx context.Context, data *VolumeResour
 			matchesService := data.ServiceId.IsNull() || data.ServiceId.IsUnknown() || instance.Node.ServiceId == data.ServiceId.ValueString()
 
 			if matchesEnvironment && matchesService {
+				data.VolumeInstanceId = types.StringValue(instance.Node.Id)
 				data.EnvironmentId = types.StringValue(instance.Node.EnvironmentId)
 				data.ServiceId = types.StringValue(instance.Node.ServiceId)
 				data.MountPath = types.StringValue(instance.Node.MountPath)

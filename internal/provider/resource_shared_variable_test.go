@@ -11,6 +11,7 @@ func TestAccSharedVariableResourceDefault(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+		CheckDestroy:             testAccCheckSharedVariableDestroy,
 		Steps: []resource.TestStep{
 			// Create and Read testing
 			{
@@ -68,6 +69,7 @@ func TestAccSharedVariableResource_disappears(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+		CheckDestroy:             testAccCheckSharedVariableDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccSharedVariableResourceConfigDefault("disappears-value"),

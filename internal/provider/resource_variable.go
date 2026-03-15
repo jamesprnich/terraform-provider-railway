@@ -43,10 +43,13 @@ func (r *VariableResource) Metadata(ctx context.Context, req resource.MetadataRe
 
 func (r *VariableResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
+		Version:             1,
 		MarkdownDescription: "Railway variable. Any changes in collection triggers service redeployment.",
+		Description:         "Railway variable. Any changes in collection triggers service redeployment.",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				MarkdownDescription: "Identifier of the variable.",
+				Description:         "Identifier of the variable.",
 				Computed:            true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
@@ -54,6 +57,7 @@ func (r *VariableResource) Schema(ctx context.Context, req resource.SchemaReques
 			},
 			"name": schema.StringAttribute{
 				MarkdownDescription: "Name of the variable.",
+				Description:         "Name of the variable.",
 				Required:            true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
@@ -64,11 +68,13 @@ func (r *VariableResource) Schema(ctx context.Context, req resource.SchemaReques
 			},
 			"value": schema.StringAttribute{
 				MarkdownDescription: "Value of the variable.",
+				Description:         "Value of the variable.",
 				Required:            true,
 				Sensitive:           true,
 			},
 			"environment_id": schema.StringAttribute{
 				MarkdownDescription: "Identifier of the environment the variable belongs to.",
+				Description:         "Identifier of the environment the variable belongs to.",
 				Required:            true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
@@ -79,6 +85,7 @@ func (r *VariableResource) Schema(ctx context.Context, req resource.SchemaReques
 			},
 			"service_id": schema.StringAttribute{
 				MarkdownDescription: "Identifier of the service the variable belongs to.",
+				Description:         "Identifier of the service the variable belongs to.",
 				Required:            true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
@@ -89,6 +96,7 @@ func (r *VariableResource) Schema(ctx context.Context, req resource.SchemaReques
 			},
 			"project_id": schema.StringAttribute{
 				MarkdownDescription: "Identifier of the project the variable belongs to.",
+				Description:         "Identifier of the project the variable belongs to.",
 				Computed:            true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
@@ -149,7 +157,18 @@ func (r *VariableResource) Create(ctx context.Context, req resource.CreateReques
 		return
 	}
 
-	tflog.Trace(ctx, "created a variable")
+	tflog.Debug(ctx, "created a variable")
+
+	// Save partial state immediately so Terraform can track (and destroy) the
+	// resource even if a subsequent read or redeploy call fails or the process
+	// crashes. Resolve Unknown computed values to concrete values before saving.
+	data.Id = types.StringValue(fmt.Sprintf("%s:%s:%s", data.ServiceId.ValueString(), data.EnvironmentId.ValueString(), data.Name.ValueString()))
+	data.ProjectId = types.StringValue(service.Service.ProjectId)
+
+	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
 
 	err = getVariable(ctx, *r.client, service.Service.ProjectId, data.EnvironmentId.ValueString(), data.ServiceId.ValueString(), data.Name.ValueString(), data)
 
@@ -229,7 +248,7 @@ func (r *VariableResource) Update(ctx context.Context, req resource.UpdateReques
 		return
 	}
 
-	tflog.Trace(ctx, "updated a variable")
+	tflog.Debug(ctx, "updated a variable")
 
 	err = getVariable(ctx, *r.client, state.ProjectId.ValueString(), data.EnvironmentId.ValueString(), data.ServiceId.ValueString(), data.Name.ValueString(), data)
 
@@ -266,19 +285,19 @@ func (r *VariableResource) Delete(ctx context.Context, req resource.DeleteReques
 
 	_, err := deleteVariable(ctx, *r.client, input)
 
-	if err != nil && !isNotFound(err) {
+	if err != nil && !isNotFoundOrGone(err) {
 		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to delete variable, got error: %s", err))
 		return
 	}
 
 	_, err = redeployServiceInstance(ctx, *r.client, data.EnvironmentId.ValueString(), data.ServiceId.ValueString())
 
-	if err != nil && !isNotFound(err) {
+	if err != nil && !isNotFoundOrGone(err) {
 		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to redeploy service after variable updated, got error: %s", err))
 		return
 	}
 
-	tflog.Trace(ctx, "deleted a variable")
+	tflog.Debug(ctx, "deleted a variable")
 }
 
 func (r *VariableResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
@@ -328,7 +347,11 @@ func getVariable(ctx context.Context, client graphql.Client, projectId string, e
 
 	data.Id = types.StringValue(fmt.Sprintf("%s:%s:%s", serviceId, environmentId, name))
 	data.Name = types.StringValue(name)
-	data.Value = types.StringValue(fmt.Sprintf("%v", value))
+	str, ok := value.(string)
+	if !ok {
+		str = fmt.Sprintf("%v", value)
+	}
+	data.Value = types.StringValue(str)
 	data.ProjectId = types.StringValue(projectId)
 	data.EnvironmentId = types.StringValue(environmentId)
 	data.ServiceId = types.StringValue(serviceId)

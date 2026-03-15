@@ -389,10 +389,11 @@ func TestGraphQLContract_WebhookCreateInput_serialization(t *testing.T) {
 func TestGraphQLContract_EgressGatewayCreateInput_serialization(t *testing.T) {
 	t.Parallel()
 
+	region := "us-west-2"
 	input := EgressGatewayCreateInput{
 		ServiceId:     "svc-1",
 		EnvironmentId: "env-1",
-		Region:        "us-west-2",
+		Region:        &region,
 	}
 
 	b, err := json.Marshal(input)
@@ -406,6 +407,21 @@ func TestGraphQLContract_EgressGatewayCreateInput_serialization(t *testing.T) {
 	assertEqual(t, "serviceId", m["serviceId"].(string), "svc-1")
 	assertEqual(t, "environmentId", m["environmentId"].(string), "env-1")
 	assertEqual(t, "region", m["region"].(string), "us-west-2")
+
+	// Verify omitempty: when Region is nil, it should be omitted from JSON
+	inputNoRegion := EgressGatewayCreateInput{
+		ServiceId:     "svc-2",
+		EnvironmentId: "env-2",
+	}
+	b2, err := json.Marshal(inputNoRegion)
+	if err != nil {
+		t.Fatalf("failed to marshal EgressGatewayCreateInput without region: %s", err)
+	}
+	var m2 map[string]interface{}
+	json.Unmarshal(b2, &m2)
+	if _, exists := m2["region"]; exists {
+		t.Errorf("expected region to be omitted when nil, but got: %v", m2["region"])
+	}
 }
 
 func TestGraphQLContract_DeploymentTriggerCreateInput_serialization(t *testing.T) {

@@ -1,1 +1,2 @@
-terraform import railway_variable.sentry 89fa0236-2b1b-4a8c-b12d-ae3634b30d97:staging:SENTRY_KEY
+# Import by service_id:environment_name:variable_name
+terraform import railway_variable.database_url your-service-id:production:DATABASE_URL

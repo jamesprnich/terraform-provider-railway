@@ -36,9 +36,11 @@ func (d *EnvironmentDataSource) Metadata(ctx context.Context, req datasource.Met
 func (d *EnvironmentDataSource) Schema(ctx context.Context, req datasource.SchemaRequest, resp *datasource.SchemaResponse) {
 	resp.Schema = schema.Schema{
 		MarkdownDescription: "Look up an existing Railway environment by ID or by name within a project.",
+		Description:         "Look up an existing Railway environment by ID or by name within a project.",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				MarkdownDescription: "Identifier of the environment. Exactly one of `id` or `name` must be provided.",
+				Description:         "Identifier of the environment. Exactly one of id or name must be provided.",
 				Optional:            true,
 				Computed:            true,
 				Validators: []validator.String{
@@ -48,6 +50,7 @@ func (d *EnvironmentDataSource) Schema(ctx context.Context, req datasource.Schem
 			},
 			"name": schema.StringAttribute{
 				MarkdownDescription: "Name of the environment. Exactly one of `id` or `name` must be provided. Requires `project_id`.",
+				Description:         "Name of the environment. Exactly one of id or name must be provided. Requires project_id.",
 				Optional:            true,
 				Computed:            true,
 				Validators: []validator.String{
@@ -57,6 +60,7 @@ func (d *EnvironmentDataSource) Schema(ctx context.Context, req datasource.Schem
 			},
 			"project_id": schema.StringAttribute{
 				MarkdownDescription: "Identifier of the project the environment belongs to. Required when looking up by `name`.",
+				Description:         "Identifier of the project the environment belongs to. Required when looking up by name.",
 				Optional:            true,
 				Computed:            true,
 				Validators: []validator.String{

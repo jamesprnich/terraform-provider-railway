@@ -47,10 +47,13 @@ func (r *DeploymentTriggerResource) Metadata(ctx context.Context, req resource.M
 
 func (r *DeploymentTriggerResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
+		Version:             1,
 		MarkdownDescription: "Railway deployment trigger. Connects a source code repository to a service so that pushes to a branch automatically trigger deployments.",
+		Description:         "Railway deployment trigger. Connects a source code repository to a service so that pushes to a branch automatically trigger deployments.",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				MarkdownDescription: "Identifier of the deployment trigger.",
+				Description:         "Identifier of the deployment trigger.",
 				Computed:            true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
@@ -58,6 +61,7 @@ func (r *DeploymentTriggerResource) Schema(ctx context.Context, req resource.Sch
 			},
 			"service_id": schema.StringAttribute{
 				MarkdownDescription: "Identifier of the service the deployment trigger belongs to.",
+				Description:         "Identifier of the service the deployment trigger belongs to.",
 				Required:            true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
@@ -68,6 +72,7 @@ func (r *DeploymentTriggerResource) Schema(ctx context.Context, req resource.Sch
 			},
 			"environment_id": schema.StringAttribute{
 				MarkdownDescription: "Identifier of the environment the deployment trigger belongs to.",
+				Description:         "Identifier of the environment the deployment trigger belongs to.",
 				Required:            true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
@@ -78,6 +83,7 @@ func (r *DeploymentTriggerResource) Schema(ctx context.Context, req resource.Sch
 			},
 			"project_id": schema.StringAttribute{
 				MarkdownDescription: "Identifier of the project the deployment trigger belongs to.",
+				Description:         "Identifier of the project the deployment trigger belongs to.",
 				Required:            true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
@@ -88,6 +94,7 @@ func (r *DeploymentTriggerResource) Schema(ctx context.Context, req resource.Sch
 			},
 			"repository": schema.StringAttribute{
 				MarkdownDescription: "Repository to watch for changes (e.g. \"owner/repo\").",
+				Description:         "Repository to watch for changes (e.g. \"owner/repo\").",
 				Required:            true,
 				Validators: []validator.String{
 					stringvalidator.UTF8LengthAtLeast(1),
@@ -95,6 +102,7 @@ func (r *DeploymentTriggerResource) Schema(ctx context.Context, req resource.Sch
 			},
 			"branch": schema.StringAttribute{
 				MarkdownDescription: "Branch to watch for changes.",
+				Description:         "Branch to watch for changes.",
 				Required:            true,
 				Validators: []validator.String{
 					stringvalidator.UTF8LengthAtLeast(1),
@@ -102,6 +110,7 @@ func (r *DeploymentTriggerResource) Schema(ctx context.Context, req resource.Sch
 			},
 			"check_suites": schema.BoolAttribute{
 				MarkdownDescription: "Whether to wait for check suites to pass before deploying.",
+				Description:         "Whether to wait for check suites to pass before deploying.",
 				Optional:            true,
 				Computed:            true,
 				PlanModifiers: []planmodifier.Bool{
@@ -110,6 +119,7 @@ func (r *DeploymentTriggerResource) Schema(ctx context.Context, req resource.Sch
 			},
 			"source_provider": schema.StringAttribute{
 				MarkdownDescription: "Source provider (e.g. \"github\").",
+				Description:         "Source provider (e.g. \"github\").",
 				Required:            true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
@@ -120,6 +130,7 @@ func (r *DeploymentTriggerResource) Schema(ctx context.Context, req resource.Sch
 			},
 			"root_directory": schema.StringAttribute{
 				MarkdownDescription: "Root directory within the repository. Only relevant for monorepos.",
+				Description:         "Root directory within the repository. Only relevant for monorepos.",
 				Optional:            true,
 			},
 		},
@@ -180,11 +191,24 @@ func (r *DeploymentTriggerResource) Create(ctx context.Context, req resource.Cre
 		return
 	}
 
-	tflog.Trace(ctx, "created a deployment trigger")
+	tflog.Debug(ctx, "created a deployment trigger")
 
 	trigger := response.DeploymentTriggerCreate.DeploymentTrigger
 
+	// Save state immediately so Terraform can track (and destroy) the resource
+	// even if the process crashes before the final state save. Resolve Unknown
+	// computed values to concrete values before saving.
 	data.Id = types.StringValue(trigger.Id)
+	if data.CheckSuites.IsUnknown() {
+		data.CheckSuites = types.BoolNull()
+	}
+
+	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	// Now populate full state from the response.
 	data.Branch = types.StringValue(trigger.Branch)
 	data.CheckSuites = types.BoolValue(trigger.CheckSuites)
 	data.EnvironmentId = types.StringValue(trigger.EnvironmentId)
@@ -278,7 +302,7 @@ func (r *DeploymentTriggerResource) Update(ctx context.Context, req resource.Upd
 			return
 		}
 
-		tflog.Trace(ctx, "updated a deployment trigger")
+		tflog.Debug(ctx, "updated a deployment trigger")
 
 		trigger := response.DeploymentTriggerUpdate.DeploymentTrigger
 
@@ -309,12 +333,12 @@ func (r *DeploymentTriggerResource) Delete(ctx context.Context, req resource.Del
 
 	_, err := deleteDeploymentTrigger(ctx, *r.client, data.Id.ValueString())
 
-	if err != nil && !isNotFound(err) {
+	if err != nil && !isNotFoundOrGone(err) {
 		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to delete deployment trigger, got error: %s", err))
 		return
 	}
 
-	tflog.Trace(ctx, "deleted a deployment trigger")
+	tflog.Debug(ctx, "deleted a deployment trigger")
 }
 
 func (r *DeploymentTriggerResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {

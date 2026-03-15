@@ -4,17 +4,21 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/Khan/genqlient/graphql"
+	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/listplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 )
 
 var _ resource.Resource = &PrivateNetworkEndpointResource{}
@@ -29,14 +33,15 @@ type PrivateNetworkEndpointResource struct {
 }
 
 type PrivateNetworkEndpointResourceModel struct {
-	Id               types.String `tfsdk:"id"`
-	PrivateNetworkId types.String `tfsdk:"private_network_id"`
-	ServiceId        types.String `tfsdk:"service_id"`
-	EnvironmentId    types.String `tfsdk:"environment_id"`
-	ServiceName      types.String `tfsdk:"service_name"`
-	DnsName          types.String `tfsdk:"dns_name"`
-	PrivateIps       types.List   `tfsdk:"private_ips"`
-	Tags             types.List   `tfsdk:"tags"`
+	Id               types.String   `tfsdk:"id"`
+	PrivateNetworkId types.String   `tfsdk:"private_network_id"`
+	ServiceId        types.String   `tfsdk:"service_id"`
+	EnvironmentId    types.String   `tfsdk:"environment_id"`
+	ServiceName      types.String   `tfsdk:"service_name"`
+	DnsName          types.String   `tfsdk:"dns_name"`
+	PrivateIps       types.List     `tfsdk:"private_ips"`
+	Tags             types.List     `tfsdk:"tags"`
+	Timeouts         timeouts.Value `tfsdk:"timeouts"`
 }
 
 func (r *PrivateNetworkEndpointResource) Metadata(ctx context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
@@ -45,10 +50,13 @@ func (r *PrivateNetworkEndpointResource) Metadata(ctx context.Context, req resou
 
 func (r *PrivateNetworkEndpointResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
+		Version:             1,
 		MarkdownDescription: "Railway private network endpoint. Connects a service to a private network, enabling internal service-to-service communication.",
+		Description:         "Railway private network endpoint. Connects a service to a private network, enabling internal service-to-service communication.",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				MarkdownDescription: "Identifier of the private network endpoint (publicId).",
+				Description:         "Identifier of the private network endpoint (publicId).",
 				Computed:            true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
@@ -56,6 +64,7 @@ func (r *PrivateNetworkEndpointResource) Schema(ctx context.Context, req resourc
 			},
 			"private_network_id": schema.StringAttribute{
 				MarkdownDescription: "Identifier of the private network to connect to.",
+				Description:         "Identifier of the private network to connect to.",
 				Required:            true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
@@ -63,6 +72,7 @@ func (r *PrivateNetworkEndpointResource) Schema(ctx context.Context, req resourc
 			},
 			"service_id": schema.StringAttribute{
 				MarkdownDescription: "Identifier of the service to connect.",
+				Description:         "Identifier of the service to connect.",
 				Required:            true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
@@ -73,6 +83,7 @@ func (r *PrivateNetworkEndpointResource) Schema(ctx context.Context, req resourc
 			},
 			"environment_id": schema.StringAttribute{
 				MarkdownDescription: "Identifier of the environment.",
+				Description:         "Identifier of the environment.",
 				Required:            true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
@@ -82,11 +93,17 @@ func (r *PrivateNetworkEndpointResource) Schema(ctx context.Context, req resourc
 				},
 			},
 			"service_name": schema.StringAttribute{
-				MarkdownDescription: "Name of the service (required for the create input).",
-				Required:            true,
+				MarkdownDescription: "Name of the service. Required for creation (used in the create API input), but not needed for import since it is not returned by the API.",
+				Description:         "Name of the service. Required for creation (used in the create API input), but not needed for import since it is not returned by the API.",
+				Optional:            true,
+				Computed:            true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"dns_name": schema.StringAttribute{
 				MarkdownDescription: "DNS name of the endpoint within the private network. Can be changed via rename.",
+				Description:         "DNS name of the endpoint within the private network. Can be changed via rename.",
 				Optional:            true,
 				Computed:            true,
 				PlanModifiers: []planmodifier.String{
@@ -95,15 +112,27 @@ func (r *PrivateNetworkEndpointResource) Schema(ctx context.Context, req resourc
 			},
 			"private_ips": schema.ListAttribute{
 				MarkdownDescription: "List of private IP addresses assigned to the endpoint.",
+				Description:         "List of private IP addresses assigned to the endpoint.",
 				ElementType:         types.StringType,
 				Computed:            true,
+				PlanModifiers: []planmodifier.List{
+					listplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"tags": schema.ListAttribute{
 				MarkdownDescription: "Tags associated with the private network endpoint.",
+				Description:         "Tags associated with the private network endpoint.",
 				ElementType:         types.StringType,
 				Optional:            true,
 				Computed:            true,
+				PlanModifiers: []planmodifier.List{
+					listplanmodifier.UseStateForUnknown(),
+				},
 			},
+			"timeouts": timeouts.Attributes(ctx, timeouts.Opts{
+				Create: true,
+				Read:   true,
+			}),
 		},
 	}
 }
@@ -164,7 +193,7 @@ func (r *PrivateNetworkEndpointResource) Create(ctx context.Context, req resourc
 		return
 	}
 
-	tflog.Trace(ctx, "created a private network endpoint")
+	tflog.Debug(ctx, "created a private network endpoint")
 
 	endpoint := response.PrivateNetworkEndpointCreateOrGet
 
@@ -190,7 +219,7 @@ func (r *PrivateNetworkEndpointResource) Create(ctx context.Context, req resourc
 	data.Tags = tagList
 
 	// Save state immediately so Terraform tracks this resource.
-	// If the rename step fails, the resource will be tainted
+	// If the rename or consistency wait fails, the resource will be tainted
 	// and scheduled for destroy+recreate on the next apply.
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 
@@ -210,8 +239,48 @@ func (r *PrivateNetworkEndpointResource) Create(ctx context.Context, req resourc
 
 			data.DnsName = planDnsName
 
-			tflog.Trace(ctx, "renamed private network endpoint")
+			tflog.Debug(ctx, "renamed private network endpoint")
 		}
+	}
+
+	// Consistency waiter: poll the GET endpoint until it returns valid data
+	// on 2 consecutive reads. This ensures Terraform's post-create refresh
+	// hits a warm, consistent GET and won't produce "plan not empty."
+	// Following the AWS/GCP/Azure pattern: retries belong in Create, not Read.
+	createTimeout, diags := data.Timeouts.Create(ctx, 2*time.Minute)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	consecutiveSuccesses := 0
+	waitErr := retry.RetryContext(ctx, createTimeout, func() *retry.RetryError {
+		readResp, readErr := getPrivateNetworkEndpoint(ctx, *r.client, data.EnvironmentId.ValueString(), data.PrivateNetworkId.ValueString(), data.ServiceId.ValueString())
+
+		if readErr != nil {
+			consecutiveSuccesses = 0
+			return retry.RetryableError(fmt.Errorf("GET endpoint returned error: %w", readErr))
+		}
+
+		if readResp.PrivateNetworkEndpoint.PrivateNetworkEndpointFields.PublicId == "" {
+			consecutiveSuccesses = 0
+			return retry.RetryableError(fmt.Errorf("GET endpoint returned empty data, still propagating"))
+		}
+
+		consecutiveSuccesses++
+		if consecutiveSuccesses < 2 {
+			return retry.RetryableError(fmt.Errorf("need %d more consecutive successful reads", 2-consecutiveSuccesses))
+		}
+
+		return nil
+	})
+
+	if waitErr != nil {
+		tflog.Warn(ctx, "GET endpoint did not stabilize within timeout — state was saved from the create mutation response, proceeding", map[string]interface{}{
+			"error": waitErr.Error(),
+		})
+	} else {
+		tflog.Trace(ctx, "GET endpoint confirmed consistent after create")
 	}
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
@@ -226,24 +295,78 @@ func (r *PrivateNetworkEndpointResource) Read(ctx context.Context, req resource.
 		return
 	}
 
-	response, err := getPrivateNetworkEndpoint(ctx, *r.client, data.EnvironmentId.ValueString(), data.PrivateNetworkId.ValueString(), data.ServiceId.ValueString())
+	// Railway's GET endpoint has severe eventual consistency issues — it
+	// returns empty data (not a 404 error) for both "resource exists but
+	// query is slow" and "resource was actually deleted." Under load the
+	// GET can return null for 5+ minutes for existing resources.
+	//
+	// Unlike AWS/GCP/Azure APIs which return proper 404s for deleted
+	// resources, Railway makes it impossible to distinguish consistency
+	// lag from actual deletion. Strategy:
+	//
+	// - Existing resource (has id in state): single GET. If empty,
+	//   preserve state — the consistency waiter in Create already
+	//   verified the resource exists. If the resource was truly deleted
+	//   externally, Terraform's next destroy will handle it.
+	// - Import (no id in state): retry with backoff since we need the
+	//   API data to populate state.
+	//
+	// Deletion detection relies on the Delete method and isNotFound
+	// errors, not on Read returning empty.
+	hasExistingId := !data.Id.IsNull() && !data.Id.IsUnknown() && data.Id.ValueString() != ""
 
-	if isNotFound(err) {
-		tflog.Warn(ctx, "private network endpoint not found, removing from state")
-		resp.State.RemoveResource(ctx)
-		return
-	}
+	var endpoint getPrivateNetworkEndpointPrivateNetworkEndpoint
 
-	if err != nil {
-		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to read private network endpoint (service_id=%s, environment_id=%s, private_network_id=%s), got error: %s", data.ServiceId.ValueString(), data.EnvironmentId.ValueString(), data.PrivateNetworkId.ValueString(), err))
-		return
-	}
+	if hasExistingId {
+		response, err := getPrivateNetworkEndpoint(ctx, *r.client, data.EnvironmentId.ValueString(), data.PrivateNetworkId.ValueString(), data.ServiceId.ValueString())
 
-	endpoint := response.PrivateNetworkEndpoint
+		if isNotFound(err) {
+			tflog.Info(ctx, "private network endpoint not found, removing from state")
+			resp.State.RemoveResource(ctx)
+			return
+		}
 
-	if endpoint.PrivateNetworkEndpointFields.PublicId == "" {
-		resp.State.RemoveResource(ctx)
-		return
+		if err != nil {
+			resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to read private network endpoint (service_id=%s, environment_id=%s, private_network_id=%s), got error: %s", data.ServiceId.ValueString(), data.EnvironmentId.ValueString(), data.PrivateNetworkId.ValueString(), err))
+			return
+		}
+
+		if response.PrivateNetworkEndpoint.PrivateNetworkEndpointFields.PublicId == "" {
+			tflog.Warn(ctx, "private network endpoint query returned empty data (eventual consistency), preserving existing state")
+			return
+		}
+
+		endpoint = response.PrivateNetworkEndpoint
+	} else {
+		readTimeout, diags := data.Timeouts.Read(ctx, 30*time.Second)
+		resp.Diagnostics.Append(diags...)
+		if resp.Diagnostics.HasError() {
+			return
+		}
+
+		err := retry.RetryContext(ctx, readTimeout, func() *retry.RetryError {
+			response, readErr := getPrivateNetworkEndpoint(ctx, *r.client, data.EnvironmentId.ValueString(), data.PrivateNetworkId.ValueString(), data.ServiceId.ValueString())
+
+			if isNotFound(readErr) {
+				return retry.NonRetryableError(readErr)
+			}
+
+			if readErr != nil {
+				return retry.RetryableError(readErr)
+			}
+
+			if response.PrivateNetworkEndpoint.PrivateNetworkEndpointFields.PublicId == "" {
+				return retry.RetryableError(fmt.Errorf("endpoint returned with empty PublicId, still propagating"))
+			}
+
+			endpoint = response.PrivateNetworkEndpoint
+			return nil
+		})
+
+		if err != nil {
+			resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to read private network endpoint during import (service_id=%s, environment_id=%s, private_network_id=%s), got error: %s", data.ServiceId.ValueString(), data.EnvironmentId.ValueString(), data.PrivateNetworkId.ValueString(), err))
+			return
+		}
 	}
 
 	data.Id = types.StringValue(endpoint.PrivateNetworkEndpointFields.PublicId)
@@ -297,7 +420,7 @@ func (r *PrivateNetworkEndpointResource) Update(ctx context.Context, req resourc
 			return
 		}
 
-		tflog.Trace(ctx, "renamed private network endpoint")
+		tflog.Debug(ctx, "renamed private network endpoint")
 	}
 
 	// Read back the state
@@ -349,12 +472,12 @@ func (r *PrivateNetworkEndpointResource) Delete(ctx context.Context, req resourc
 
 	_, err := deletePrivateNetworkEndpoint(ctx, *r.client, data.Id.ValueString())
 
-	if err != nil && !isNotFound(err) {
+	if err != nil && !isNotFoundOrGone(err) {
 		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to delete private network endpoint, got error: %s", err))
 		return
 	}
 
-	tflog.Trace(ctx, "deleted a private network endpoint")
+	tflog.Debug(ctx, "deleted a private network endpoint")
 }
 
 func (r *PrivateNetworkEndpointResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {

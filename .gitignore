@@ -10,3 +10,4 @@ terraform.tfstate.d/
 
 # Claude Code
 CLAUDE.md
+.vscode-screenshots/

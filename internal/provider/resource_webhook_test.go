@@ -12,6 +12,79 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
+func TestAccWebhookResourceDefault(t *testing.T) {
+	t.Skip("Webhook API types (WebhookCreateInput, ProjectWebhook) are not in Railway's public GraphQL schema")
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+		CheckDestroy:             testAccCheckWebhookDestroy,
+		Steps: []resource.TestStep{
+			// Create
+			{
+				Config: testAccWebhookResourceConfig("https://example.com/webhook-test", `["deploy.completed"]`),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttrSet("railway_webhook.test", "id"),
+					resource.TestCheckResourceAttr("railway_webhook.test", "project_id", testAccProjectId),
+					resource.TestCheckResourceAttr("railway_webhook.test", "url", "https://example.com/webhook-test"),
+					resource.TestCheckResourceAttr("railway_webhook.test", "filters.#", "1"),
+					resource.TestCheckResourceAttr("railway_webhook.test", "filters.0", "deploy.completed"),
+				),
+			},
+			// Import
+			{
+				ResourceName: "railway_webhook.test",
+				ImportState:  true,
+				ImportStateIdFunc: func(s *terraform.State) (string, error) {
+					rs, ok := s.RootModule().Resources["railway_webhook.test"]
+					if !ok {
+						return "", fmt.Errorf("resource not found")
+					}
+					return testAccProjectId + ":" + rs.Primary.ID, nil
+				},
+				ImportStateVerify: true,
+			},
+			// Update URL and filters
+			{
+				Config: testAccWebhookResourceConfig("https://example.com/webhook-updated", `["deploy.completed", "deploy.started"]`),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttrSet("railway_webhook.test", "id"),
+					resource.TestCheckResourceAttr("railway_webhook.test", "url", "https://example.com/webhook-updated"),
+					resource.TestCheckResourceAttr("railway_webhook.test", "filters.#", "2"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccWebhookResource_disappears(t *testing.T) {
+	t.Skip("Webhook API types (WebhookCreateInput, ProjectWebhook) are not in Railway's public GraphQL schema")
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+		CheckDestroy:             testAccCheckWebhookDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccWebhookResourceConfig("https://example.com/webhook-disappears", `["deploy.completed"]`),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttrSet("railway_webhook.test", "id"),
+					testAccCheckWebhookDisappears("railway_webhook.test"),
+				),
+				ExpectNonEmptyPlan: true,
+			},
+		},
+	})
+}
+
+func testAccWebhookResourceConfig(url, filters string) string {
+	return fmt.Sprintf(`
+resource "railway_webhook" "test" {
+  project_id = "%s"
+  url        = "%s"
+  filters    = %s
+}
+`, testAccProjectId, url, filters)
+}
+
 func TestWebhookResource_basic(t *testing.T) {
 	projectId := "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"
 
@@ -54,7 +127,7 @@ func TestWebhookResource_update(t *testing.T) {
 	updated := false
 
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		var req graphqlRequest
+		var req mockGraphqlRequest
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 			t.Errorf("mock server: failed to decode request body: %s", err)
 			w.WriteHeader(http.StatusBadRequest)

@@ -1,1 +1,2 @@
-terraform import railway_service_instance.backend_dev 89fa0236-2b1b-4a8c-b12d-ae3634b30d97:a1b2c3d4-5e6f-7a8b-9c0d-1e2f3a4b5c6d
+# Import by service_id:environment_id
+terraform import railway_service_instance.api_staging your-service-id:your-environment-id

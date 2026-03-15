@@ -59,10 +59,13 @@ func (r *ProjectResource) Metadata(ctx context.Context, req resource.MetadataReq
 
 func (r *ProjectResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
+		Version:             1,
 		MarkdownDescription: "Railway project.",
+		Description:         "Railway project.",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				MarkdownDescription: "Identifier of the project.",
+				Description:         "Identifier of the project.",
 				Computed:            true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
@@ -70,6 +73,7 @@ func (r *ProjectResource) Schema(ctx context.Context, req resource.SchemaRequest
 			},
 			"name": schema.StringAttribute{
 				MarkdownDescription: "Name of the project.",
+				Description:         "Name of the project.",
 				Required:            true,
 				Validators: []validator.String{
 					stringvalidator.UTF8LengthAtLeast(1),
@@ -77,24 +81,28 @@ func (r *ProjectResource) Schema(ctx context.Context, req resource.SchemaRequest
 			},
 			"description": schema.StringAttribute{
 				MarkdownDescription: "Description of the project.",
+				Description:         "Description of the project.",
 				Computed:            true,
 				Optional:            true,
 				Default:             stringdefault.StaticString(""),
 			},
 			"private": schema.BoolAttribute{
 				MarkdownDescription: "Privacy of the project. **Default** `true`.",
+				Description:         "Privacy of the project. Default true.",
 				Computed:            true,
 				Optional:            true,
 				Default:             booldefault.StaticBool(true),
 			},
 			"has_pr_deploys": schema.BoolAttribute{
 				MarkdownDescription: "Whether the project has PR deploys enabled. **Default** `false`.",
+				Description:         "Whether the project has PR deploys enabled. Default false.",
 				Computed:            true,
 				Optional:            true,
 				Default:             booldefault.StaticBool(false),
 			},
 			"workspace_id": schema.StringAttribute{
-				MarkdownDescription: "Identifier of the workspace the project belongs to. Required if the railway token has access to multiple workspaces.",
+				MarkdownDescription: "Identifier of the workspace the project belongs to. Required if the railway token has access to multiple workspaces. ~> **Warning:** Changing this forces resource destruction and recreation.",
+				Description:         "Identifier of the workspace the project belongs to. Required if the railway token has access to multiple workspaces. Warning: Changing this forces resource destruction and recreation.",
 				Computed:            true,
 				Optional:            true,
 				PlanModifiers: []planmodifier.String{
@@ -107,6 +115,7 @@ func (r *ProjectResource) Schema(ctx context.Context, req resource.SchemaRequest
 			},
 			"default_environment": schema.SingleNestedAttribute{
 				MarkdownDescription: "Default environment of the project. When multiple exist, the oldest is considered.",
+				Description:         "Default environment of the project. When multiple exist, the oldest is considered.",
 				Optional:            true,
 				Computed:            true,
 				Default: objectdefault.StaticValue(
@@ -121,6 +130,7 @@ func (r *ProjectResource) Schema(ctx context.Context, req resource.SchemaRequest
 				Attributes: map[string]schema.Attribute{
 					"id": schema.StringAttribute{
 						MarkdownDescription: "Identifier of the default environment.",
+						Description:         "Identifier of the default environment.",
 						Computed:            true,
 						PlanModifiers: []planmodifier.String{
 							stringplanmodifier.UseStateForUnknown(),
@@ -128,6 +138,7 @@ func (r *ProjectResource) Schema(ctx context.Context, req resource.SchemaRequest
 					},
 					"name": schema.StringAttribute{
 						MarkdownDescription: "Name of the default environment.",
+						Description:         "Name of the default environment.",
 						Optional:            true,
 						Computed:            true,
 						Default:             stringdefault.StaticString("production"),
@@ -200,7 +211,7 @@ func (r *ProjectResource) Create(ctx context.Context, req resource.CreateRequest
 		return
 	}
 
-	tflog.Trace(ctx, "created a project")
+	tflog.Debug(ctx, "created a project")
 
 	project := response.ProjectCreate.Project
 
@@ -309,11 +320,11 @@ func (r *ProjectResource) Update(ctx context.Context, req resource.UpdateRequest
 	response, err := updateProject(ctx, *r.client, data.Id.ValueString(), input)
 
 	if err != nil {
-		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to update project, got error: %s", err))
+		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to update project (id=%s), got error: %s", data.Id.ValueString(), err))
 		return
 	}
 
-	tflog.Trace(ctx, "updated a project")
+	tflog.Debug(ctx, "updated a project")
 
 	project := response.ProjectUpdate.Project
 
@@ -359,14 +370,14 @@ func (r *ProjectResource) Delete(ctx context.Context, req resource.DeleteRequest
 	_, err := deleteProject(ctx, *r.client, data.Id.ValueString())
 
 	if err != nil {
-		if isNotFound(err) {
+		if isNotFoundOrGone(err) {
 			return
 		}
-		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to delete project, got error: %s", err))
+		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to delete project (id=%s), got error: %s", data.Id.ValueString(), err))
 		return
 	}
 
-	tflog.Trace(ctx, "deleted a project")
+	tflog.Debug(ctx, "deleted a project")
 }
 
 func (r *ProjectResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {

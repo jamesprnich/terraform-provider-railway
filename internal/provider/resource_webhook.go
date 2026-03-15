@@ -3,6 +3,7 @@ package provider
 import (
 	"context"
 	"fmt"
+	"regexp"
 
 	"strings"
 
@@ -17,6 +18,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
+
+var webhookURLRegexp = regexp.MustCompile(`^https?://`)
 
 var _ resource.Resource = &WebhookResource{}
 var _ resource.ResourceWithImportState = &WebhookResource{}
@@ -42,10 +45,13 @@ func (r *WebhookResource) Metadata(ctx context.Context, req resource.MetadataReq
 
 func (r *WebhookResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
+		Version:             1,
 		MarkdownDescription: "Railway webhook.",
+		Description:         "Railway webhook.",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				MarkdownDescription: "Identifier of the webhook.",
+				Description:         "Identifier of the webhook.",
 				Computed:            true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
@@ -53,6 +59,7 @@ func (r *WebhookResource) Schema(ctx context.Context, req resource.SchemaRequest
 			},
 			"project_id": schema.StringAttribute{
 				MarkdownDescription: "Identifier of the project the webhook belongs to.",
+				Description:         "Identifier of the project the webhook belongs to.",
 				Required:            true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
@@ -63,13 +70,16 @@ func (r *WebhookResource) Schema(ctx context.Context, req resource.SchemaRequest
 			},
 			"url": schema.StringAttribute{
 				MarkdownDescription: "URL of the webhook.",
+				Description:         "URL of the webhook.",
 				Required:            true,
 				Validators: []validator.String{
 					stringvalidator.UTF8LengthAtLeast(1),
+					stringvalidator.RegexMatches(webhookURLRegexp, "must be a valid HTTP or HTTPS URL"),
 				},
 			},
 			"filters": schema.ListAttribute{
 				MarkdownDescription: "List of event filters for the webhook.",
+				Description:         "List of event filters for the webhook.",
 				Optional:            true,
 				ElementType:         types.StringType,
 			},
@@ -130,7 +140,7 @@ func (r *WebhookResource) Create(ctx context.Context, req resource.CreateRequest
 		return
 	}
 
-	tflog.Trace(ctx, "created a webhook")
+	tflog.Debug(ctx, "created a webhook")
 
 	webhook := response.WebhookCreate.ProjectWebhook
 
@@ -165,7 +175,7 @@ func (r *WebhookResource) Read(ctx context.Context, req resource.ReadRequest, re
 	response, err := getWebhooks(ctx, *r.client, data.ProjectId.ValueString())
 
 	if isNotFound(err) {
-		tflog.Warn(ctx, "webhooks not found, removing from state")
+		tflog.Info(ctx, "webhooks not found, removing from state")
 		resp.State.RemoveResource(ctx)
 		return
 	}
@@ -241,11 +251,11 @@ func (r *WebhookResource) Update(ctx context.Context, req resource.UpdateRequest
 	response, err := updateWebhook(ctx, *r.client, data.Id.ValueString(), input)
 
 	if err != nil {
-		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to update webhook, got error: %s", err))
+		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to update webhook (id=%s), got error: %s", data.Id.ValueString(), err))
 		return
 	}
 
-	tflog.Trace(ctx, "updated a webhook")
+	tflog.Debug(ctx, "updated a webhook")
 
 	webhook := response.WebhookUpdate.ProjectWebhook
 
@@ -253,14 +263,19 @@ func (r *WebhookResource) Update(ctx context.Context, req resource.UpdateRequest
 	data.ProjectId = types.StringValue(webhook.ProjectId)
 	data.Url = types.StringValue(webhook.Url)
 
-	filtersValue, diags := types.ListValueFrom(ctx, types.StringType, webhook.Filters)
-	resp.Diagnostics.Append(diags...)
+	// Preserve null when API returns empty and config didn't specify filters
+	if data.Filters.IsNull() && len(webhook.Filters) == 0 {
+		// Keep null
+	} else {
+		filtersValue, diags := types.ListValueFrom(ctx, types.StringType, webhook.Filters)
+		resp.Diagnostics.Append(diags...)
 
-	if resp.Diagnostics.HasError() {
-		return
+		if resp.Diagnostics.HasError() {
+			return
+		}
+
+		data.Filters = filtersValue
 	}
-
-	data.Filters = filtersValue
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
@@ -276,12 +291,12 @@ func (r *WebhookResource) Delete(ctx context.Context, req resource.DeleteRequest
 
 	_, err := deleteWebhook(ctx, *r.client, data.Id.ValueString())
 
-	if err != nil && !isNotFound(err) {
-		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to delete webhook, got error: %s", err))
+	if err != nil && !isNotFoundOrGone(err) {
+		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to delete webhook (id=%s), got error: %s", data.Id.ValueString(), err))
 		return
 	}
 
-	tflog.Trace(ctx, "deleted a webhook")
+	tflog.Debug(ctx, "deleted a webhook")
 }
 
 func (r *WebhookResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {

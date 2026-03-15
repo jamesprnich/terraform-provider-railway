@@ -57,10 +57,13 @@ func (r *VariableCollectionResource) Metadata(ctx context.Context, req resource.
 
 func (r *VariableCollectionResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
+		Version:             1,
 		MarkdownDescription: "Railway variable collection. Group of variables managed as a whole. Any changes in collection triggers service redeployment.",
+		Description:         "Railway variable collection. Group of variables managed as a whole. Any changes in collection triggers service redeployment.",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				MarkdownDescription: "Identifier of the variable collection.",
+				Description:         "Identifier of the variable collection.",
 				Computed:            true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
@@ -68,14 +71,17 @@ func (r *VariableCollectionResource) Schema(ctx context.Context, req resource.Sc
 			},
 			"variables": schema.ListNestedAttribute{
 				MarkdownDescription: "Collection of variables.",
+				Description:         "Collection of variables.",
 				NestedObject: schema.NestedAttributeObject{
 					Attributes: map[string]schema.Attribute{
 						"name": schema.StringAttribute{
 							MarkdownDescription: "Name of the variable.",
+							Description:         "Name of the variable.",
 							Required:            true,
 						},
 						"value": schema.StringAttribute{
 							MarkdownDescription: "Value of the variable.",
+							Description:         "Value of the variable.",
 							Required:            true,
 							Sensitive:           true,
 						},
@@ -88,6 +94,7 @@ func (r *VariableCollectionResource) Schema(ctx context.Context, req resource.Sc
 			},
 			"environment_id": schema.StringAttribute{
 				MarkdownDescription: "Identifier of the environment the variable collection belongs to.",
+				Description:         "Identifier of the environment the variable collection belongs to.",
 				Required:            true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
@@ -98,6 +105,7 @@ func (r *VariableCollectionResource) Schema(ctx context.Context, req resource.Sc
 			},
 			"service_id": schema.StringAttribute{
 				MarkdownDescription: "Identifier of the service the variable collection belongs to.",
+				Description:         "Identifier of the service the variable collection belongs to.",
 				Required:            true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
@@ -108,6 +116,7 @@ func (r *VariableCollectionResource) Schema(ctx context.Context, req resource.Sc
 			},
 			"project_id": schema.StringAttribute{
 				MarkdownDescription: "Identifier of the project the variable collection belongs to.",
+				Description:         "Identifier of the project the variable collection belongs to.",
 				Computed:            true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
@@ -181,7 +190,7 @@ func (r *VariableCollectionResource) Create(ctx context.Context, req resource.Cr
 		return
 	}
 
-	tflog.Trace(ctx, "created a variable collection")
+	tflog.Debug(ctx, "created a variable collection")
 
 	variableNames, diagErr := getVariableNames(ctx, data)
 
@@ -299,7 +308,7 @@ func (r *VariableCollectionResource) Update(ctx context.Context, req resource.Up
 		}
 	}
 
-	tflog.Trace(ctx, "updated a variable collection")
+	tflog.Debug(ctx, "updated a variable collection")
 
 	allVariableNames, diagErr := getVariableNames(ctx, data)
 
@@ -343,19 +352,19 @@ func (r *VariableCollectionResource) Delete(ctx context.Context, req resource.De
 
 	err := deleteManyVariables(ctx, *r.client, data.ProjectId.ValueString(), data.EnvironmentId.ValueString(), data.ServiceId.ValueString(), variableNames)
 
-	if err != nil && !isNotFound(err) {
+	if err != nil && !isNotFoundOrGone(err) {
 		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to delete variable collection, got error: %s", err))
 		return
 	}
 
 	_, err = redeployServiceInstance(ctx, *r.client, data.EnvironmentId.ValueString(), data.ServiceId.ValueString())
 
-	if err != nil {
+	if err != nil && !isNotFoundOrGone(err) {
 		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to redeploy service after variable collection deleted, got error: %s", err))
 		return
 	}
 
-	tflog.Trace(ctx, "deleted a variable collection")
+	tflog.Debug(ctx, "deleted a variable collection")
 }
 
 func (r *VariableCollectionResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {

@@ -12,6 +12,7 @@ func TestAccServiceDomainResourceDefault(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+		CheckDestroy:             testAccCheckServiceDomainDestroy,
 		Steps: []resource.TestStep{
 			// Create and Read testing
 			{
@@ -58,6 +59,7 @@ func TestAccServiceDomainResource_disappears(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+		CheckDestroy:             testAccCheckServiceDomainDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccServiceDomainResourceConfig(),

@@ -45,20 +45,26 @@ func (r *PrivateNetworkResource) Metadata(ctx context.Context, req resource.Meta
 
 func (r *PrivateNetworkResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
+		Version:             1,
 		MarkdownDescription: "Railway private network. Creates a private network in a specific environment for internal service-to-service communication.",
+		Description:         "Railway private network. Creates a private network in a specific environment for internal service-to-service communication.",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				MarkdownDescription: "Identifier of the private network (publicId).",
+				Description:         "Identifier of the private network (publicId).",
 				Computed:            true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
 			"project_id": schema.StringAttribute{
-				MarkdownDescription: "Identifier of the project the private network belongs to.",
-				Required:            true,
+				MarkdownDescription: "Identifier of the project the private network belongs to. Required for creation, populated automatically on import.",
+				Description:         "Identifier of the project the private network belongs to. Required for creation, populated automatically on import.",
+				Optional:            true,
+				Computed:            true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
+					stringplanmodifier.UseStateForUnknown(),
 				},
 				Validators: []validator.String{
 					stringvalidator.RegexMatches(uuidRegex(), "must be an id"),
@@ -66,6 +72,7 @@ func (r *PrivateNetworkResource) Schema(ctx context.Context, req resource.Schema
 			},
 			"environment_id": schema.StringAttribute{
 				MarkdownDescription: "Identifier of the environment the private network belongs to.",
+				Description:         "Identifier of the environment the private network belongs to.",
 				Required:            true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
@@ -76,6 +83,7 @@ func (r *PrivateNetworkResource) Schema(ctx context.Context, req resource.Schema
 			},
 			"name": schema.StringAttribute{
 				MarkdownDescription: "Name of the private network.",
+				Description:         "Name of the private network.",
 				Required:            true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
@@ -83,6 +91,7 @@ func (r *PrivateNetworkResource) Schema(ctx context.Context, req resource.Schema
 			},
 			"dns_name": schema.StringAttribute{
 				MarkdownDescription: "DNS name of the private network.",
+				Description:         "DNS name of the private network.",
 				Computed:            true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
@@ -90,6 +99,7 @@ func (r *PrivateNetworkResource) Schema(ctx context.Context, req resource.Schema
 			},
 			"network_id": schema.Int64Attribute{
 				MarkdownDescription: "Numeric network identifier.",
+				Description:         "Numeric network identifier.",
 				Computed:            true,
 				PlanModifiers: []planmodifier.Int64{
 					int64planmodifier.UseStateForUnknown(),
@@ -97,6 +107,7 @@ func (r *PrivateNetworkResource) Schema(ctx context.Context, req resource.Schema
 			},
 			"tags": schema.ListAttribute{
 				MarkdownDescription: "Tags associated with the private network.",
+				Description:         "Tags associated with the private network.",
 				ElementType:         types.StringType,
 				Optional:            true,
 				Computed:            true,
@@ -157,7 +168,7 @@ func (r *PrivateNetworkResource) Create(ctx context.Context, req resource.Create
 		return
 	}
 
-	tflog.Trace(ctx, "created a private network")
+	tflog.Debug(ctx, "created a private network")
 
 	network := response.PrivateNetworkCreateOrGet
 
@@ -236,7 +247,7 @@ func (r *PrivateNetworkResource) Update(ctx context.Context, req resource.Update
 		return
 	}
 
-	tflog.Trace(ctx, "updated private network")
+	tflog.Debug(ctx, "updated private network")
 
 	network := response.PrivateNetworkCreateOrGet
 
@@ -270,16 +281,26 @@ func (r *PrivateNetworkResource) Delete(ctx context.Context, req resource.Delete
 	// in an environment (privateNetworksForEnvironmentDelete). There is no mutation
 	// to delete a single network. If multiple networks exist in the same environment,
 	// destroying one will destroy all of them.
+	resp.Diagnostics.AddWarning(
+		"Railway API deletes ALL private networks in the environment",
+		fmt.Sprintf(
+			"The Railway API does not support deleting a single private network. "+
+				"Destroying private network %q (id=%s) will delete ALL private networks "+
+				"in environment %s, not just this one. If you have other private networks "+
+				"in this environment, they will also be deleted.",
+			data.Name.ValueString(), data.Id.ValueString(), data.EnvironmentId.ValueString(),
+		),
+	)
 	tflog.Warn(ctx, "Railway API deletes ALL private networks in the environment, not just this one")
 
 	_, err := deletePrivateNetworksForEnvironment(ctx, *r.client, data.EnvironmentId.ValueString())
 
-	if err != nil && !isNotFound(err) {
+	if err != nil && !isNotFoundOrGone(err) {
 		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to delete private networks, got error: %s", err))
 		return
 	}
 
-	tflog.Trace(ctx, "deleted private networks for environment")
+	tflog.Debug(ctx, "deleted private networks for environment")
 }
 
 func (r *PrivateNetworkResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {

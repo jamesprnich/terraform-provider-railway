@@ -1,8 +1,10 @@
-data "railway_environment" "by_name" {
+# Look up by name (requires project_id)
+data "railway_environment" "staging" {
   name       = "staging"
   project_id = railway_project.example.id
 }
 
+# Or look up by ID
 data "railway_environment" "by_id" {
-  id = "d0519b29-5d12-4857-a5dd-76fa7418336c"
+  id = "your-environment-id"
 }

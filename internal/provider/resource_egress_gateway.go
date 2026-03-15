@@ -10,6 +10,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/listplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
@@ -42,10 +43,13 @@ func (r *EgressGatewayResource) Metadata(ctx context.Context, req resource.Metad
 
 func (r *EgressGatewayResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
+		Version:             1,
 		MarkdownDescription: "Railway egress gateway. Associates a static egress IP with a service in a specific environment.",
+		Description:         "Railway egress gateway. Associates a static egress IP with a service in a specific environment.",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				MarkdownDescription: "Identifier of the egress gateway (service_id:environment_id).",
+				Description:         "Identifier of the egress gateway (service_id:environment_id).",
 				Computed:            true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
@@ -53,6 +57,7 @@ func (r *EgressGatewayResource) Schema(ctx context.Context, req resource.SchemaR
 			},
 			"service_id": schema.StringAttribute{
 				MarkdownDescription: "Identifier of the service the egress gateway belongs to.",
+				Description:         "Identifier of the service the egress gateway belongs to.",
 				Required:            true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
@@ -63,6 +68,7 @@ func (r *EgressGatewayResource) Schema(ctx context.Context, req resource.SchemaR
 			},
 			"environment_id": schema.StringAttribute{
 				MarkdownDescription: "Identifier of the environment the egress gateway belongs to.",
+				Description:         "Identifier of the environment the egress gateway belongs to.",
 				Required:            true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
@@ -73,6 +79,7 @@ func (r *EgressGatewayResource) Schema(ctx context.Context, req resource.SchemaR
 			},
 			"region": schema.StringAttribute{
 				MarkdownDescription: "Region for the egress gateway.",
+				Description:         "Region for the egress gateway.",
 				Optional:            true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
@@ -80,8 +87,12 @@ func (r *EgressGatewayResource) Schema(ctx context.Context, req resource.SchemaR
 			},
 			"ip_addresses": schema.ListAttribute{
 				MarkdownDescription: "List of static IPv4 addresses assigned to the egress gateway.",
+				Description:         "List of static IPv4 addresses assigned to the egress gateway.",
 				ElementType:         types.StringType,
 				Computed:            true,
+				PlanModifiers: []planmodifier.List{
+					listplanmodifier.UseStateForUnknown(),
+				},
 			},
 		},
 	}
@@ -121,7 +132,8 @@ func (r *EgressGatewayResource) Create(ctx context.Context, req resource.CreateR
 	}
 
 	if !data.Region.IsNull() && !data.Region.IsUnknown() {
-		input.Region = data.Region.ValueString()
+		region := data.Region.ValueString()
+		input.Region = &region
 	}
 
 	response, err := createEgressGateway(ctx, *r.client, input)
@@ -131,9 +143,20 @@ func (r *EgressGatewayResource) Create(ctx context.Context, req resource.CreateR
 		return
 	}
 
-	tflog.Trace(ctx, "created an egress gateway")
+	tflog.Debug(ctx, "created an egress gateway")
 
+	// Save state immediately so Terraform can track (and destroy) the resource
+	// even if the process crashes during IP list processing. Resolve Unknown
+	// computed values to concrete values before saving.
 	data.Id = types.StringValue(fmt.Sprintf("%s:%s", data.ServiceId.ValueString(), data.EnvironmentId.ValueString()))
+	if data.IpAddresses.IsUnknown() {
+		data.IpAddresses = types.ListNull(types.StringType)
+	}
+
+	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
 
 	ipAddresses := make([]string, len(response.EgressGatewayAssociationCreate))
 	for i, gw := range response.EgressGatewayAssociationCreate {
@@ -164,7 +187,7 @@ func (r *EgressGatewayResource) Read(ctx context.Context, req resource.ReadReque
 	response, err := getEgressGateways(ctx, *r.client, data.EnvironmentId.ValueString(), data.ServiceId.ValueString())
 
 	if isNotFound(err) {
-		tflog.Warn(ctx, "egress gateways not found, removing from state")
+		tflog.Info(ctx, "egress gateways not found, removing from state")
 		resp.State.RemoveResource(ctx)
 		return
 	}
@@ -192,6 +215,13 @@ func (r *EgressGatewayResource) Read(ctx context.Context, req resource.ReadReque
 	}
 
 	data.IpAddresses = ipList
+
+	// Only persist region if the user specified it in config (already in state).
+	// Region has RequiresReplace — setting it when the user didn't specify it
+	// would cause a spurious destroy+recreate on the next plan.
+	if !data.Region.IsNull() && len(response.EgressGateways) > 0 && response.EgressGateways[0].Region != "" {
+		data.Region = types.StringValue(response.EgressGateways[0].Region)
+	}
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
@@ -224,12 +254,12 @@ func (r *EgressGatewayResource) Delete(ctx context.Context, req resource.DeleteR
 
 	_, err := clearEgressGateways(ctx, *r.client, input)
 
-	if err != nil && !isNotFound(err) {
-		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to clear egress gateways, got error: %s", err))
+	if err != nil && !isNotFoundOrGone(err) {
+		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to clear egress gateways (service_id=%s, environment_id=%s), got error: %s", data.ServiceId.ValueString(), data.EnvironmentId.ValueString(), err))
 		return
 	}
 
-	tflog.Trace(ctx, "cleared egress gateways")
+	tflog.Debug(ctx, "deleted egress gateways")
 }
 
 func (r *EgressGatewayResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {

@@ -27,10 +27,10 @@ resource "railway_private_network" "internal" {
 
 - `environment_id` (String) Identifier of the environment the private network belongs to.
 - `name` (String) Name of the private network.
-- `project_id` (String) Identifier of the project the private network belongs to.
 
 ### Optional
 
+- `project_id` (String) Identifier of the project the private network belongs to. Required for creation, populated automatically on import.
 - `tags` (List of String) Tags associated with the private network.
 
 ### Read-Only

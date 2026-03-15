@@ -36,9 +36,11 @@ func (d *ServiceDataSource) Metadata(ctx context.Context, req datasource.Metadat
 func (d *ServiceDataSource) Schema(ctx context.Context, req datasource.SchemaRequest, resp *datasource.SchemaResponse) {
 	resp.Schema = schema.Schema{
 		MarkdownDescription: "Look up an existing Railway service by ID or by name within a project.",
+		Description:         "Look up an existing Railway service by ID or by name within a project.",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				MarkdownDescription: "Identifier of the service. Exactly one of `id` or `name` must be provided.",
+				Description:         "Identifier of the service. Exactly one of id or name must be provided.",
 				Optional:            true,
 				Computed:            true,
 				Validators: []validator.String{
@@ -48,6 +50,7 @@ func (d *ServiceDataSource) Schema(ctx context.Context, req datasource.SchemaReq
 			},
 			"name": schema.StringAttribute{
 				MarkdownDescription: "Name of the service. Exactly one of `id` or `name` must be provided. Requires `project_id`.",
+				Description:         "Name of the service. Exactly one of id or name must be provided. Requires project_id.",
 				Optional:            true,
 				Computed:            true,
 				Validators: []validator.String{
@@ -57,6 +60,7 @@ func (d *ServiceDataSource) Schema(ctx context.Context, req datasource.SchemaReq
 			},
 			"project_id": schema.StringAttribute{
 				MarkdownDescription: "Identifier of the project the service belongs to. Required when looking up by `name`. Computed when looking up by `id`.",
+				Description:         "Identifier of the project the service belongs to. Required when looking up by name. Computed when looking up by id.",
 				Optional:            true,
 				Computed:            true,
 				Validators: []validator.String{
@@ -124,6 +128,7 @@ func (d *ServiceDataSource) Read(ctx context.Context, req datasource.ReadRequest
 			if edge.Node.Name == data.Name.ValueString() {
 				data.Id = types.StringValue(edge.Node.Id)
 				data.Name = types.StringValue(edge.Node.Name)
+				data.ProjectId = types.StringValue(data.ProjectId.ValueString())
 
 				found = true
 				break

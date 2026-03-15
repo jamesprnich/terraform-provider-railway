@@ -40,10 +40,13 @@ func (r *EnvironmentResource) Metadata(ctx context.Context, req resource.Metadat
 
 func (r *EnvironmentResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
+		Version:             1,
 		MarkdownDescription: "Railway environment.",
+		Description:         "Railway environment.",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				MarkdownDescription: "Identifier of the environment.",
+				Description:         "Identifier of the environment.",
 				Computed:            true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
@@ -51,6 +54,7 @@ func (r *EnvironmentResource) Schema(ctx context.Context, req resource.SchemaReq
 			},
 			"name": schema.StringAttribute{
 				MarkdownDescription: "Name of the environment.",
+				Description:         "Name of the environment.",
 				Required:            true,
 				Validators: []validator.String{
 					stringvalidator.UTF8LengthAtLeast(1),
@@ -58,6 +62,7 @@ func (r *EnvironmentResource) Schema(ctx context.Context, req resource.SchemaReq
 			},
 			"project_id": schema.StringAttribute{
 				MarkdownDescription: "Identifier of the project the environment belongs to.",
+				Description:         "Identifier of the project the environment belongs to.",
 				Required:            true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
@@ -111,7 +116,7 @@ func (r *EnvironmentResource) Create(ctx context.Context, req resource.CreateReq
 		return
 	}
 
-	tflog.Trace(ctx, "created an environment")
+	tflog.Debug(ctx, "created an environment")
 
 	environment := response.EnvironmentCreate.Environment
 
@@ -193,7 +198,7 @@ func (r *EnvironmentResource) Update(ctx context.Context, req resource.UpdateReq
 			return
 		}
 
-		tflog.Trace(ctx, "renamed an environment")
+		tflog.Debug(ctx, "updated an environment")
 
 		plan.Id = types.StringValue(response.EnvironmentRename.Id)
 		plan.Name = types.StringValue(response.EnvironmentRename.Name)
@@ -232,14 +237,14 @@ func (r *EnvironmentResource) Delete(ctx context.Context, req resource.DeleteReq
 	_, err = deleteEnvironment(ctx, *r.client, data.Id.ValueString())
 
 	if err != nil {
-		if isNotFound(err) {
+		if isNotFoundOrGone(err) {
 			return
 		}
 		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to delete environment, got error: %s", err))
 		return
 	}
 
-	tflog.Trace(ctx, "deleted an environment")
+	tflog.Debug(ctx, "deleted an environment")
 }
 
 func (r *EnvironmentResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {

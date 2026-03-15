@@ -130,7 +130,7 @@ resource "railway_service" "postgres" {
 }
 ```
 
-Use standalone `railway_volume` only when you need a volume in a non-default environment.
+Use standalone `railway_volume` when you need a volume in a non-default environment, or when you need to reference the `volume_instance_id` (e.g., for `railway_volume_backup_schedule`). The inline volume block does not expose `volume_instance_id`.
 
 ### Service Instance Configuration
 
@@ -138,18 +138,43 @@ Use `railway_service_instance` for per-environment config. This is separate from
 
 ```terraform
 resource "railway_service_instance" "app" {
-  service_id       = railway_service.app.id
-  environment_id   = local.environment_id
-  start_command    = "gunicorn app:app"
-  build_command    = "pip install -r requirements.txt"
-  healthcheck_path = "/health"
-  num_replicas     = 2
-  vcpus            = 1.0
-  memory_gb        = 0.5
+  service_id     = railway_service.app.id
+  environment_id = local.environment_id
+
+  # Source (optional — override what's set on railway_service)
+  source_repo    = "myorg/myapp"
+  root_directory = "/backend"
+  config_path    = "backend/railway.toml"
+
+  # Build & start
+  build_command  = "pip install -r requirements.txt"
+  start_command  = "gunicorn app:app"
+  builder        = "RAILPACK"  # HEROKU, NIXPACKS, PAKETO, RAILPACK
+
+  # Deploy settings
+  region                     = "us-west1"
+  num_replicas               = 2
+  healthcheck_path           = "/health"
+  healthcheck_timeout        = 300
+  restart_policy_type        = "ON_FAILURE"  # ALWAYS, ON_FAILURE, NEVER
+  restart_policy_max_retries = 3
+  sleep_application          = false
+  overlap_seconds            = 5
+  draining_seconds           = 10
+  watch_patterns             = ["backend/**"]
+  pre_deploy_command         = ["python manage.py migrate"]
+  # cron_schedule            = "0 */6 * * *"  # requires num_replicas = 1
+
+  # Resource limits
+  vcpus     = 1.0
+  memory_gb = 0.5
 }
 ```
 
-Note: `vcpus` and `memory_gb` are write-only — they can be set but not read back from the API. Import will not capture them.
+Notes:
+- `vcpus` and `memory_gb` are write-only — they can be set but not read back from the API. Import will not capture them.
+- `region` uses Railway's `multiRegionConfig` internally. The `ServiceInstance.region` API field returns null — the provider reads region from `latestDeployment.meta`.
+- `source_image` and `source_repo` are mutually exclusive. Use `source_image` for Docker images (e.g., `postgres:17`).
 
 ### Private Networking
 
@@ -190,7 +215,7 @@ resource "railway_deployment_trigger" "api" {
 
 ### Egress Gateway (Static IP)
 
-For services that need a fixed outbound IP (e.g., for external API allowlisting):
+For services that need a fixed outbound IP (e.g., for external API allowlisting). Requires a **Pro plan** workspace. The service must have at least one deployment — the static IP is tied to the service's deployment region and activates after the next deploy. If `region` is omitted, Railway uses the service's current deployment region.
 
 ```terraform
 resource "railway_egress_gateway" "api" {
@@ -207,7 +232,7 @@ Enable automatic backups for production volumes:
 
 ```terraform
 resource "railway_volume_backup_schedule" "postgres_data" {
-  volume_instance_id = railway_volume.postgres_data.id
+  volume_instance_id = railway_volume.postgres_data.volume_instance_id
   kinds              = ["DAILY", "WEEKLY"]
 }
 ```
@@ -229,15 +254,19 @@ Use `railway_variable_collection` for bulk variables on a single service, `railw
 
 ### Webhooks
 
+> **WARNING:** Webhook types (`WebhookCreateInput`, `ProjectWebhook`) are NOT in Railway's public GraphQL schema as of v0.8.0. The provider includes the operations in its local schema and they work with mock tests, but live API calls will fail with "Unknown type" errors. Do not use `railway_webhook` in production configs until Railway re-adds these types to their public API.
+
 Send notifications when events occur in a project:
 
 ```terraform
 resource "railway_webhook" "deploy_notifications" {
   project_id = railway_project.main.id
   url        = "https://example.com/webhooks/railway"
-  filters    = ["deploy.completed"]
+  filters    = ["deploy.completed", "deploy.started"]
 }
 ```
+
+Known filter values: `deploy.completed`, `deploy.started`, `deploy.failed`, `deploy.crashed`, `deploy.removed`.
 
 ## Known Issues
 
@@ -272,6 +301,18 @@ resource "railway_webhook" "deploy_notifications" {
 **Why:** Railway's API caches individual resource lookups. The list endpoint (e.g., `environments(projectId: "...")`) reflects deletions much faster (~1-2 seconds).
 
 **Workaround:** The provider's Read methods use list queries filtered by ID instead of direct-by-ID queries where this is observed. Currently applied to `railway_environment`. If adding new resources, prefer list-based Read when the parent provides a list endpoint.
+
+### TCP Proxy Domain Trailing Dot
+
+**What happens:** Railway's API sometimes returns the `domain` field with a trailing dot (e.g., `roundrobin-xxx.proxy.rlwy.net.`). The provider normalizes this automatically by stripping the trailing dot in both Create and Read.
+
+**Impact:** None — handled transparently. Just be aware if comparing domain values from the Railway API directly.
+
+### Volume Name Uniqueness Per Project
+
+**What happens:** Volume names must be unique within a project. If you try to create a service with an inline volume whose name already exists in the project (from a previous failed run or another service), the volume will be created but the rename will fail.
+
+**Impact:** As of v0.8.0, the provider cleans up the orphaned volume automatically if the rename fails. You'll get a clear error message. To fix: choose a different volume name or delete the conflicting volume.
 
 ### "Operation Already in Progress" on Delete
 

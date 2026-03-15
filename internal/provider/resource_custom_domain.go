@@ -48,10 +48,13 @@ func (r *CustomDomainResource) Metadata(ctx context.Context, req resource.Metada
 
 func (r *CustomDomainResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
+		Version:             1,
 		MarkdownDescription: "Railway custom domain.",
+		Description:         "Railway custom domain.",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				MarkdownDescription: "Identifier of the custom domain.",
+				Description:         "Identifier of the custom domain.",
 				Computed:            true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
@@ -59,6 +62,7 @@ func (r *CustomDomainResource) Schema(ctx context.Context, req resource.SchemaRe
 			},
 			"domain": schema.StringAttribute{
 				MarkdownDescription: "Custom domain.",
+				Description:         "Custom domain.",
 				Required:            true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
@@ -69,6 +73,7 @@ func (r *CustomDomainResource) Schema(ctx context.Context, req resource.SchemaRe
 			},
 			"environment_id": schema.StringAttribute{
 				MarkdownDescription: "Identifier of the environment the custom domain belongs to.",
+				Description:         "Identifier of the environment the custom domain belongs to.",
 				Required:            true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
@@ -79,6 +84,7 @@ func (r *CustomDomainResource) Schema(ctx context.Context, req resource.SchemaRe
 			},
 			"service_id": schema.StringAttribute{
 				MarkdownDescription: "Identifier of the service the custom domain belongs to.",
+				Description:         "Identifier of the service the custom domain belongs to.",
 				Required:            true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
@@ -89,6 +95,7 @@ func (r *CustomDomainResource) Schema(ctx context.Context, req resource.SchemaRe
 			},
 			"project_id": schema.StringAttribute{
 				MarkdownDescription: "Identifier of the project the custom domain belongs to.",
+				Description:         "Identifier of the project the custom domain belongs to.",
 				Computed:            true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
@@ -96,6 +103,7 @@ func (r *CustomDomainResource) Schema(ctx context.Context, req resource.SchemaRe
 			},
 			"target_port": schema.Int64Attribute{
 				MarkdownDescription: "Target port for the custom domain.",
+				Description:         "Target port for the custom domain.",
 				Optional:            true,
 				Computed:            true,
 				PlanModifiers: []planmodifier.Int64{
@@ -107,6 +115,7 @@ func (r *CustomDomainResource) Schema(ctx context.Context, req resource.SchemaRe
 			},
 			"host_label": schema.StringAttribute{
 				MarkdownDescription: "Host label of the custom domain.",
+				Description:         "Host label of the custom domain.",
 				Computed:            true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
@@ -114,6 +123,7 @@ func (r *CustomDomainResource) Schema(ctx context.Context, req resource.SchemaRe
 			},
 			"zone": schema.StringAttribute{
 				MarkdownDescription: "Zone of the custom domain.",
+				Description:         "Zone of the custom domain.",
 				Computed:            true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
@@ -121,6 +131,7 @@ func (r *CustomDomainResource) Schema(ctx context.Context, req resource.SchemaRe
 			},
 			"dns_record_value": schema.StringAttribute{
 				MarkdownDescription: "DNS record value of the custom domain.",
+				Description:         "DNS record value of the custom domain.",
 				Computed:            true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
@@ -185,15 +196,37 @@ func (r *CustomDomainResource) Create(ctx context.Context, req resource.CreateRe
 		return
 	}
 
-	tflog.Trace(ctx, "created a custom domain")
+	tflog.Debug(ctx, "created a custom domain")
 
 	domain := response.CustomDomainCreate.CustomDomain
 
+	// Save state immediately so Terraform can track (and destroy) the resource
+	// even if the process crashes before the final state save. Resolve Unknown
+	// computed values to concrete values before saving.
 	data.Id = types.StringValue(domain.Id)
+	data.ProjectId = types.StringValue(service.Service.ProjectId)
+	if data.TargetPort.IsUnknown() {
+		data.TargetPort = types.Int64Null()
+	}
+	if data.HostLabel.IsUnknown() {
+		data.HostLabel = types.StringNull()
+	}
+	if data.Zone.IsUnknown() {
+		data.Zone = types.StringNull()
+	}
+	if data.DNSRecordValue.IsUnknown() {
+		data.DNSRecordValue = types.StringNull()
+	}
+
+	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	// Now populate full state from the response.
 	data.Domain = types.StringValue(domain.Domain)
 	data.EnvironmentId = types.StringValue(domain.EnvironmentId)
 	data.ServiceId = types.StringValue(domain.ServiceId)
-	data.ProjectId = types.StringValue(service.Service.ProjectId)
 
 	if domain.TargetPort != 0 {
 		data.TargetPort = types.Int64Value(int64(domain.TargetPort))
@@ -302,11 +335,29 @@ func (r *CustomDomainResource) Update(ctx context.Context, req resource.UpdateRe
 		_, err := updateCustomDomain(ctx, *r.client, plan.EnvironmentId.ValueString(), state.Id.ValueString(), targetPort)
 
 		if err != nil {
-			resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to update custom domain, got error: %s", err))
+			resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to update custom domain (domain=%s, id=%s), got error: %s", plan.Domain.ValueString(), state.Id.ValueString(), err))
 			return
 		}
 
-		tflog.Trace(ctx, "updated custom domain target port")
+		tflog.Debug(ctx, "updated custom domain target port")
+	}
+
+	// Read back from API to confirm the update
+	response, err := listCustomDomains(ctx, *r.client, plan.EnvironmentId.ValueString(), plan.ServiceId.ValueString(), plan.ProjectId.ValueString())
+	if err != nil {
+		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to read custom domain after update (domain=%s), got error: %s", plan.Domain.ValueString(), err))
+		return
+	}
+
+	for _, customDomain := range response.Domains.CustomDomains {
+		if customDomain.CustomDomain.Domain == plan.Domain.ValueString() {
+			if customDomain.CustomDomain.TargetPort != 0 {
+				plan.TargetPort = types.Int64Value(int64(customDomain.CustomDomain.TargetPort))
+			} else {
+				plan.TargetPort = types.Int64Null()
+			}
+			break
+		}
 	}
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
@@ -323,12 +374,12 @@ func (r *CustomDomainResource) Delete(ctx context.Context, req resource.DeleteRe
 
 	_, err := deleteCustomDomain(ctx, *r.client, data.Id.ValueString())
 
-	if err != nil && !isNotFound(err) && !strings.Contains(strings.ToLower(err.Error()), "operation is already in progress") {
+	if err != nil && !isNotFoundOrGone(err) && !isOperationInProgress(err) {
 		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to delete custom domain, got error: %s", err))
 		return
 	}
 
-	tflog.Trace(ctx, "deleted a custom domain")
+	tflog.Debug(ctx, "deleted a custom domain")
 }
 
 func (r *CustomDomainResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {

@@ -1,1 +1,2 @@
-terraform import railway_egress_gateway.example 89fa0236-2b1b-4a8c-b12d-ae3634b30d97:d0519b29-5d12-4857-a5dd-76fa7418336c
+# Import by service_id:environment_id
+terraform import railway_egress_gateway.api your-service-id:your-environment-id

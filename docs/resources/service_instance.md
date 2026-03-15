@@ -35,8 +35,15 @@ resource "railway_service_instance" "backend_dev" {
   vcpus     = 2
   memory_gb = 0.5
 
-  healthcheck_path = "/health/"
-  num_replicas     = 1
+  healthcheck_path    = "/health/"
+  healthcheck_timeout = 300
+  num_replicas        = 1
+
+  restart_policy_type        = "ON_FAILURE"
+  restart_policy_max_retries = 3
+
+  overlap_seconds  = 5
+  draining_seconds = 10
 }
 ```
 
@@ -65,18 +72,26 @@ resource "railway_service_instance" "postgres_dev" {
 ### Optional
 
 - `build_command` (String) Custom build command.
+- `builder` (String) Builder to use. Valid values: `HEROKU`, `NIXPACKS`, `PAKETO`, `RAILPACK`.
 - `config_path` (String) Path to the Railway config file (e.g. `backend/railway.toml`).
-- `cron_schedule` (String) Cron schedule for the service.
+- `cron_schedule` (String) Cron schedule for the service. Can only be set when `num_replicas` is 1.
+- `draining_seconds` (Number) Number of seconds to drain connections before stopping the old deployment.
 - `healthcheck_path` (String) HTTP path for health checks.
+- `healthcheck_timeout` (Number) Healthcheck timeout in seconds.
 - `memory_gb` (Number) Amount of memory in GB to allocate (e.g. `0.5`, `1`, `2`). Maps to Railway's container memory limit.
 - `num_replicas` (Number) Number of replicas.
+- `overlap_seconds` (Number) Number of seconds to keep the old deployment running alongside the new one during a rollout.
+- `pre_deploy_command` (List of String) Pre-deploy command(s) to run before starting the service.
 - `region` (String) Region to deploy the service instance in.
+- `restart_policy_max_retries` (Number) Maximum number of restart retries when `restart_policy_type` is `ON_FAILURE`.
+- `restart_policy_type` (String) Restart policy type. Valid values: `ALWAYS`, `ON_FAILURE`, `NEVER`.
 - `root_directory` (String) Root directory for the service within the repository.
 - `sleep_application` (Boolean) Whether the service should sleep when inactive.
 - `source_image` (String) Docker image to use as the source (e.g. `postgres:17`). Conflicts with `source_repo`.
 - `source_repo` (String) GitHub repository to use as the source (e.g. `owner/repo`). Conflicts with `source_image`.
 - `start_command` (String) Custom start command.
 - `vcpus` (Number) Number of vCPUs to allocate (e.g. `0.5`, `1`, `2`). Maps to Railway's container CPU limit.
+- `watch_patterns` (List of String) File patterns to watch for changes to trigger rebuilds (e.g. `["server/**"]`).
 
 ### Read-Only
 

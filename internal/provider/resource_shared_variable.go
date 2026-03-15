@@ -42,10 +42,13 @@ func (r *SharedVariableResource) Metadata(ctx context.Context, req resource.Meta
 
 func (r *SharedVariableResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
+		Version:             1,
 		MarkdownDescription: "Railway shared variable.",
+		Description:         "Railway shared variable.",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				MarkdownDescription: "Identifier of the variable.",
+				Description:         "Identifier of the variable.",
 				Computed:            true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
@@ -53,6 +56,7 @@ func (r *SharedVariableResource) Schema(ctx context.Context, req resource.Schema
 			},
 			"name": schema.StringAttribute{
 				MarkdownDescription: "Name of the variable.",
+				Description:         "Name of the variable.",
 				Required:            true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
@@ -63,11 +67,13 @@ func (r *SharedVariableResource) Schema(ctx context.Context, req resource.Schema
 			},
 			"value": schema.StringAttribute{
 				MarkdownDescription: "Value of the variable.",
+				Description:         "Value of the variable.",
 				Required:            true,
 				Sensitive:           true,
 			},
 			"environment_id": schema.StringAttribute{
 				MarkdownDescription: "Identifier of the environment the variable belongs to.",
+				Description:         "Identifier of the environment the variable belongs to.",
 				Required:            true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
@@ -78,6 +84,7 @@ func (r *SharedVariableResource) Schema(ctx context.Context, req resource.Schema
 			},
 			"project_id": schema.StringAttribute{
 				MarkdownDescription: "Identifier of the project the variable belongs to.",
+				Description:         "Identifier of the project the variable belongs to.",
 				Required:            true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
@@ -133,7 +140,16 @@ func (r *SharedVariableResource) Create(ctx context.Context, req resource.Create
 		return
 	}
 
-	tflog.Trace(ctx, "created a shared variable")
+	tflog.Debug(ctx, "created a shared variable")
+
+	// Save partial state immediately so Terraform can track (and destroy) the
+	// resource even if a subsequent read call fails or the process crashes.
+	data.Id = types.StringValue(fmt.Sprintf("%s:%s:%s", data.ProjectId.ValueString(), data.EnvironmentId.ValueString(), data.Name.ValueString()))
+
+	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
 
 	err = getSharedVariable(ctx, *r.client, data.ProjectId.ValueString(), data.EnvironmentId.ValueString(), data.Name.ValueString(), data)
 
@@ -191,7 +207,7 @@ func (r *SharedVariableResource) Update(ctx context.Context, req resource.Update
 		return
 	}
 
-	tflog.Trace(ctx, "updated a shared variable")
+	tflog.Debug(ctx, "updated a shared variable")
 
 	err = getSharedVariable(ctx, *r.client, data.ProjectId.ValueString(), data.EnvironmentId.ValueString(), data.Name.ValueString(), data)
 
@@ -220,12 +236,12 @@ func (r *SharedVariableResource) Delete(ctx context.Context, req resource.Delete
 
 	_, err := deleteVariable(ctx, *r.client, input)
 
-	if err != nil && !isNotFound(err) {
+	if err != nil && !isNotFoundOrGone(err) {
 		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to delete shared variable, got error: %s", err))
 		return
 	}
 
-	tflog.Trace(ctx, "deleted a shared variable")
+	tflog.Debug(ctx, "deleted a shared variable")
 }
 
 func (r *SharedVariableResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
@@ -266,7 +282,11 @@ func getSharedVariable(ctx context.Context, client graphql.Client, projectId str
 
 	data.Id = types.StringValue(fmt.Sprintf("%s:%s:%s", projectId, environmentId, name))
 	data.Name = types.StringValue(name)
-	data.Value = types.StringValue(fmt.Sprintf("%v", value))
+	str, isStr := value.(string)
+	if !isStr {
+		str = fmt.Sprintf("%v", value)
+	}
+	data.Value = types.StringValue(str)
 	data.ProjectId = types.StringValue(projectId)
 	data.EnvironmentId = types.StringValue(environmentId)
 

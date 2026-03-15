@@ -44,6 +44,15 @@
 * Fix `railway_custom_domain` Delete failing with "operation already in progress" when concurrent deletes occur
 * Fix `railway_tcp_proxy` Delete failing with "operation already in progress" when concurrent deletes occur
 * Fix `railway_tcp_proxy` domain field inconsistency — normalize trailing dot between Create and Read API responses
+* Fix `railway_service` inline volume orphan leak — when volume rename fails after creation, the orphaned volume is now cleaned up automatically (both Create and Update paths)
+* Fix all Delete methods — introduced `isNotFoundOrGone()` for Delete-only use, matching Railway's non-standard "Not Authorized" and "Problem processing request" responses for already-deleted resources. `isNotFound()` remains narrow (safe for Read methods where false positives would silently remove live resources from state)
+* Fix `railway_deployment_trigger` acceptance tests — corrected GitHub repo name from `railway-terraform-provider` to `terraform-provider-railway`
+* Add `volume_instance_id` computed attribute to `railway_volume` — enables chaining to `railway_volume_backup_schedule` (previously the volume ID was used where the volume instance ID was required)
+* Fix `railway_service` root_directory description typo — "Directory to user" → "Directory to use"
+* Fix `docs/resources/webhook.md` example filter format — changed `["DEPLOY"]` to `["deploy.completed", "deploy.started"]`
+* Fix `docs/resources/custom_domain.md` — add missing `target_port` Optional field documentation
+* Fix `railway_service` inline volume creation — unknown computed sub-fields (`id`, `size`) in early state save caused "Provider returned invalid result object after apply" when volume creation failed
+* Fix `railway_service` inline volume creation — add retry with backoff for Railway API "Problem processing request" errors due to eventual consistency on newly created services
 
 ## 0.7.0
 

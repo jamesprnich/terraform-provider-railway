@@ -1,1 +1,2 @@
-terraform import railway_service_domain.api 89fa0236-2b1b-4a8c-b12d-ae3634b30d97:staging:example-api.up.railway.app
+# Import by service_id:environment_name:full_domain
+terraform import railway_service_domain.api your-service-id:production:my-app-abc123.up.railway.app

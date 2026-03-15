@@ -1,1 +1,2 @@
-terraform import railway_volume_backup_schedule.example a1b2c3d4-5e6f-7a8b-9c0d-1e2f3a4b5c6d
+# Import by volume_instance_id
+terraform import railway_volume_backup_schedule.daily your-volume-instance-id
