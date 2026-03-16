@@ -4,7 +4,6 @@ page_title: "railway_service Resource - terraform-provider-railway"
 subcategory: ""
 description: |-
   Railway service.
-  ⚠️ NOTE: All the other settings not specified here are recommended to be specified in the Railway config file.
 ---
 
 # railway_service (Resource)

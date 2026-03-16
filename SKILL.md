@@ -5,7 +5,7 @@ description: Deploy and manage Railway infrastructure using the Railway Terrafor
 
 # railway-provider
 
-Use this skill when a project needs to deploy services to Railway using OpenTofu/Terraform with the `terraform-community-providers/railway` provider.
+Use this skill when a project needs to deploy services to Railway using OpenTofu/Terraform with the `jamesprnich/railway` provider.
 
 ## Prerequisites
 
@@ -16,7 +16,7 @@ Use this skill when a project needs to deploy services to Railway using OpenTofu
   ```hcl
   provider_installation {
     dev_overrides {
-      "terraform-community-providers/railway" = "/path/to/go/bin"
+      "jamesprnich/railway" = "/path/to/go/bin"
     }
     direct {}
   }
