@@ -32,10 +32,10 @@ jobs:
         env:
           TF_ACC: 1
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
-          TF_ACC_TERRAFORM_PATH: tofu
           TF_ACC_PROVIDER_NAMESPACE: hashicorp
           TF_ACC_PROVIDER_HOST: registry.opentofu.org
         run: |
+          export TF_ACC_TERRAFORM_PATH="$(which tofu)"
           if [ -n "${{ inputs.test_pattern }}" ]; then
             go test -v -cover -timeout 15m -run "${{ inputs.test_pattern }}" ./internal/provider/
           else
