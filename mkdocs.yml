@@ -1,0 +1,69 @@
+site_name: Railway Terraform Provider
+site_url: https://jamesprnich.github.io/terraform-provider-railway/
+site_description: Terraform / OpenTofu provider for managing Railway infrastructure as code
+repo_url: https://github.com/jamesprnich/terraform-provider-railway
+repo_name: terraform-provider-railway
+
+docs_dir: docs/
+
+theme:
+  name: material
+  custom_dir: docs/overrides
+  palette:
+    scheme: slate
+    primary: blue
+    accent: blue
+  font:
+    text: Inter
+    code: JetBrains Mono
+  features:
+    - navigation.top
+    - content.code.copy
+    - content.code.annotate
+    - search.suggest
+    - search.highlight
+    - toc.follow
+
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.tabbed:
+      alternate_style: true
+  - tables
+  - attr_list
+  - md_in_html
+  - toc:
+      permalink: true
+
+nav:
+  - Home: home.md
+  - Provider Configuration: index.md
+  - Guides:
+    - Authentication: guides/authentication.md
+    - Two-Layer Architecture: guides/two-layer-architecture.md
+  - Resources:
+    - project: resources/project.md
+    - environment: resources/environment.md
+    - service: resources/service.md
+    - service_instance: resources/service_instance.md
+    - variable: resources/variable.md
+    - variable_collection: resources/variable_collection.md
+    - shared_variable: resources/shared_variable.md
+    - volume: resources/volume.md
+    - volume_backup_schedule: resources/volume_backup_schedule.md
+    - service_domain: resources/service_domain.md
+    - custom_domain: resources/custom_domain.md
+    - tcp_proxy: resources/tcp_proxy.md
+    - webhook: resources/webhook.md
+    - deployment_trigger: resources/deployment_trigger.md
+    - egress_gateway: resources/egress_gateway.md
+    - private_network: resources/private_network.md
+    - private_network_endpoint: resources/private_network_endpoint.md
+  - Data Sources:
+    - project: data-sources/project.md
+    - environment: data-sources/environment.md
+    - service: data-sources/service.md

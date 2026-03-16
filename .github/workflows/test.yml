@@ -3,12 +3,21 @@ on:
   pull_request:
     paths-ignore:
       - 'README.md'
+      - 'CHANGELOG.md'
+      - 'CONTRIBUTING.md'
+      - 'SKILL.md'
+      - 'docs/**'
   push:
-    branches: [master]
+    branches: [main]
     paths-ignore:
       - 'README.md'
+      - 'CHANGELOG.md'
+      - 'CONTRIBUTING.md'
+      - 'SKILL.md'
+      - 'docs/**'
 concurrency:
   group: test-${{ github.ref }}
+  cancel-in-progress: true
 permissions:
   contents: read
 jobs:
@@ -18,9 +27,9 @@ jobs:
     timeout-minutes: 5
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
-      - name: Install go
-        uses: actions/setup-go@v4
+        uses: actions/checkout@v4
+      - name: Install Go
+        uses: actions/setup-go@v5
         with:
           go-version-file: 'go.mod'
           cache: true
@@ -28,49 +37,62 @@ jobs:
         run: go mod download
       - name: Build
         run: go build -v .
-  generate:
-    name: Generated code check
+      - name: Vet
+        run: go vet ./...
+
+  unit:
+    name: Unit Tests
+    needs: build
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
-      - name: Install terraform
-        uses: hashicorp/setup-terraform@v3
-        with:
-          terraform_wrapper: false
-      - name: Install go
-        uses: actions/setup-go@v4
+        uses: actions/checkout@v4
+      - name: Install Go
+        uses: actions/setup-go@v5
         with:
           go-version-file: 'go.mod'
           cache: true
-      - name: Check generated code
-        run: |
-          go generate ./...
-          git diff --compact-summary --exit-code || \
-            (echo; echo "Unexpected difference in directories after code generation. Run 'go generate ./...' command and commit."; exit 1)
-  test:
-    name: Terraform Provider Acceptance Test
+      - name: Install OpenTofu
+        uses: opentofu/setup-opentofu@v1
+        with:
+          tofu_version: 1.9.0
+          tofu_wrapper: false
+      - name: Install deps
+        run: go mod download
+      - name: Run unit tests
+        env:
+          TF_ACC_TERRAFORM_PATH: tofu
+          TF_ACC_PROVIDER_NAMESPACE: hashicorp
+          TF_ACC_PROVIDER_HOST: registry.opentofu.org
+        run: go test -v -timeout 5m ./internal/provider/
+
+  acceptance:
+    name: Acceptance Tests
     needs: build
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
-      - name: Install go
-        uses: actions/setup-go@v4
+        uses: actions/checkout@v4
+      - name: Install Go
+        uses: actions/setup-go@v5
         with:
           go-version-file: 'go.mod'
           cache: true
-      - name: Install terraform
-        uses: hashicorp/setup-terraform@v2
+      - name: Install OpenTofu
+        uses: opentofu/setup-opentofu@v1
         with:
-          terraform_version: 1.4.*
-          terraform_wrapper: false
+          tofu_version: 1.9.0
+          tofu_wrapper: false
       - name: Install deps
         run: go mod download
-      - name: Test
+      - name: Run acceptance tests
         env:
           TF_ACC: 1
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
-        run: go test -v -cover ./internal/provider/
-        timeout-minutes: 10
+          TF_ACC_TERRAFORM_PATH: tofu
+          TF_ACC_PROVIDER_NAMESPACE: hashicorp
+          TF_ACC_PROVIDER_HOST: registry.opentofu.org
+        run: go test -v -cover -timeout 15m ./internal/provider/

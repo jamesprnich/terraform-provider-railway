@@ -10,7 +10,8 @@ description: |-
 
 Railway webhook. Sends HTTP POST notifications to a URL when events occur in a project.
 
-~> **Note:** Webhook types (`WebhookCreateInput`, `ProjectWebhook`) are not currently in Railway's public GraphQL schema. This resource is defined in the provider but live API calls may fail until Railway re-adds these types. The provider and mock tests work correctly.
+!!! warning "Not currently functional"
+    Webhook types (`WebhookCreateInput`, `ProjectWebhook`) are not in Railway's public GraphQL schema. This resource is implemented and passes mock tests, but **live API calls will fail** until Railway re-adds these types to their schema.
 
 ## Example Usage
 
