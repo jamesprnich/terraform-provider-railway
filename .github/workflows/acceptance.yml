@@ -1,0 +1,43 @@
+name: Acceptance Tests
+on:
+  workflow_dispatch:
+    inputs:
+      test_pattern:
+        description: 'Test pattern filter (e.g. TestAccProject, leave empty for all)'
+        required: false
+        default: ''
+permissions:
+  contents: read
+jobs:
+  acceptance:
+    name: Acceptance Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Install Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: 'go.mod'
+          cache: true
+      - name: Install OpenTofu
+        uses: opentofu/setup-opentofu@v1
+        with:
+          tofu_version: 1.9.0
+          tofu_wrapper: false
+      - name: Install deps
+        run: go mod download
+      - name: Run acceptance tests
+        env:
+          TF_ACC: 1
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+          TF_ACC_TERRAFORM_PATH: tofu
+          TF_ACC_PROVIDER_NAMESPACE: hashicorp
+          TF_ACC_PROVIDER_HOST: registry.opentofu.org
+        run: |
+          if [ -n "${{ inputs.test_pattern }}" ]; then
+            go test -v -cover -timeout 15m -run "${{ inputs.test_pattern }}" ./internal/provider/
+          else
+            go test -v -cover -timeout 15m ./internal/provider/
+          fi
