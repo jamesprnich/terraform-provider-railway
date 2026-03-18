@@ -4,11 +4,11 @@ page_title: "Authentication Guide"
 
 # Authentication Guide
 
-The Railway Terraform provider supports two types of API tokens. Choosing the right token type is critical for both security and functionality — they have very different permission levels.
+The Railway provider supports two types of API tokens. Choosing the right token type is critical for both security and functionality — they have very different permission levels.
 
 ## Token Types
 
-### Account Tokens (Recommended for Terraform)
+### Account Tokens (Recommended)
 
 Account tokens have full access to all projects and resources within your Railway account.
 
@@ -20,7 +20,7 @@ Account tokens have full access to all projects and resources within your Railwa
 - Manage volumes, domains, variables, and all other resources
 - Access all projects in the account
 
-**When to use:** Any Terraform workflow that needs to create or fully configure services. This is the token type you need for most Terraform operations.
+**When to use:** Any workflow that needs to create or fully configure services. This is the token type you need for most provider operations.
 
 **Security note:** Account tokens are powerful. Never commit them to source control. Use environment variables or a secrets manager:
 
@@ -40,7 +40,7 @@ Project tokens are scoped to a single environment within a single project. They 
 - Manage deployment triggers, egress gateways, private networks
 - Delete resources within the scoped environment
 
-**Limitations (will cause Terraform errors):**
+**Limitations (will cause errors):**
 - **Cannot run `serviceConnect`** — this means you cannot attach a Docker image or GitHub repo to a service. Any `railway_service` resource with `source_image` or `source_repo` set will partially create (the service is created but the source is not attached) and then error.
 - **Cannot list all projects** — the `data.railway_project` data source with a `name` lookup will fail. Direct `id` lookup works.
 - **Cannot query across environments** — only the environment the token is scoped to is accessible.
@@ -69,17 +69,17 @@ Project tokens are scoped to a single environment within a single project. They 
 
 ## Recommended Setup
 
-For a typical Terraform workflow managing Railway infrastructure:
+For a typical workflow managing Railway infrastructure:
 
-1. **Create a dedicated account token** for Terraform automation
+1. **Create a dedicated account token** for automation
 2. **Store it in your CI/CD secrets** or a secrets manager
-3. **Scope your Terraform configs** to specific projects using `project_id` — the isolation comes from your config, not the token
+3. **Scope your configs** to specific projects using `project_id` — the isolation comes from your config, not the token
 4. **Rotate tokens periodically** via the Railway dashboard
 
 ```terraform
 provider "railway" {
   # Set via RAILWAY_TOKEN environment variable
-  # Do not hardcode tokens in Terraform files
+  # Do not hardcode tokens in config files
 }
 
 resource "railway_service" "web" {

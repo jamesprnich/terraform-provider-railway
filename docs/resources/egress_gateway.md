@@ -43,5 +43,5 @@ resource "railway_egress_gateway" "api" {
 Import is supported using the following syntax:
 
 ```shell
-terraform import railway_egress_gateway.api <service_id>:<environment_id>
+tofu import railway_egress_gateway.api <service_id>:<environment_id>
 ```

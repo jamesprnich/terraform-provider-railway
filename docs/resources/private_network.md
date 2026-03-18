@@ -46,5 +46,5 @@ resource "railway_private_network" "internal" {
 Import is supported using the following syntax:
 
 ```shell
-terraform import railway_private_network.internal <environment_id>:<network_public_id>
+tofu import railway_private_network.internal <environment_id>:<network_public_id>
 ```

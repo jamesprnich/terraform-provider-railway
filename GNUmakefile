@@ -1,4 +1,4 @@
-default: testacc
+default: test
 
 # OpenTofu test configuration — required for unit tests that use resource.UnitTest()
 # Without these, OpenTofu rejects the legacy "-" provider namespace.

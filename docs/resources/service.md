@@ -18,8 +18,6 @@ In Railway, a **Service** is a project-level resource that exists across all env
 
 If you need **per-environment control** over what source, version, or resource limits each environment uses, create services without sources here and use [`railway_service_instance`](service_instance.md) to configure each environment independently.
 
-See the [Two-Layer Architecture Guide](../guides/two-layer-architecture.md) for the full pattern.
-
 ## Example Usage
 
 ### Empty service (recommended for multi-environment setups)
@@ -93,5 +91,5 @@ Read-Only:
 Import is supported using the following syntax:
 
 ```shell
-terraform import railway_service.example 89fa0236-2b1b-4a8c-b12d-ae3634b30d97
+tofu import railway_service.example 89fa0236-2b1b-4a8c-b12d-ae3634b30d97
 ```

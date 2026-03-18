@@ -53,5 +53,5 @@ Read-Only:
 Import is supported using the following syntax:
 
 ```shell
-terraform import railway_project.example 0bb01547-570d-4109-a5e8-138691f6a2d1
+tofu import railway_project.example 0bb01547-570d-4109-a5e8-138691f6a2d1
 ```

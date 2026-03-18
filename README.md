@@ -1,6 +1,6 @@
-# Railway Terraform Provider
+# Railway OpenTofu Provider
 
-A [Terraform](https://www.terraform.io) / [OpenTofu](https://opentofu.org) provider for managing [Railway](https://railway.app) infrastructure as code.
+An [OpenTofu](https://opentofu.org) provider for managing [Railway](https://railway.app) infrastructure as code. Also compatible with [Terraform](https://www.terraform.io).
 
 17 resources, 3 data sources, full import support.
 

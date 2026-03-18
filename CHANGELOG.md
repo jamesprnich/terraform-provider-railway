@@ -36,7 +36,7 @@
 * Fix `railway_service` inline volume plan modifiers — replace `UseStateForUnknown()` with custom `useStringStateForUnknownIfNonNull()` / `useFloat64StateForUnknownIfNonNull()` to prevent "inconsistent result after apply" when adding volume to existing service
 * Fix `railway_service` Create — reorder source connection (image/repo) before volume creation for API stability
 * Fix `railway_service` Create — set computed fields (regions, volume) to null instead of unknown before early state save
-* Fix `railway_variable_collection` ID instability — changed ID format from `serviceId:envId:NAME1:NAME2:...` to `serviceId:envId` so variable name changes don't break Terraform state
+* Fix `railway_variable_collection` ID instability — changed ID format from `serviceId:envId:NAME1:NAME2:...` to `serviceId:envId` so variable name changes don't break state
 * Fix `railway_environment` Read using stale `getEnvironment(id)` query — switched to authoritative `getEnvironments(projectId)` list which correctly reflects deletions
 * Fix `railway_environment` ImportState not setting `project_id` (Read would fail after import)
 * Fix `railway_environment` Delete failing when environment already deleted externally — added pre-delete existence check via project environment list

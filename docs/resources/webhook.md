@@ -53,5 +53,5 @@ resource "railway_webhook" "deploy_only" {
 Import is supported using the following syntax:
 
 ```shell
-terraform import railway_webhook.deploy_notifications <project_id>:<webhook_id>
+tofu import railway_webhook.deploy_notifications <project_id>:<webhook_id>
 ```

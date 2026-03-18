@@ -20,7 +20,6 @@ There are several ways to provide the required token:
 ## Guides
 
 * [Authentication Guide](guides/authentication.md) — Token types, permissions, and troubleshooting.
-* [Two-Layer Architecture Guide](guides/two-layer-architecture.md) — How to structure services and environments for per-environment control of sources, resource limits, and variables.
 
 ## Example Usage
 

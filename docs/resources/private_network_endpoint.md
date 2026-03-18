@@ -58,5 +58,5 @@ resource "railway_private_network_endpoint" "postgres" {
 Import is supported using the following syntax:
 
 ```shell
-terraform import railway_private_network_endpoint.postgres <environment_id>:<private_network_id>:<service_id>
+tofu import railway_private_network_endpoint.postgres <environment_id>:<private_network_id>:<service_id>
 ```

@@ -36,5 +36,5 @@ resource "railway_volume_backup_schedule" "postgres_data" {
 Import is supported using the following syntax:
 
 ```shell
-terraform import railway_volume_backup_schedule.postgres_data <volume_instance_id>
+tofu import railway_volume_backup_schedule.postgres_data <volume_instance_id>
 ```

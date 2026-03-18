@@ -14,7 +14,7 @@ In Railway's data model, a **Service** is a project-level resource that exists a
 
 The existing `railway_service` resource only configures the default environment's service instance. This resource allows configuring any environment's service instance independently.
 
-For best results, create services without sources via `railway_service` and use this resource to set the source, build, deploy settings, and resource limits per environment. See the [Two-Layer Architecture Guide](../guides/two-layer-architecture.md) for the full pattern.
+For multi-environment setups, create services without sources via `railway_service` and use this resource to set the source, build, deploy settings, and resource limits per environment.
 
 ## Example Usage
 
@@ -54,7 +54,7 @@ resource "railway_service_instance" "postgres_dev" {
   service_id     = railway_service.postgres.id
   environment_id = railway_environment.dev.id
 
-  source_image = "postgres:17"
+  source_image = "postgres:17.5-alpine"
 
   vcpus     = 1
   memory_gb = 0.5
@@ -102,5 +102,5 @@ resource "railway_service_instance" "postgres_dev" {
 Import is supported using the following syntax:
 
 ```shell
-terraform import railway_service_instance.backend_dev <service_id>:<environment_id>
+tofu import railway_service_instance.backend_dev <service_id>:<environment_id>
 ```

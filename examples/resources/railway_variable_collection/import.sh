@@ -1,2 +1,2 @@
 # Import by service_id:environment_name:var_name1:var_name2:...
-terraform import railway_variable_collection.app_config your-service-id:production:DATABASE_URL:REDIS_URL
+tofu import railway_variable_collection.app_config your-service-id:production:DATABASE_URL:REDIS_URL
