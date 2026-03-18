@@ -1438,6 +1438,7 @@
 <li><strong>Private networking</strong> requires a manual redeploy of the target service after the first provider-created deployment (Railway platform bug with Wireguard tunnel setup).</li>
 <li><strong>Service domain subdomains</strong> are auto-generated and cannot be customized via the API. Use <code>railway_custom_domain</code> for specific domain names.</li>
 <li><strong><code>vcpus</code> and <code>memory_gb</code></strong> on <code>railway_service_instance</code> are write-only — they can be set but not read back. Import will not capture them.</li>
+<li><strong>Multiple redeployments on first apply</strong> — Railway triggers a redeployment on every API mutation (source connection, variables, instance config). First <code>tofu apply</code> creates 3-4 deployments per service. Use <a href="../resources/variable_collection/"><code>railway_variable_collection</code></a> instead of individual variables to minimise this. Subsequent applies with no changes trigger zero redeployments.</li>
 </ul>
 <h2 id="ai-agent-integration">AI Agent Integration<a class="headerlink" href="#ai-agent-integration" title="Permanent link">&para;</a></h2>
 <p>This provider ships with <a href="https://github.com/jamesprnich/terraform-provider-railway/blob/main/SKILL.md"><code>SKILL.md</code></a> — a structured reference designed for AI coding agents. It contains every resource, every field, every import format, working examples, and known issues. Point your AI agent at this file and it can deploy full Railway infrastructure autonomously.</p>

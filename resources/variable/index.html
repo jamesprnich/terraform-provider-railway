@@ -1251,7 +1251,11 @@
 
 
 <h1 id="railway_variable-resource">railway_variable (Resource)<a class="headerlink" href="#railway_variable-resource" title="Permanent link">&para;</a></h1>
-<p>Railway variable. Any changes in collection triggers service redeployment.</p>
+<p>Railway variable. Each create, update, or delete triggers a service redeployment.</p>
+<div class="admonition tip">
+<p class="admonition-title">Prefer <code>railway_variable_collection</code> for multiple variables</p>
+<p>Each individual <code>railway_variable</code> on the same service triggers a separate redeployment. If you're setting 2+ variables on one service, use <a href="../variable_collection/"><code>railway_variable_collection</code></a> instead — it sets all variables in a single API call, triggering only one redeployment.</p>
+</div>
 <h2 id="example-usage">Example Usage<a class="headerlink" href="#example-usage" title="Permanent link">&para;</a></h2>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kr">resource</span><span class="w"> </span><span class="nc">&quot;railway_variable&quot;</span><span class="w"> </span><span class="nv">&quot;example&quot;</span><span class="w"> </span><span class="p">{</span>
 <a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="w">  </span><span class="na">name</span><span class="w">           </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;SENTRY_KEY&quot;</span>
