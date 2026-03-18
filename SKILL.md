@@ -1,18 +1,18 @@
 ---
 name: railway-provider
-description: Deploy and manage Railway infrastructure using the Railway Terraform Provider (v0.8.0)
+description: Deploy and manage Railway infrastructure using the Railway OpenTofu Provider (v0.8.0)
 ---
 
 # railway-provider
 
-Use this skill when a project needs to deploy services to Railway using OpenTofu/Terraform with the `jamesprnich/railway` provider.
+Use this skill when a project needs to deploy services to Railway using OpenTofu with the `jamesprnich/railway` provider. Also compatible with Terraform.
 
 ## Prerequisites
 
 - Go 1.25+ (to build the provider from source)
 - OpenTofu (or Terraform) installed
-- `RAILWAY_TOKEN` environment variable set (team or project token)
-- A `~/.terraformrc` dev override pointing at the built binary:
+- `RAILWAY_TOKEN` environment variable set (account token recommended, see [Authentication Guide](docs/guides/authentication.md))
+- A `~/.tofurc` (or `~/.terraformrc`) dev override pointing at the built binary:
   ```hcl
   provider_installation {
     dev_overrides {
@@ -70,16 +70,11 @@ The reference config is `examples/workflows/main.tf`. It creates a project, serv
    tofu destroy -var='app_repo=owner/repo' -var='postgres_password=xxx'
    ```
 
-### Multi-Environment Architecture
+### Deployment Pattern
 
-For production setups with separate environments (dev, staging, production), use the pattern in `examples/workflows/environments/`. This creates a shared project and per-environment infrastructure using modules.
+Use a single `main.tf` that creates everything in one apply: project, services, variables, service instances, volumes, and domains. This is the tested and proven approach — see `examples/workflows/main.tf`.
 
-Key pattern:
-- One `railway_project` with a default environment
-- Additional `railway_environment` resources for staging/production
-- Per-environment `railway_service_instance` resources for config (build commands, resource limits, healthcheck)
-- Per-environment `railway_variable` resources for env-specific config
-- Data sources (`data.railway_service`, `data.railway_environment`) to reference shared resources across environments
+For multiple environments, use separate `railway_environment` resources and scope `railway_service_instance`, `railway_variable`, and `railway_volume` to each environment via `environment_id`.
 
 ## Available Resources
 
@@ -272,9 +267,9 @@ Known filter values: `deploy.completed`, `deploy.started`, `deploy.failed`, `dep
 
 ### Private Networking Wireguard Bug
 
-**What happens:** On the first Terraform-created deployment, `.railway.internal` DNS resolves correctly but TCP connections time out.
+**What happens:** On the first provider-created deployment, `.railway.internal` DNS resolves correctly but TCP connections time out.
 
-**Why:** Railway's Wireguard mesh doesn't establish the tunnel for Terraform-created services until the target service is redeployed. This is a Railway platform bug, not a provider issue.
+**Why:** Railway's Wireguard mesh doesn't establish the tunnel for provider-created services until the target service is redeployed. This is a Railway platform bug, not a provider issue.
 
 **Workaround:** After first deploy, redeploy the target service from the Railway dashboard. Use `connect_timeout=5` in DATABASE_URL and handle DB errors gracefully so healthchecks still pass during the window before the tunnel is established.
 
@@ -292,7 +287,7 @@ Known filter values: `deploy.completed`, `deploy.started`, `deploy.failed`, `dep
 
 **Why:** Railway's `ServiceInstance` GraphQL type does not expose CPU/memory fields. They are set via a separate `serviceInstanceLimitsUpdate` mutation.
 
-**Workaround:** The provider preserves these values from Terraform state/plan. Import will not capture them — you must declare them in config after import.
+**Workaround:** The provider preserves these values from state/plan. Import will not capture them — you must declare them in config after import.
 
 ### Stale Data on Individual Resource Queries
 

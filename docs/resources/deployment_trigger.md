@@ -64,5 +64,5 @@ resource "railway_deployment_trigger" "api" {
 Import is supported using the following syntax:
 
 ```shell
-terraform import railway_deployment_trigger.api <project_id>:<environment_id>:<service_id>:<trigger_id>
+tofu import railway_deployment_trigger.api <project_id>:<environment_id>:<service_id>:<trigger_id>
 ```

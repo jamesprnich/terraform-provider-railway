@@ -41,11 +41,17 @@ Unit tests use mock HTTP servers and do not require a Railway account:
 make test
 ```
 
-Acceptance tests create real resources and require a `RAILWAY_TOKEN` environment variable:
+Acceptance tests create real resources and require a Railway account token:
 
 ```shell
+export RAILWAY_TOKEN="your-account-token"
+export RAILWAY_TEST_WORKSPACE_ID="your-workspace-id"
 make testacc
 ```
+
+The test suite automatically creates and destroys a fixture project for each run. If a run crashes, the next run cleans up orphaned fixtures automatically.
+
+Find your workspace ID in the Railway dashboard URL: `https://railway.com/workspace/<workspace-id>`.
 
 Both targets automatically set the OpenTofu compatibility environment variables. If running `go test` directly, you must set them yourself:
 

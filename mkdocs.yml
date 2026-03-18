@@ -1,6 +1,6 @@
-site_name: Railway Terraform Provider
+site_name: Railway OpenTofu Provider
 site_url: https://jamesprnich.github.io/terraform-provider-railway/
-site_description: Terraform / OpenTofu provider for managing Railway infrastructure as code
+site_description: OpenTofu provider for managing Railway infrastructure as code
 repo_url: https://github.com/jamesprnich/terraform-provider-railway
 repo_name: terraform-provider-railway
 
@@ -44,7 +44,6 @@ nav:
   - Provider Configuration: index.md
   - Guides:
     - Authentication: guides/authentication.md
-    - Two-Layer Architecture: guides/two-layer-architecture.md
   - Resources:
     - project: resources/project.md
     - environment: resources/environment.md

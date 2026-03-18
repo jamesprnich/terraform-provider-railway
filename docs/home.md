@@ -1,11 +1,11 @@
 ---
 title: Getting Started
-description: Railway Terraform / OpenTofu provider — installation, authentication, and quick start guide.
+description: Railway OpenTofu provider — installation, authentication, and quick start guide.
 ---
 
-# Railway Terraform Provider
+# Railway OpenTofu Provider
 
-A [Terraform](https://www.terraform.io) / [OpenTofu](https://opentofu.org) provider for managing [Railway](https://railway.app) infrastructure as code.
+An [OpenTofu](https://opentofu.org) provider for managing [Railway](https://railway.app) infrastructure as code. Also compatible with [Terraform](https://www.terraform.io).
 
 17 resources, 3 data sources, full import support.
 
@@ -24,8 +24,6 @@ terraform {
 }
 ```
 
-Works with both Terraform and OpenTofu.
-
 ## Authentication
 
 Set the `RAILWAY_TOKEN` environment variable:
@@ -43,7 +41,7 @@ provider "railway" {
 ```
 
 !!! tip "Token types"
-    Railway has two token types with very different permissions. **Account tokens** are recommended for Terraform — they have full access to all resources. **Project tokens** are scoped to a single environment and cannot attach sources to services. See the [Authentication Guide](guides/authentication.md) for details.
+    Railway has two token types with very different permissions. **Account tokens** are recommended — they have full access to all resources. **Project tokens** are scoped to a single environment and cannot attach sources to services. See the [Authentication Guide](guides/authentication.md) for details.
 
 ## Quick Start
 
@@ -66,7 +64,7 @@ resource "railway_service" "postgres" {
 resource "railway_variable" "postgres_password" {
   name           = "POSTGRES_PASSWORD"
   value          = var.postgres_password
-  environment_id = railway_project.main.default_environment_id
+  environment_id = railway_project.main.default_environment.id
   service_id     = railway_service.postgres.id
 }
 ```
@@ -105,14 +103,10 @@ tofu apply -var='postgres_password=secretpassword'
 | [`data.railway_environment`](data-sources/environment.md) | `id` or `project_id` + `name` |
 | [`data.railway_service`](data-sources/service.md) | `id` or `project_id` + `name` |
 
-## Multi-Environment Architecture
-
-For production setups with separate dev/staging/production environments, use the [Two-Layer Architecture](guides/two-layer-architecture.md) pattern: create empty services in one layer, then configure per-environment settings with `railway_service_instance` in another.
-
 ## Known Issues
 
 - **Webhook types not in public schema** — `railway_webhook` works with mock tests but live API calls will fail until Railway re-adds webhook types to their public GraphQL schema.
-- **Private networking** requires a manual redeploy of the target service after first Terraform-created deployment (Railway platform bug with Wireguard tunnel setup).
+- **Private networking** requires a manual redeploy of the target service after the first provider-created deployment (Railway platform bug with Wireguard tunnel setup).
 - **Service domain subdomains** are auto-generated and cannot be customized via the API. Use `railway_custom_domain` for specific domain names.
 - **`vcpus` and `memory_gb`** on `railway_service_instance` are write-only — they can be set but not read back. Import will not capture them.
 
