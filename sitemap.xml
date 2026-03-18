@@ -2,98 +2,94 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
     <url>
          <loc>https://jamesprnich.github.io/terraform-provider-railway/</loc>
-         <lastmod>2026-03-16</lastmod>
+         <lastmod>2026-03-18</lastmod>
     </url>
     <url>
          <loc>https://jamesprnich.github.io/terraform-provider-railway/home/</loc>
-         <lastmod>2026-03-16</lastmod>
+         <lastmod>2026-03-18</lastmod>
     </url>
     <url>
          <loc>https://jamesprnich.github.io/terraform-provider-railway/data-sources/environment/</loc>
-         <lastmod>2026-03-16</lastmod>
+         <lastmod>2026-03-18</lastmod>
     </url>
     <url>
          <loc>https://jamesprnich.github.io/terraform-provider-railway/data-sources/project/</loc>
-         <lastmod>2026-03-16</lastmod>
+         <lastmod>2026-03-18</lastmod>
     </url>
     <url>
          <loc>https://jamesprnich.github.io/terraform-provider-railway/data-sources/service/</loc>
-         <lastmod>2026-03-16</lastmod>
+         <lastmod>2026-03-18</lastmod>
     </url>
     <url>
          <loc>https://jamesprnich.github.io/terraform-provider-railway/guides/authentication/</loc>
-         <lastmod>2026-03-16</lastmod>
-    </url>
-    <url>
-         <loc>https://jamesprnich.github.io/terraform-provider-railway/guides/two-layer-architecture/</loc>
-         <lastmod>2026-03-16</lastmod>
+         <lastmod>2026-03-18</lastmod>
     </url>
     <url>
          <loc>https://jamesprnich.github.io/terraform-provider-railway/resources/custom_domain/</loc>
-         <lastmod>2026-03-16</lastmod>
+         <lastmod>2026-03-18</lastmod>
     </url>
     <url>
          <loc>https://jamesprnich.github.io/terraform-provider-railway/resources/deployment_trigger/</loc>
-         <lastmod>2026-03-16</lastmod>
+         <lastmod>2026-03-18</lastmod>
     </url>
     <url>
          <loc>https://jamesprnich.github.io/terraform-provider-railway/resources/egress_gateway/</loc>
-         <lastmod>2026-03-16</lastmod>
+         <lastmod>2026-03-18</lastmod>
     </url>
     <url>
          <loc>https://jamesprnich.github.io/terraform-provider-railway/resources/environment/</loc>
-         <lastmod>2026-03-16</lastmod>
+         <lastmod>2026-03-18</lastmod>
     </url>
     <url>
          <loc>https://jamesprnich.github.io/terraform-provider-railway/resources/private_network/</loc>
-         <lastmod>2026-03-16</lastmod>
+         <lastmod>2026-03-18</lastmod>
     </url>
     <url>
          <loc>https://jamesprnich.github.io/terraform-provider-railway/resources/private_network_endpoint/</loc>
-         <lastmod>2026-03-16</lastmod>
+         <lastmod>2026-03-18</lastmod>
     </url>
     <url>
          <loc>https://jamesprnich.github.io/terraform-provider-railway/resources/project/</loc>
-         <lastmod>2026-03-16</lastmod>
+         <lastmod>2026-03-18</lastmod>
     </url>
     <url>
          <loc>https://jamesprnich.github.io/terraform-provider-railway/resources/service/</loc>
-         <lastmod>2026-03-16</lastmod>
+         <lastmod>2026-03-18</lastmod>
     </url>
     <url>
          <loc>https://jamesprnich.github.io/terraform-provider-railway/resources/service_domain/</loc>
-         <lastmod>2026-03-16</lastmod>
+         <lastmod>2026-03-18</lastmod>
     </url>
     <url>
          <loc>https://jamesprnich.github.io/terraform-provider-railway/resources/service_instance/</loc>
-         <lastmod>2026-03-16</lastmod>
+         <lastmod>2026-03-18</lastmod>
     </url>
     <url>
          <loc>https://jamesprnich.github.io/terraform-provider-railway/resources/shared_variable/</loc>
-         <lastmod>2026-03-16</lastmod>
+         <lastmod>2026-03-18</lastmod>
     </url>
     <url>
          <loc>https://jamesprnich.github.io/terraform-provider-railway/resources/tcp_proxy/</loc>
-         <lastmod>2026-03-16</lastmod>
+         <lastmod>2026-03-18</lastmod>
     </url>
     <url>
          <loc>https://jamesprnich.github.io/terraform-provider-railway/resources/variable/</loc>
-         <lastmod>2026-03-16</lastmod>
+         <lastmod>2026-03-18</lastmod>
     </url>
     <url>
          <loc>https://jamesprnich.github.io/terraform-provider-railway/resources/variable_collection/</loc>
-         <lastmod>2026-03-16</lastmod>
+         <lastmod>2026-03-18</lastmod>
     </url>
     <url>
          <loc>https://jamesprnich.github.io/terraform-provider-railway/resources/volume/</loc>
-         <lastmod>2026-03-16</lastmod>
+         <lastmod>2026-03-18</lastmod>
     </url>
     <url>
          <loc>https://jamesprnich.github.io/terraform-provider-railway/resources/volume_backup_schedule/</loc>
-         <lastmod>2026-03-16</lastmod>
+         <lastmod>2026-03-18</lastmod>
     </url>
     <url>
          <loc>https://jamesprnich.github.io/terraform-provider-railway/resources/webhook/</loc>
-         <lastmod>2026-03-16</lastmod>
+         <lastmod>2026-03-18</lastmod>
     </url>
 </urlset>
