@@ -109,6 +109,7 @@ tofu apply -var='postgres_password=secretpassword'
 - **Private networking** requires a manual redeploy of the target service after the first provider-created deployment (Railway platform bug with Wireguard tunnel setup).
 - **Service domain subdomains** are auto-generated and cannot be customized via the API. Use `railway_custom_domain` for specific domain names.
 - **`vcpus` and `memory_gb`** on `railway_service_instance` are write-only — they can be set but not read back. Import will not capture them.
+- **Multiple redeployments on first apply** — Railway triggers a redeployment on every API mutation (source connection, variables, instance config). First `tofu apply` creates 3-4 deployments per service. Use [`railway_variable_collection`](resources/variable_collection.md) instead of individual variables to minimise this. Subsequent applies with no changes trigger zero redeployments.
 
 ## AI Agent Integration
 

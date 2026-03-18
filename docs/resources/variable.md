@@ -8,7 +8,10 @@ description: |-
 
 # railway_variable (Resource)
 
-Railway variable. Any changes in collection triggers service redeployment.
+Railway variable. Each create, update, or delete triggers a service redeployment.
+
+!!! tip "Prefer `railway_variable_collection` for multiple variables"
+    Each individual `railway_variable` on the same service triggers a separate redeployment. If you're setting 2+ variables on one service, use [`railway_variable_collection`](variable_collection.md) instead — it sets all variables in a single API call, triggering only one redeployment.
 
 ## Example Usage
 

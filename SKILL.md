@@ -72,9 +72,11 @@ The reference config is `examples/workflows/main.tf`. It creates a project, serv
 
 ### Deployment Pattern
 
-Use a single `main.tf` that creates everything in one apply: project, services, variables, service instances, volumes, and domains. This is the tested and proven approach — see `examples/workflows/main.tf`.
+Use a single `main.tf` that creates everything in one apply: project, services, variable collections, service instances, volumes, and domains. This is the tested and proven approach — see `examples/workflows/main.tf`.
 
-For multiple environments, use separate `railway_environment` resources and scope `railway_service_instance`, `railway_variable`, and `railway_volume` to each environment via `environment_id`.
+For multiple environments, use separate `railway_environment` resources and scope `railway_service_instance`, `railway_variable_collection`, and `railway_volume` to each environment via `environment_id`.
+
+**Minimise redeployments:** Railway triggers a redeployment every time a variable, service instance setting, or source connection changes. Use `railway_variable_collection` (not individual `railway_variable` resources) to set all variables for a service in one API call. Five individual variables = five queued redeployments. One collection = one redeployment.
 
 ## Available Resources
 
@@ -234,18 +236,23 @@ resource "railway_volume_backup_schedule" "postgres_data" {
 
 ### Variables
 
-Always set `PORT` as a variable on every service — Railway uses it for healthcheck probing and routing:
+Always set `PORT` as a variable on every service — Railway uses it for healthcheck probing and routing.
+
+**Use `railway_variable_collection` for multiple variables on the same service.** Each individual `railway_variable` triggers a separate redeployment. A collection sets all variables in one API call — one redeployment instead of N:
 
 ```terraform
-resource "railway_variable" "app_port" {
-  name           = "PORT"
-  value          = "8080"
+resource "railway_variable_collection" "app" {
   environment_id = local.environment_id
   service_id     = railway_service.app.id
+
+  variables = [
+    { name = "PORT", value = "8080" },
+    { name = "DATABASE_URL", value = "postgresql://..." },
+  ]
 }
 ```
 
-Use `railway_variable_collection` for bulk variables on a single service, `railway_shared_variable` for project-wide variables not scoped to a service.
+Use individual `railway_variable` only when you have a single variable that changes independently. Use `railway_shared_variable` for project-wide variables not scoped to a service.
 
 ### Webhooks
 
@@ -316,6 +323,14 @@ Known filter values: `deploy.completed`, `deploy.started`, `deploy.failed`, `dep
 **Why:** Railway processes deletes asynchronously. A second delete request during processing is rejected. This is NOT matched by `isNotFound()`.
 
 **Workaround:** All Delete methods treat "operation is already in progress" as successful (idempotent deletion). The disappears test helpers use `retry.RetryContext` polling to wait for deletion to complete.
+
+### Multiple Redeployments on First Apply
+
+**What happens:** On initial `tofu apply`, each service shows 3-4 queued deployments in the Railway dashboard instead of one.
+
+**Why:** Railway triggers a redeployment on every mutation — service source connection, variable changes, and service instance config updates are separate API calls. The Railway UI avoids this by batching changes locally and deploying once, but the API has no equivalent "hold deployments" mechanism.
+
+**Workaround:** Use `railway_variable_collection` instead of individual `railway_variable` resources to minimise redeployments (one collection = one redeployment instead of one per variable). Beyond that, 3-4 deployments per service on first apply is the practical minimum with the current API. Subsequent `tofu apply` with no changes triggers zero redeployments. This is a Railway API limitation, not a provider bug.
 
 ## Guidelines
 

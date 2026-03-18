@@ -2,7 +2,7 @@
 # Railway Test App — Full Stack
 # =============================================================================
 # Deploys a Flask app + Postgres on Railway with private networking.
-# Proves: project, services, variables, volume, service instances, domain.
+# Proves: project, services, variable collections, volume, service instances, domain.
 #
 # Usage:
 #   tofu apply -var='app_repo=owner/repo' -var='postgres_password=xxx'
@@ -76,56 +76,32 @@ resource "railway_service" "app" {
 }
 
 # --- Postgres variables ---
+# Use variable_collection to set all variables in one API call (one redeployment,
+# not one per variable).
 
-resource "railway_variable" "pgdata" {
-  name           = "PGDATA"
-  value          = "/data/pgdata"
+resource "railway_variable_collection" "postgres" {
   environment_id = local.environment_id
   service_id     = railway_service.postgres.id
-}
 
-resource "railway_variable" "postgres_user" {
-  name           = "POSTGRES_USER"
-  value          = "testapp"
-  environment_id = local.environment_id
-  service_id     = railway_service.postgres.id
-}
-
-resource "railway_variable" "postgres_password" {
-  name           = "POSTGRES_PASSWORD"
-  value          = var.postgres_password
-  environment_id = local.environment_id
-  service_id     = railway_service.postgres.id
-}
-
-resource "railway_variable" "postgres_db" {
-  name           = "POSTGRES_DB"
-  value          = "testapp"
-  environment_id = local.environment_id
-  service_id     = railway_service.postgres.id
-}
-
-resource "railway_variable" "postgres_port" {
-  name           = "PORT"
-  value          = "5432"
-  environment_id = local.environment_id
-  service_id     = railway_service.postgres.id
+  variables = [
+    { name = "PGDATA", value = "/data/pgdata" },
+    { name = "POSTGRES_USER", value = "testapp" },
+    { name = "POSTGRES_PASSWORD", value = var.postgres_password },
+    { name = "POSTGRES_DB", value = "testapp" },
+    { name = "PORT", value = "5432" },
+  ]
 }
 
 # --- App variables ---
 
-resource "railway_variable" "app_port" {
-  name           = "PORT"
-  value          = "8080"
+resource "railway_variable_collection" "app" {
   environment_id = local.environment_id
   service_id     = railway_service.app.id
-}
 
-resource "railway_variable" "database_url" {
-  name           = "DATABASE_URL"
-  value          = "postgresql://testapp:${var.postgres_password}@postgres-dev.railway.internal:5432/testapp"
-  environment_id = local.environment_id
-  service_id     = railway_service.app.id
+  variables = [
+    { name = "PORT", value = "8080" },
+    { name = "DATABASE_URL", value = "postgresql://testapp:${var.postgres_password}@postgres-dev.railway.internal:5432/testapp" },
+  ]
 }
 
 # --- Service instance config ---
