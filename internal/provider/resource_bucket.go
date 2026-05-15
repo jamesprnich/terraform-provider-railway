@@ -100,7 +100,7 @@ func (r *BucketResource) Create(ctx context.Context, req resource.CreateRequest,
 
 	name := data.Name.ValueString()
 	input := BucketCreateInput{
-		Name:      name,
+		Name:      &name,
 		ProjectId: data.ProjectId.ValueString(),
 	}
 

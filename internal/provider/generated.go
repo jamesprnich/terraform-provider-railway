@@ -12,18 +12,18 @@ import (
 
 type BucketCreateInput struct {
 	// [unimplemented] The environment to deploy the bucket instances into. If `null`, the bucket will not be deployed to any environment. `undefined` will deploy to all environments.
-	EnvironmentId string `json:"environmentId"`
+	EnvironmentId *string `json:"environmentId,omitempty"`
 	// The name of the bucket
-	Name string `json:"name"`
+	Name *string `json:"name,omitempty"`
 	// The project to create the bucket in
 	ProjectId string `json:"projectId"`
 }
 
 // GetEnvironmentId returns BucketCreateInput.EnvironmentId, and is useful for accessing the field via an interface.
-func (v *BucketCreateInput) GetEnvironmentId() string { return v.EnvironmentId }
+func (v *BucketCreateInput) GetEnvironmentId() *string { return v.EnvironmentId }
 
 // GetName returns BucketCreateInput.Name, and is useful for accessing the field via an interface.
-func (v *BucketCreateInput) GetName() string { return v.Name }
+func (v *BucketCreateInput) GetName() *string { return v.Name }
 
 // GetProjectId returns BucketCreateInput.ProjectId, and is useful for accessing the field via an interface.
 func (v *BucketCreateInput) GetProjectId() string { return v.ProjectId }
@@ -70,10 +70,10 @@ const (
 
 type CreateNotificationRuleInput struct {
 	ChannelConfigs        []json.RawMessage      `json:"channelConfigs"`
-	EphemeralEnvironments bool                   `json:"ephemeralEnvironments"`
+	EphemeralEnvironments *bool                  `json:"ephemeralEnvironments,omitempty"`
 	EventTypes            []string               `json:"eventTypes"`
-	ProjectId             string                 `json:"projectId"`
-	Severities            []NotificationSeverity `json:"severities"`
+	ProjectId             *string                `json:"projectId,omitempty"`
+	Severities            []NotificationSeverity `json:"severities,omitempty"`
 	WorkspaceId           string                 `json:"workspaceId"`
 }
 
@@ -81,13 +81,15 @@ type CreateNotificationRuleInput struct {
 func (v *CreateNotificationRuleInput) GetChannelConfigs() []json.RawMessage { return v.ChannelConfigs }
 
 // GetEphemeralEnvironments returns CreateNotificationRuleInput.EphemeralEnvironments, and is useful for accessing the field via an interface.
-func (v *CreateNotificationRuleInput) GetEphemeralEnvironments() bool { return v.EphemeralEnvironments }
+func (v *CreateNotificationRuleInput) GetEphemeralEnvironments() *bool {
+	return v.EphemeralEnvironments
+}
 
 // GetEventTypes returns CreateNotificationRuleInput.EventTypes, and is useful for accessing the field via an interface.
 func (v *CreateNotificationRuleInput) GetEventTypes() []string { return v.EventTypes }
 
 // GetProjectId returns CreateNotificationRuleInput.ProjectId, and is useful for accessing the field via an interface.
-func (v *CreateNotificationRuleInput) GetProjectId() string { return v.ProjectId }
+func (v *CreateNotificationRuleInput) GetProjectId() *string { return v.ProjectId }
 
 // GetSeverities returns CreateNotificationRuleInput.Severities, and is useful for accessing the field via an interface.
 func (v *CreateNotificationRuleInput) GetSeverities() []NotificationSeverity { return v.Severities }
@@ -855,12 +857,12 @@ type ServiceCreateInput struct {
 	// Environment ID. If the specified environment is a fork, the service will only be created in it. Otherwise it will created in all environments that are not forks of other environments
 	EnvironmentId       *string                   `json:"environmentId,omitempty"`
 	Icon                *string                   `json:"icon,omitempty"`
-	Name                string                    `json:"name,omitempty"`
+	Name                *string                   `json:"name,omitempty"`
 	ProjectId           string                    `json:"projectId"`
 	RegistryCredentials *RegistryCredentialsInput `json:"registryCredentials,omitempty"`
 	Source              *ServiceSourceInput       `json:"source,omitempty"`
 	// Template ID. Required when templateServiceId is provided.
-	TemplateId string `json:"templateId,omitempty"`
+	TemplateId *string `json:"templateId,omitempty"`
 	// Template service ID within the template's serializedConfig. Required when templateId is provided.
 	TemplateServiceId *string                `json:"templateServiceId,omitempty"`
 	Variables         map[string]interface{} `json:"variables,omitempty"`
@@ -876,7 +878,7 @@ func (v *ServiceCreateInput) GetEnvironmentId() *string { return v.EnvironmentId
 func (v *ServiceCreateInput) GetIcon() *string { return v.Icon }
 
 // GetName returns ServiceCreateInput.Name, and is useful for accessing the field via an interface.
-func (v *ServiceCreateInput) GetName() string { return v.Name }
+func (v *ServiceCreateInput) GetName() *string { return v.Name }
 
 // GetProjectId returns ServiceCreateInput.ProjectId, and is useful for accessing the field via an interface.
 func (v *ServiceCreateInput) GetProjectId() string { return v.ProjectId }
@@ -890,7 +892,7 @@ func (v *ServiceCreateInput) GetRegistryCredentials() *RegistryCredentialsInput 
 func (v *ServiceCreateInput) GetSource() *ServiceSourceInput { return v.Source }
 
 // GetTemplateId returns ServiceCreateInput.TemplateId, and is useful for accessing the field via an interface.
-func (v *ServiceCreateInput) GetTemplateId() string { return v.TemplateId }
+func (v *ServiceCreateInput) GetTemplateId() *string { return v.TemplateId }
 
 // GetTemplateServiceId returns ServiceCreateInput.TemplateServiceId, and is useful for accessing the field via an interface.
 func (v *ServiceCreateInput) GetTemplateServiceId() *string { return v.TemplateServiceId }
@@ -1107,9 +1109,9 @@ func (v *ServiceUpdateInput) GetIcon() string { return v.Icon }
 func (v *ServiceUpdateInput) GetName() string { return v.Name }
 
 type SshPublicKeyCreateInput struct {
-	Name        string `json:"name"`
-	PublicKey   string `json:"publicKey"`
-	WorkspaceId string `json:"workspaceId"`
+	Name        string  `json:"name"`
+	PublicKey   string  `json:"publicKey"`
+	WorkspaceId *string `json:"workspaceId,omitempty"`
 }
 
 // GetName returns SshPublicKeyCreateInput.Name, and is useful for accessing the field via an interface.
@@ -1119,7 +1121,7 @@ func (v *SshPublicKeyCreateInput) GetName() string { return v.Name }
 func (v *SshPublicKeyCreateInput) GetPublicKey() string { return v.PublicKey }
 
 // GetWorkspaceId returns SshPublicKeyCreateInput.WorkspaceId, and is useful for accessing the field via an interface.
-func (v *SshPublicKeyCreateInput) GetWorkspaceId() string { return v.WorkspaceId }
+func (v *SshPublicKeyCreateInput) GetWorkspaceId() *string { return v.WorkspaceId }
 
 // SshPublicKeyFields includes the GraphQL fields of SshPublicKey requested by the fragment SshPublicKeyFields.
 type SshPublicKeyFields struct {
@@ -1225,17 +1227,19 @@ const (
 )
 
 type UpdateNotificationRuleInput struct {
-	ChannelConfigs        []json.RawMessage      `json:"channelConfigs"`
-	EphemeralEnvironments bool                   `json:"ephemeralEnvironments"`
-	EventTypes            []string               `json:"eventTypes"`
-	Severities            []NotificationSeverity `json:"severities"`
+	ChannelConfigs        []json.RawMessage      `json:"channelConfigs,omitempty"`
+	EphemeralEnvironments *bool                  `json:"ephemeralEnvironments,omitempty"`
+	EventTypes            []string               `json:"eventTypes,omitempty"`
+	Severities            []NotificationSeverity `json:"severities,omitempty"`
 }
 
 // GetChannelConfigs returns UpdateNotificationRuleInput.ChannelConfigs, and is useful for accessing the field via an interface.
 func (v *UpdateNotificationRuleInput) GetChannelConfigs() []json.RawMessage { return v.ChannelConfigs }
 
 // GetEphemeralEnvironments returns UpdateNotificationRuleInput.EphemeralEnvironments, and is useful for accessing the field via an interface.
-func (v *UpdateNotificationRuleInput) GetEphemeralEnvironments() bool { return v.EphemeralEnvironments }
+func (v *UpdateNotificationRuleInput) GetEphemeralEnvironments() *bool {
+	return v.EphemeralEnvironments
+}
 
 // GetEventTypes returns UpdateNotificationRuleInput.EventTypes, and is useful for accessing the field via an interface.
 func (v *UpdateNotificationRuleInput) GetEventTypes() []string { return v.EventTypes }

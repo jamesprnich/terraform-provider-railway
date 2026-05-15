@@ -136,8 +136,9 @@ func TestMain(m *testing.M) {
 
 	// Create test service with a source image to trigger a deployment.
 	// Egress gateway requires at least one deployment on the service.
+	serviceName := testAccServiceName
 	serviceResp, err := createService(ctx, client, ServiceCreateInput{
-		Name:      testAccServiceName,
+		Name:      &serviceName,
 		ProjectId: testAccProjectId,
 	})
 	if err != nil {

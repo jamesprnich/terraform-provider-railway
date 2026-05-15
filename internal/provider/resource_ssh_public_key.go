@@ -123,7 +123,8 @@ func (r *SshPublicKeyResource) Create(ctx context.Context, req resource.CreateRe
 		PublicKey: data.PublicKey.ValueString(),
 	}
 	if !data.WorkspaceId.IsNull() && !data.WorkspaceId.IsUnknown() {
-		input.WorkspaceId = data.WorkspaceId.ValueString()
+		v := data.WorkspaceId.ValueString()
+		input.WorkspaceId = &v
 	}
 
 	response, err := createSshPublicKey(ctx, *r.client, input)

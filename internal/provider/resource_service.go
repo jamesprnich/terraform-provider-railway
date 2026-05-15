@@ -393,8 +393,9 @@ func (r *ServiceResource) Create(ctx context.Context, req resource.CreateRequest
 		return
 	}
 
+	name := data.Name.ValueString()
 	input := ServiceCreateInput{
-		Name:      data.Name.ValueString(),
+		Name:      &name,
 		ProjectId: data.ProjectId.ValueString(),
 	}
 
