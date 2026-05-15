@@ -130,11 +130,16 @@ func (p *RailwayProvider) Resources(ctx context.Context) []func() resource.Resou
 		NewCustomDomainResource,
 		NewServiceDomainResource,
 		NewTcpProxyResource,
-		NewWebhookResource,
 		NewEgressGatewayResource,
 		NewPrivateNetworkResource,
 		NewPrivateNetworkEndpointResource,
 		NewDeploymentTriggerResource,
+		NewProjectTokenResource,
+		NewTrustedDomainResource,
+		NewNotificationRuleResource,
+		NewBucketResource,
+		NewSshPublicKeyResource,
+		NewProjectMemberResource,
 	}
 }
 

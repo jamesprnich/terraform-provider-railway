@@ -1,0 +1,27 @@
+fragment TrustedDomainFields on TrustedDomain {
+  id
+  domainName
+  role
+  status
+  workspaceId
+}
+
+query getTrustedDomains($workspaceId: String!) {
+  trustedDomains(workspaceId: $workspaceId, first: 1000) {
+    edges {
+      node {
+        ...TrustedDomainFields
+      }
+    }
+  }
+}
+
+mutation createTrustedDomain($input: WorkspaceTrustedDomainCreateInput!) {
+  trustedDomainCreate(input: $input) {
+    ...TrustedDomainFields
+  }
+}
+
+mutation deleteTrustedDomain($id: String!) {
+  trustedDomainDelete(id: $id)
+}

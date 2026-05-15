@@ -4,7 +4,7 @@ default: test
 # Without these, OpenTofu rejects the legacy "-" provider namespace.
 # See: https://github.com/opentofu/opentofu/issues/977
 TOFU_TEST_ENV = TF_ACC_TERRAFORM_PATH=$(shell which tofu) \
-	TF_ACC_PROVIDER_NAMESPACE=hashicorp \
+	TF_ACC_PROVIDER_NAMESPACE=jamesprnich \
 	TF_ACC_PROVIDER_HOST=registry.opentofu.org
 
 # Run acceptance tests (requires RAILWAY_TOKEN env var)

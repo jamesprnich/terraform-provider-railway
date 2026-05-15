@@ -1,0 +1,34 @@
+fragment NotificationRuleFields on NotificationRule {
+  id
+  workspaceId
+  projectId
+  eventTypes
+  severities
+  ephemeralEnvironments
+  channels {
+    id
+    config
+  }
+}
+
+query getNotificationRules($workspaceId: String!, $projectId: String) {
+  notificationRules(workspaceId: $workspaceId, projectId: $projectId) {
+    ...NotificationRuleFields
+  }
+}
+
+mutation createNotificationRule($input: CreateNotificationRuleInput!) {
+  notificationRuleCreate(input: $input) {
+    ...NotificationRuleFields
+  }
+}
+
+mutation updateNotificationRule($id: String!, $input: UpdateNotificationRuleInput!) {
+  notificationRuleUpdate(id: $id, input: $input) {
+    ...NotificationRuleFields
+  }
+}
+
+mutation deleteNotificationRule($id: String!) {
+  notificationRuleDelete(id: $id)
+}

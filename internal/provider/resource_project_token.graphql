@@ -1,0 +1,24 @@
+fragment ProjectTokenFields on ProjectToken {
+  id
+  name
+  projectId
+  environmentId
+}
+
+query getProjectTokens($projectId: String!) {
+  projectTokens(projectId: $projectId, first: 1000) {
+    edges {
+      node {
+        ...ProjectTokenFields
+      }
+    }
+  }
+}
+
+mutation createProjectToken($input: ProjectTokenCreateInput!) {
+  projectTokenCreate(input: $input)
+}
+
+mutation deleteProjectToken($id: String!) {
+  projectTokenDelete(id: $id)
+}

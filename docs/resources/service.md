@@ -76,6 +76,8 @@ Optional:
 <a id="nestedatt--volume"></a>
 ### Nested Schema for `volume`
 
+~> **Note:** Removing the `volume` block from a service queues the volume for deletion with a 48-hour retention period. Railway sends an email notification with a restore link during this window. The volume remains visible in the API during retention, so subsequent plans may show drift until the volume is permanently deleted.
+
 Required:
 
 - `mount_path` (String) Mount path of the volume.

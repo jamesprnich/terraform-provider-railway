@@ -12,6 +12,9 @@ terraform.tfstate.d/
 # MkDocs
 site/
 
+# Rascl
+rascl-results/
+
 # Claude Code
 CLAUDE.md
 .vscode-screenshots/

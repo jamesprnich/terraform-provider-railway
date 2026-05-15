@@ -26,19 +26,16 @@ Use this skill when a project needs to deploy services to Railway using OpenTofu
 
 ### Build the Provider
 
-1. Clone the repo and build:
-   ```bash
-   go build -o ~/go/bin/terraform-provider-railway .
-   ```
-2. If any `.graphql` files were changed, regenerate the client first:
-   ```bash
-   go run github.com/Khan/genqlient
-   ```
-   Do NOT use `go generate` — that also requires a terraform binary.
+Clone the repo and build:
+```bash
+git clone https://github.com/jamesprnich/terraform-provider-railway.git
+cd terraform-provider-railway
+go build -o ~/go/bin/terraform-provider-railway .
+```
 
 ### Deploy a Full Stack (Flask + Postgres Example)
 
-The reference config is `examples/workflows/main.tf`. It creates a project, services, variables, service instances, and a public domain in a single apply.
+The reference config is `examples/workflows/main.tf`. It creates a project, services, variable collections, service instances, and a public domain in a single apply.
 
 1. Set variables:
    | Variable | Required | Default | Notes |
@@ -47,10 +44,11 @@ The reference config is `examples/workflows/main.tf`. It creates a project, serv
    | `postgres_password` | yes | — | Postgres password (sensitive) |
    | `project_name` | no | `test-app` | Railway project name |
 
-2. Apply:
+2. Init and apply:
    ```bash
    cd examples/workflows
    export RAILWAY_TOKEN="<token>"
+   tofu init
    tofu apply \
      -var='app_repo=owner/repo' \
      -var='postgres_password=xxx' \
@@ -78,6 +76,8 @@ For multiple environments, use separate `railway_environment` resources and scop
 
 **Minimise redeployments:** Railway triggers a redeployment every time a variable, service instance setting, or source connection changes. Use `railway_variable_collection` (not individual `railway_variable` resources) to set all variables for a service in one API call. Five individual variables = five queued redeployments. One collection = one redeployment.
 
+**Partial failures:** If `tofu apply` fails partway through, run `tofu apply` again. The provider saves state after each successful resource creation, so retrying picks up where it left off — already-created resources are detected and skipped.
+
 ## Available Resources
 
 | Resource | Purpose | Import Format |
@@ -94,11 +94,16 @@ For multiple environments, use separate `railway_environment` resources and scop
 | `railway_service_domain` | Auto-generated public `.up.railway.app` domain | `<service_id>:<environment_name>:<domain>` |
 | `railway_custom_domain` | Custom domain with DNS verification | `<service_id>:<environment_name>:<domain>` |
 | `railway_tcp_proxy` | TCP proxy for non-HTTP services | `<service_id>:<environment_id>:<tcp_proxy_id>` |
-| `railway_webhook` | HTTP webhook notifications for project events | `<project_id>:<webhook_id>` |
 | `railway_deployment_trigger` | Auto-deploy from GitHub/GitLab on push | `<project_id>:<environment_id>:<service_id>:<trigger_id>` |
 | `railway_egress_gateway` | Static egress IP for external service allowlisting | `<service_id>:<environment_id>` |
 | `railway_private_network` | Private network for internal service-to-service communication | `<environment_id>:<network_public_id>` |
 | `railway_private_network_endpoint` | Connects a service to a private network with a DNS name | `<environment_id>:<private_network_id>:<service_id>` |
+| `railway_project_token` | Project-scoped deploy token for CI/CD (sensitive) | `<project_id>:<token_id>` |
+| `railway_trusted_domain` | Workspace-level trusted domain for SSO | `<workspace_id>:<trusted_domain_id>` |
+| `railway_notification_rule` | Notification rule (webhook, Slack, email) — replaces `railway_webhook` | `<workspace_id>:<rule_id>` |
+| `railway_bucket` | S3-compatible object storage bucket (no delete API) | `<project_id>:<bucket_id>` |
+| `railway_ssh_public_key` | SSH public key for workspace or authenticated user | `<key_id>` |
+| `railway_project_member` | Project membership with role | `<project_id>:<user_id>` |
 
 ## Available Data Sources
 
@@ -196,7 +201,9 @@ Services can then reach each other via `<service-name>.railway.internal`.
 
 ### Deployment Triggers
 
-Connect a GitHub repo to auto-deploy on push:
+Setting `source_repo` on `railway_service` automatically creates a deployment trigger — you do NOT need a separate `railway_deployment_trigger` for the same service. A second trigger on the same service will fail.
+
+Use `railway_deployment_trigger` only when you need to manage the trigger separately from the service — for example, different branches per environment, `check_suites` gating, or monorepo `root_directory` filtering:
 
 ```terraform
 resource "railway_deployment_trigger" "api" {
@@ -254,21 +261,26 @@ resource "railway_variable_collection" "app" {
 
 Use individual `railway_variable` only when you have a single variable that changes independently. Use `railway_shared_variable` for project-wide variables not scoped to a service.
 
-### Webhooks
+### Notification Rules
 
-> **WARNING:** Webhook types (`WebhookCreateInput`, `ProjectWebhook`) are NOT in Railway's public GraphQL schema as of v0.8.0. The provider includes the operations in its local schema and they work with mock tests, but live API calls will fail with "Unknown type" errors. Do not use `railway_webhook` in production configs until Railway re-adds these types to their public API.
-
-Send notifications when events occur in a project:
+Send notifications (via webhook, Slack, email, or other channels) when events occur. `railway_notification_rule` replaced `railway_webhook` in v0.9.0 to align with Railway's new notification model — webhooks are now one channel type among many.
 
 ```terraform
-resource "railway_webhook" "deploy_notifications" {
-  project_id = railway_project.main.id
-  url        = "https://example.com/webhooks/railway"
-  filters    = ["deploy.completed", "deploy.started"]
+resource "railway_notification_rule" "deploy_notifications" {
+  workspace_id = var.railway_workspace_id
+  project_id   = railway_project.main.id
+  event_types  = ["deployment.completed", "deployment.failed"]
+  severities   = ["CRITICAL", "WARNING"]
+  channel_configs = [
+    jsonencode({
+      type = "webhook"
+      url  = "https://example.com/webhooks/railway"
+    }),
+  ]
 }
 ```
 
-Known filter values: `deploy.completed`, `deploy.started`, `deploy.failed`, `deploy.crashed`, `deploy.removed`.
+`channel_configs` accepts a list of JSON strings — each describes one delivery channel. Refer to the Railway dashboard or API docs for the supported channel shapes.
 
 ## Known Issues
 
@@ -296,34 +308,6 @@ Known filter values: `deploy.completed`, `deploy.started`, `deploy.failed`, `dep
 
 **Workaround:** The provider preserves these values from state/plan. Import will not capture them — you must declare them in config after import.
 
-### Stale Data on Individual Resource Queries
-
-**What happens:** After deleting a resource, querying it by ID (e.g., `environment(id: "...")`) can return the full resource data for 30+ seconds.
-
-**Why:** Railway's API caches individual resource lookups. The list endpoint (e.g., `environments(projectId: "...")`) reflects deletions much faster (~1-2 seconds).
-
-**Workaround:** The provider's Read methods use list queries filtered by ID instead of direct-by-ID queries where this is observed. Currently applied to `railway_environment`. If adding new resources, prefer list-based Read when the parent provides a list endpoint.
-
-### TCP Proxy Domain Trailing Dot
-
-**What happens:** Railway's API sometimes returns the `domain` field with a trailing dot (e.g., `roundrobin-xxx.proxy.rlwy.net.`). The provider normalizes this automatically by stripping the trailing dot in both Create and Read.
-
-**Impact:** None — handled transparently. Just be aware if comparing domain values from the Railway API directly.
-
-### Volume Name Uniqueness Per Project
-
-**What happens:** Volume names must be unique within a project. If you try to create a service with an inline volume whose name already exists in the project (from a previous failed run or another service), the volume will be created but the rename will fail.
-
-**Impact:** As of v0.8.0, the provider cleans up the orphaned volume automatically if the rename fails. You'll get a clear error message. To fix: choose a different volume name or delete the conflicting volume.
-
-### "Operation Already in Progress" on Delete
-
-**What happens:** Deleting a resource that is already being deleted returns `Cannot delete [resource]: an operation is already in progress`.
-
-**Why:** Railway processes deletes asynchronously. A second delete request during processing is rejected. This is NOT matched by `isNotFound()`.
-
-**Workaround:** All Delete methods treat "operation is already in progress" as successful (idempotent deletion). The disappears test helpers use `retry.RetryContext` polling to wait for deletion to complete.
-
 ### Multiple Redeployments on First Apply
 
 **What happens:** On initial `tofu apply`, each service shows 3-4 queued deployments in the Railway dashboard instead of one.
@@ -332,21 +316,3 @@ Known filter values: `deploy.completed`, `deploy.started`, `deploy.failed`, `dep
 
 **Workaround:** Use `railway_variable_collection` instead of individual `railway_variable` resources to minimise redeployments (one collection = one redeployment instead of one per variable). Beyond that, 3-4 deployments per service on first apply is the practical minimum with the current API. Subsequent `tofu apply` with no changes triggers zero redeployments. This is a Railway API limitation, not a provider bug.
 
-## Guidelines
-
-- NEVER use `go generate` — use `go run github.com/Khan/genqlient` to regenerate the GraphQL client
-- GraphQL queries live in `internal/provider/*.graphql`, client code in `generated.go`
-- Resources follow the pattern: model struct → Schema() → Configure() → CRUD methods → ImportState()
-- Provider registration is in `provider.go` Resources() and DataSources() functions
-- Registry docs in `docs/resources/` and `docs/data-sources/`
-- Run `make test` to run all unit tests (mock-based, no Railway token needed)
-- Run `make testacc` to run acceptance tests (requires `RAILWAY_TOKEN`)
-- Both targets set the OpenTofu provider namespace env vars automatically
-- If running tests manually (not via `make`), you must set these env vars for OpenTofu compatibility:
-  ```bash
-  TF_ACC_TERRAFORM_PATH="$(which tofu)" \
-  TF_ACC_PROVIDER_NAMESPACE="hashicorp" \
-  TF_ACC_PROVIDER_HOST="registry.opentofu.org" \
-  go test ./internal/provider/ -v
-  ```
-- Run `./scripts/check-schema.sh` to verify the GraphQL schema hasn't drifted from the recorded version

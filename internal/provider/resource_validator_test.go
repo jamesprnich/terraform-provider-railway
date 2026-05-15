@@ -162,26 +162,6 @@ resource "railway_volume" "test" {
 	})
 }
 
-func TestWebhookResource_invalidProjectId(t *testing.T) {
-	t.Parallel()
-	server := newMockGraphQLServer(t, mockFixtures{})
-	defer server.Close()
-
-	resource.UnitTest(t, resource.TestCase{
-		ProtoV6ProviderFactories: testUnitProtoV6ProviderFactories(),
-		Steps: []resource.TestStep{
-			{
-				Config: testUnitProviderConfig(server.URL) + `
-resource "railway_webhook" "test" {
-  project_id = "bad-id"
-  url        = "https://example.com/webhook"
-}`,
-				ExpectError: regexp.MustCompile(`must be an id`),
-			},
-		},
-	})
-}
-
 func TestCustomDomainResource_invalidEnvironmentId(t *testing.T) {
 	t.Parallel()
 	server := newMockGraphQLServer(t, mockFixtures{})
@@ -346,50 +326,6 @@ resource "railway_service_instance" "test" {
   environment_id = "00000000-0000-0000-0000-000000000001"
 }`,
 				ExpectError: regexp.MustCompile(`must be an id`),
-			},
-		},
-	})
-}
-
-// =============================================================================
-// URL format validator tests — webhook URL must be HTTP or HTTPS
-// =============================================================================
-
-func TestWebhookResource_invalidUrl(t *testing.T) {
-	t.Parallel()
-	server := newMockGraphQLServer(t, mockFixtures{})
-	defer server.Close()
-
-	resource.UnitTest(t, resource.TestCase{
-		ProtoV6ProviderFactories: testUnitProtoV6ProviderFactories(),
-		Steps: []resource.TestStep{
-			{
-				Config: testUnitProviderConfig(server.URL) + `
-resource "railway_webhook" "test" {
-  project_id = "00000000-0000-0000-0000-000000000001"
-  url        = "ftp://example.com/webhook"
-}`,
-				ExpectError: regexp.MustCompile(`must be a valid HTTP or HTTPS URL`),
-			},
-		},
-	})
-}
-
-func TestWebhookResource_invalidUrlNoScheme(t *testing.T) {
-	t.Parallel()
-	server := newMockGraphQLServer(t, mockFixtures{})
-	defer server.Close()
-
-	resource.UnitTest(t, resource.TestCase{
-		ProtoV6ProviderFactories: testUnitProtoV6ProviderFactories(),
-		Steps: []resource.TestStep{
-			{
-				Config: testUnitProviderConfig(server.URL) + `
-resource "railway_webhook" "test" {
-  project_id = "00000000-0000-0000-0000-000000000001"
-  url        = "example.com/webhook"
-}`,
-				ExpectError: regexp.MustCompile(`must be a valid HTTP or HTTPS URL`),
 			},
 		},
 	})

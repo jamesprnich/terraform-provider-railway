@@ -53,11 +53,16 @@ Full documentation with guides, resource references, and examples:
 | `railway_service_domain` | Auto-generated `.up.railway.app` domain |
 | `railway_custom_domain` | Custom domain with DNS verification |
 | `railway_tcp_proxy` | TCP proxy for non-HTTP services |
-| `railway_webhook` | HTTP webhook notifications for project events |
 | `railway_deployment_trigger` | Auto-deploy from GitHub/GitLab on push |
 | `railway_egress_gateway` | Static egress IP for external service allowlisting |
 | `railway_private_network` | Private network for internal service-to-service communication |
 | `railway_private_network_endpoint` | Connects a service to a private network with DNS name |
+| `railway_project_token` | Project-scoped deploy token for CI/CD (sensitive) |
+| `railway_trusted_domain` | Workspace-level trusted domain for SSO |
+| `railway_notification_rule` | Notification rule (webhook, Slack, email) — replaces `railway_webhook` |
+| `railway_bucket` | S3-compatible object storage bucket |
+| `railway_ssh_public_key` | SSH public key for workspace |
+| `railway_project_member` | Project membership with role |
 
 ## Data Sources
 

@@ -1,6 +1,6 @@
 ## Requirements
 
-- [OpenTofu](https://opentofu.org/docs/intro/install/) >= 1.9 (or [Terraform](https://www.terraform.io/downloads.html) >= 1.0)
+- [OpenTofu](https://opentofu.org/docs/intro/install/) >= 1.11 (or [Terraform](https://www.terraform.io/downloads.html) >= 1.0)
 - [Go](https://golang.org/doc/install) >= 1.25
 
 ## Building The Provider
@@ -57,7 +57,7 @@ Both targets automatically set the OpenTofu compatibility environment variables.
 
 ```shell
 TF_ACC_TERRAFORM_PATH="$(which tofu)" \
-TF_ACC_PROVIDER_NAMESPACE="hashicorp" \
+TF_ACC_PROVIDER_NAMESPACE="jamesprnich" \
 TF_ACC_PROVIDER_HOST="registry.opentofu.org" \
 go test ./internal/provider/ -v
 ```

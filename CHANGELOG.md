@@ -1,3 +1,23 @@
+## 0.9.0
+
+### BREAKING
+* **Removed `railway_webhook` resource.** Railway has removed the `webhookCreate`, `webhookUpdate`, and `webhookDelete` mutations from its public GraphQL API. Webhooks are now one channel type of the more general `notificationRule*` mutations. Use the new `railway_notification_rule` resource instead. Migration: delete any `railway_webhook.X` resources from state with `tofu state rm`, then create equivalent `railway_notification_rule.X` resources.
+
+### Enhancements
+* Bump Go from 1.25.0 → 1.25.8 (security patches for html/template, net/http, net/mail, syscall)
+* Bump `terraform-plugin-testing` from v1.15.0 → v1.16.0
+* Bump OpenTofu CI pin from 1.9.0 → 1.11.8 (HTTP/2 security fix)
+* Refresh GraphQL schema from Railway API (2025-05-01 → 2026-05-15)
+* Add `railway_notification_rule` resource — webhook, Slack, email and other notification channels (replaces `railway_webhook`)
+* Add `railway_project_token` resource — project-scoped deploy tokens for CI/CD pipelines
+* Add `railway_trusted_domain` resource — workspace-level trusted domain for SSO
+* Add `railway_bucket` resource — S3-compatible object storage bucket
+* Add `railway_ssh_public_key` resource — SSH public key for workspace
+* Add `railway_project_member` resource — full membership CRUD (Add mutation added by Railway)
+
+### Known Limitations
+* `railway_bucket` Delete is a no-op — Railway has not exposed a `bucketDelete` mutation. `tofu destroy` removes the bucket from state only; the bucket persists in Railway until project deletion or manual cleanup via the dashboard.
+
 ## 0.8.0
 
 ### BREAKING

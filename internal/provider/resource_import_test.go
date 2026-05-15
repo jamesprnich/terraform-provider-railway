@@ -492,56 +492,6 @@ resource "railway_tcp_proxy" "test" {
 	})
 }
 
-// TestWebhookResource_importInvalid tests that malformed import IDs
-// are rejected by the railway_webhook resource.
-// Expected format: project_id:webhook_id (2 parts).
-func TestWebhookResource_importInvalid(t *testing.T) {
-	srv := newMockGraphQLServer(t, mockFixtures{})
-	defer srv.Close()
-
-	resource.UnitTest(t, resource.TestCase{
-		ProtoV6ProviderFactories: testUnitProtoV6ProviderFactories(),
-		Steps: []resource.TestStep{
-			{
-				Config: testUnitProviderConfig(srv.URL) + `
-resource "railway_webhook" "test" {
-  project_id = "11111111-2222-3333-4444-555555555555"
-  url        = "https://example.com/webhook"
-}
-`,
-				ResourceName:  "railway_webhook.test",
-				ImportState:   true,
-				ImportStateId: "only-one-part",
-				ExpectError:   importFormatRegex,
-			},
-			{
-				Config: testUnitProviderConfig(srv.URL) + `
-resource "railway_webhook" "test" {
-  project_id = "11111111-2222-3333-4444-555555555555"
-  url        = "https://example.com/webhook"
-}
-`,
-				ResourceName:  "railway_webhook.test",
-				ImportState:   true,
-				ImportStateId: "proj:",
-				ExpectError:   importFormatRegex,
-			},
-			{
-				Config: testUnitProviderConfig(srv.URL) + `
-resource "railway_webhook" "test" {
-  project_id = "11111111-2222-3333-4444-555555555555"
-  url        = "https://example.com/webhook"
-}
-`,
-				ResourceName:  "railway_webhook.test",
-				ImportState:   true,
-				ImportStateId: ":webhook-id",
-				ExpectError:   importFormatRegex,
-			},
-		},
-	})
-}
-
 // TestDeploymentTriggerResource_importInvalid tests that malformed import IDs
 // are rejected by the railway_deployment_trigger resource.
 // Expected format: project_id:environment_id:service_id:trigger_id (4 parts).
