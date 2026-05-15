@@ -17,7 +17,10 @@ query getSshPublicKeys($workspaceId: String) {
   }
 }
 
-mutation createSshPublicKey($input: SshPublicKeyCreateInput!) {
+# @genqlient(for: "SshPublicKeyCreateInput.workspaceId", omitempty: true, pointer: true)
+mutation createSshPublicKey(
+  $input: SshPublicKeyCreateInput!
+) {
   sshPublicKeyCreate(input: $input) {
     ...SshPublicKeyFields
   }

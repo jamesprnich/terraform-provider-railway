@@ -17,13 +17,25 @@ query getNotificationRules($workspaceId: String!, $projectId: String) {
   }
 }
 
-mutation createNotificationRule($input: CreateNotificationRuleInput!) {
+# @genqlient(for: "CreateNotificationRuleInput.projectId", omitempty: true, pointer: true)
+# @genqlient(for: "CreateNotificationRuleInput.severities", omitempty: true)
+# @genqlient(for: "CreateNotificationRuleInput.ephemeralEnvironments", omitempty: true, pointer: true)
+mutation createNotificationRule(
+  $input: CreateNotificationRuleInput!
+) {
   notificationRuleCreate(input: $input) {
     ...NotificationRuleFields
   }
 }
 
-mutation updateNotificationRule($id: String!, $input: UpdateNotificationRuleInput!) {
+# @genqlient(for: "UpdateNotificationRuleInput.channelConfigs", omitempty: true)
+# @genqlient(for: "UpdateNotificationRuleInput.eventTypes", omitempty: true)
+# @genqlient(for: "UpdateNotificationRuleInput.severities", omitempty: true)
+# @genqlient(for: "UpdateNotificationRuleInput.ephemeralEnvironments", omitempty: true, pointer: true)
+mutation updateNotificationRule(
+  $id: String!
+  $input: UpdateNotificationRuleInput!
+) {
   notificationRuleUpdate(id: $id, input: $input) {
     ...NotificationRuleFields
   }

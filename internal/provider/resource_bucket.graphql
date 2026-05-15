@@ -18,13 +18,20 @@ query getProjectBuckets($projectId: String!) {
   }
 }
 
-mutation createBucket($input: BucketCreateInput!) {
+# @genqlient(for: "BucketCreateInput.environmentId", omitempty: true, pointer: true)
+# @genqlient(for: "BucketCreateInput.name", omitempty: true, pointer: true)
+mutation createBucket(
+  $input: BucketCreateInput!
+) {
   bucketCreate(input: $input) {
     ...BucketFields
   }
 }
 
-mutation updateBucket($id: String!, $input: BucketUpdateInput!) {
+mutation updateBucket(
+  $id: String!
+  $input: BucketUpdateInput!
+) {
   bucketUpdate(id: $id, input: $input) {
     ...BucketFields
   }

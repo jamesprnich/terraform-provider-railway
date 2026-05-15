@@ -161,14 +161,18 @@ func (r *NotificationRuleResource) Create(ctx context.Context, req resource.Crea
 	}
 
 	input := CreateNotificationRuleInput{
-		WorkspaceId:           data.WorkspaceId.ValueString(),
-		EventTypes:            eventTypes,
-		Severities:            severities,
-		ChannelConfigs:        channelConfigs,
-		EphemeralEnvironments: data.EphemeralEnvironments.ValueBool(),
+		WorkspaceId:    data.WorkspaceId.ValueString(),
+		EventTypes:     eventTypes,
+		Severities:     severities,
+		ChannelConfigs: channelConfigs,
+	}
+	if !data.EphemeralEnvironments.IsNull() && !data.EphemeralEnvironments.IsUnknown() {
+		v := data.EphemeralEnvironments.ValueBool()
+		input.EphemeralEnvironments = &v
 	}
 	if !data.ProjectId.IsNull() && !data.ProjectId.IsUnknown() {
-		input.ProjectId = data.ProjectId.ValueString()
+		v := data.ProjectId.ValueString()
+		input.ProjectId = &v
 	}
 
 	response, err := createNotificationRule(ctx, *r.client, input)
@@ -279,10 +283,13 @@ func (r *NotificationRuleResource) Update(ctx context.Context, req resource.Upda
 	}
 
 	input := UpdateNotificationRuleInput{
-		EventTypes:            eventTypes,
-		Severities:            severities,
-		ChannelConfigs:        channelConfigs,
-		EphemeralEnvironments: data.EphemeralEnvironments.ValueBool(),
+		EventTypes:     eventTypes,
+		Severities:     severities,
+		ChannelConfigs: channelConfigs,
+	}
+	if !data.EphemeralEnvironments.IsNull() && !data.EphemeralEnvironments.IsUnknown() {
+		v := data.EphemeralEnvironments.ValueBool()
+		input.EphemeralEnvironments = &v
 	}
 
 	_, err := updateNotificationRule(ctx, *r.client, data.Id.ValueString(), input)
