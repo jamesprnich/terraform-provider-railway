@@ -1,8 +1,8 @@
 # =============================================================================
-# Railway Test App — Full Stack
+# Railway Reference Deployment — Full Stack
 # =============================================================================
 # Deploys a Flask app + Postgres on Railway with private networking.
-# Proves: project, services, variable collections, volume, service instances, domain.
+# Demonstrates: project, services, variable collections, volume, service instances, domain.
 #
 # Usage:
 #   tofu apply -var='app_repo=owner/repo' -var='postgres_password=xxx'
@@ -100,7 +100,7 @@ resource "railway_variable_collection" "app" {
 
   variables = [
     { name = "PORT", value = "8080" },
-    { name = "DATABASE_URL", value = "postgresql://testapp:${var.postgres_password}@postgres-dev.railway.internal:5432/testapp" },
+    { name = "DATABASE_URL", value = "postgresql://testapp:${var.postgres_password}@postgres-dev.railway.internal:5432/testapp?connect_timeout=5" },
   ]
 }
 

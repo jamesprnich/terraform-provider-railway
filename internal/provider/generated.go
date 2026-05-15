@@ -10,6 +10,55 @@ import (
 	"github.com/Khan/genqlient/graphql"
 )
 
+type BucketCreateInput struct {
+	// [unimplemented] The environment to deploy the bucket instances into. If `null`, the bucket will not be deployed to any environment. `undefined` will deploy to all environments.
+	EnvironmentId string `json:"environmentId"`
+	// The name of the bucket
+	Name string `json:"name"`
+	// The project to create the bucket in
+	ProjectId string `json:"projectId"`
+}
+
+// GetEnvironmentId returns BucketCreateInput.EnvironmentId, and is useful for accessing the field via an interface.
+func (v *BucketCreateInput) GetEnvironmentId() string { return v.EnvironmentId }
+
+// GetName returns BucketCreateInput.Name, and is useful for accessing the field via an interface.
+func (v *BucketCreateInput) GetName() string { return v.Name }
+
+// GetProjectId returns BucketCreateInput.ProjectId, and is useful for accessing the field via an interface.
+func (v *BucketCreateInput) GetProjectId() string { return v.ProjectId }
+
+// BucketFields includes the GraphQL fields of Bucket requested by the fragment BucketFields.
+type BucketFields struct {
+	Id        string    `json:"id"`
+	Name      string    `json:"name"`
+	ProjectId string    `json:"projectId"`
+	CreatedAt time.Time `json:"createdAt"`
+	UpdatedAt time.Time `json:"updatedAt"`
+}
+
+// GetId returns BucketFields.Id, and is useful for accessing the field via an interface.
+func (v *BucketFields) GetId() string { return v.Id }
+
+// GetName returns BucketFields.Name, and is useful for accessing the field via an interface.
+func (v *BucketFields) GetName() string { return v.Name }
+
+// GetProjectId returns BucketFields.ProjectId, and is useful for accessing the field via an interface.
+func (v *BucketFields) GetProjectId() string { return v.ProjectId }
+
+// GetCreatedAt returns BucketFields.CreatedAt, and is useful for accessing the field via an interface.
+func (v *BucketFields) GetCreatedAt() time.Time { return v.CreatedAt }
+
+// GetUpdatedAt returns BucketFields.UpdatedAt, and is useful for accessing the field via an interface.
+func (v *BucketFields) GetUpdatedAt() time.Time { return v.UpdatedAt }
+
+type BucketUpdateInput struct {
+	Name string `json:"name"`
+}
+
+// GetName returns BucketUpdateInput.Name, and is useful for accessing the field via an interface.
+func (v *BucketUpdateInput) GetName() string { return v.Name }
+
 type Builder string
 
 const (
@@ -18,6 +67,33 @@ const (
 	BuilderPaketo   Builder = "PAKETO"
 	BuilderRailpack Builder = "RAILPACK"
 )
+
+type CreateNotificationRuleInput struct {
+	ChannelConfigs        []json.RawMessage      `json:"channelConfigs"`
+	EphemeralEnvironments bool                   `json:"ephemeralEnvironments"`
+	EventTypes            []string               `json:"eventTypes"`
+	ProjectId             string                 `json:"projectId"`
+	Severities            []NotificationSeverity `json:"severities"`
+	WorkspaceId           string                 `json:"workspaceId"`
+}
+
+// GetChannelConfigs returns CreateNotificationRuleInput.ChannelConfigs, and is useful for accessing the field via an interface.
+func (v *CreateNotificationRuleInput) GetChannelConfigs() []json.RawMessage { return v.ChannelConfigs }
+
+// GetEphemeralEnvironments returns CreateNotificationRuleInput.EphemeralEnvironments, and is useful for accessing the field via an interface.
+func (v *CreateNotificationRuleInput) GetEphemeralEnvironments() bool { return v.EphemeralEnvironments }
+
+// GetEventTypes returns CreateNotificationRuleInput.EventTypes, and is useful for accessing the field via an interface.
+func (v *CreateNotificationRuleInput) GetEventTypes() []string { return v.EventTypes }
+
+// GetProjectId returns CreateNotificationRuleInput.ProjectId, and is useful for accessing the field via an interface.
+func (v *CreateNotificationRuleInput) GetProjectId() string { return v.ProjectId }
+
+// GetSeverities returns CreateNotificationRuleInput.Severities, and is useful for accessing the field via an interface.
+func (v *CreateNotificationRuleInput) GetSeverities() []NotificationSeverity { return v.Severities }
+
+// GetWorkspaceId returns CreateNotificationRuleInput.WorkspaceId, and is useful for accessing the field via an interface.
+func (v *CreateNotificationRuleInput) GetWorkspaceId() string { return v.WorkspaceId }
 
 // CustomDomain includes the GraphQL fields of CustomDomain requested by the fragment CustomDomain.
 type CustomDomain struct {
@@ -241,9 +317,7 @@ func (v *Environment) GetName() string { return v.Name }
 func (v *Environment) GetProjectId() string { return v.ProjectId }
 
 type EnvironmentCreateInput struct {
-	// If true, the changes will be applied in the background and the mutation will
-	// return immediately. If false, the mutation will wait for the changes to be
-	// applied before returning.
+	// If true, the changes will be applied in the background and the mutation will return immediately. If false, the mutation will wait for the changes to be applied before returning.
 	ApplyChangesInBackground bool   `json:"applyChangesInBackground"`
 	Ephemeral                bool   `json:"ephemeral"`
 	Name                     string `json:"name"`
@@ -285,6 +359,63 @@ type EnvironmentRenameInput struct {
 
 // GetName returns EnvironmentRenameInput.Name, and is useful for accessing the field via an interface.
 func (v *EnvironmentRenameInput) GetName() string { return v.Name }
+
+// NotificationRuleFields includes the GraphQL fields of NotificationRule requested by the fragment NotificationRuleFields.
+type NotificationRuleFields struct {
+	Id                    string                                              `json:"id"`
+	WorkspaceId           string                                              `json:"workspaceId"`
+	ProjectId             string                                              `json:"projectId"`
+	EventTypes            []string                                            `json:"eventTypes"`
+	Severities            []NotificationSeverity                              `json:"severities"`
+	EphemeralEnvironments bool                                                `json:"ephemeralEnvironments"`
+	Channels              []NotificationRuleFieldsChannelsNotificationChannel `json:"channels"`
+}
+
+// GetId returns NotificationRuleFields.Id, and is useful for accessing the field via an interface.
+func (v *NotificationRuleFields) GetId() string { return v.Id }
+
+// GetWorkspaceId returns NotificationRuleFields.WorkspaceId, and is useful for accessing the field via an interface.
+func (v *NotificationRuleFields) GetWorkspaceId() string { return v.WorkspaceId }
+
+// GetProjectId returns NotificationRuleFields.ProjectId, and is useful for accessing the field via an interface.
+func (v *NotificationRuleFields) GetProjectId() string { return v.ProjectId }
+
+// GetEventTypes returns NotificationRuleFields.EventTypes, and is useful for accessing the field via an interface.
+func (v *NotificationRuleFields) GetEventTypes() []string { return v.EventTypes }
+
+// GetSeverities returns NotificationRuleFields.Severities, and is useful for accessing the field via an interface.
+func (v *NotificationRuleFields) GetSeverities() []NotificationSeverity { return v.Severities }
+
+// GetEphemeralEnvironments returns NotificationRuleFields.EphemeralEnvironments, and is useful for accessing the field via an interface.
+func (v *NotificationRuleFields) GetEphemeralEnvironments() bool { return v.EphemeralEnvironments }
+
+// GetChannels returns NotificationRuleFields.Channels, and is useful for accessing the field via an interface.
+func (v *NotificationRuleFields) GetChannels() []NotificationRuleFieldsChannelsNotificationChannel {
+	return v.Channels
+}
+
+// NotificationRuleFieldsChannelsNotificationChannel includes the requested fields of the GraphQL type NotificationChannel.
+type NotificationRuleFieldsChannelsNotificationChannel struct {
+	Id     string          `json:"id"`
+	Config json.RawMessage `json:"config"`
+}
+
+// GetId returns NotificationRuleFieldsChannelsNotificationChannel.Id, and is useful for accessing the field via an interface.
+func (v *NotificationRuleFieldsChannelsNotificationChannel) GetId() string { return v.Id }
+
+// GetConfig returns NotificationRuleFieldsChannelsNotificationChannel.Config, and is useful for accessing the field via an interface.
+func (v *NotificationRuleFieldsChannelsNotificationChannel) GetConfig() json.RawMessage {
+	return v.Config
+}
+
+type NotificationSeverity string
+
+const (
+	NotificationSeverityCritical NotificationSeverity = "CRITICAL"
+	NotificationSeverityInfo     NotificationSeverity = "INFO"
+	NotificationSeverityNotice   NotificationSeverity = "NOTICE"
+	NotificationSeverityWarning  NotificationSeverity = "WARNING"
+)
 
 type PrivateNetworkCreateOrGetInput struct {
 	EnvironmentId string   `json:"environmentId"`
@@ -512,14 +643,120 @@ func (v *ProjectEnvironmentsProjectEnvironmentsConnectionEdgesProjectEnvironment
 	return v.CreatedAt
 }
 
+type ProjectMemberAddInput struct {
+	ProjectId string      `json:"projectId"`
+	Role      ProjectRole `json:"role"`
+	UserId    string      `json:"userId"`
+}
+
+// GetProjectId returns ProjectMemberAddInput.ProjectId, and is useful for accessing the field via an interface.
+func (v *ProjectMemberAddInput) GetProjectId() string { return v.ProjectId }
+
+// GetRole returns ProjectMemberAddInput.Role, and is useful for accessing the field via an interface.
+func (v *ProjectMemberAddInput) GetRole() ProjectRole { return v.Role }
+
+// GetUserId returns ProjectMemberAddInput.UserId, and is useful for accessing the field via an interface.
+func (v *ProjectMemberAddInput) GetUserId() string { return v.UserId }
+
+// ProjectMemberFields includes the GraphQL fields of ProjectMember requested by the fragment ProjectMemberFields.
+type ProjectMemberFields struct {
+	Id    string      `json:"id"`
+	Email string      `json:"email"`
+	Name  string      `json:"name"`
+	Role  ProjectRole `json:"role"`
+}
+
+// GetId returns ProjectMemberFields.Id, and is useful for accessing the field via an interface.
+func (v *ProjectMemberFields) GetId() string { return v.Id }
+
+// GetEmail returns ProjectMemberFields.Email, and is useful for accessing the field via an interface.
+func (v *ProjectMemberFields) GetEmail() string { return v.Email }
+
+// GetName returns ProjectMemberFields.Name, and is useful for accessing the field via an interface.
+func (v *ProjectMemberFields) GetName() string { return v.Name }
+
+// GetRole returns ProjectMemberFields.Role, and is useful for accessing the field via an interface.
+func (v *ProjectMemberFields) GetRole() ProjectRole { return v.Role }
+
+type ProjectMemberRemoveInput struct {
+	ProjectId string `json:"projectId"`
+	UserId    string `json:"userId"`
+}
+
+// GetProjectId returns ProjectMemberRemoveInput.ProjectId, and is useful for accessing the field via an interface.
+func (v *ProjectMemberRemoveInput) GetProjectId() string { return v.ProjectId }
+
+// GetUserId returns ProjectMemberRemoveInput.UserId, and is useful for accessing the field via an interface.
+func (v *ProjectMemberRemoveInput) GetUserId() string { return v.UserId }
+
+type ProjectMemberUpdateInput struct {
+	ProjectId string      `json:"projectId"`
+	Role      ProjectRole `json:"role"`
+	UserId    string      `json:"userId"`
+}
+
+// GetProjectId returns ProjectMemberUpdateInput.ProjectId, and is useful for accessing the field via an interface.
+func (v *ProjectMemberUpdateInput) GetProjectId() string { return v.ProjectId }
+
+// GetRole returns ProjectMemberUpdateInput.Role, and is useful for accessing the field via an interface.
+func (v *ProjectMemberUpdateInput) GetRole() ProjectRole { return v.Role }
+
+// GetUserId returns ProjectMemberUpdateInput.UserId, and is useful for accessing the field via an interface.
+func (v *ProjectMemberUpdateInput) GetUserId() string { return v.UserId }
+
+type ProjectRole string
+
+const (
+	ProjectRoleAdmin  ProjectRole = "ADMIN"
+	ProjectRoleMember ProjectRole = "MEMBER"
+	ProjectRoleViewer ProjectRole = "VIEWER"
+)
+
+type ProjectTokenCreateInput struct {
+	EnvironmentId string `json:"environmentId"`
+	Name          string `json:"name"`
+	ProjectId     string `json:"projectId"`
+}
+
+// GetEnvironmentId returns ProjectTokenCreateInput.EnvironmentId, and is useful for accessing the field via an interface.
+func (v *ProjectTokenCreateInput) GetEnvironmentId() string { return v.EnvironmentId }
+
+// GetName returns ProjectTokenCreateInput.Name, and is useful for accessing the field via an interface.
+func (v *ProjectTokenCreateInput) GetName() string { return v.Name }
+
+// GetProjectId returns ProjectTokenCreateInput.ProjectId, and is useful for accessing the field via an interface.
+func (v *ProjectTokenCreateInput) GetProjectId() string { return v.ProjectId }
+
+// ProjectTokenFields includes the GraphQL fields of ProjectToken requested by the fragment ProjectTokenFields.
+type ProjectTokenFields struct {
+	Id            string `json:"id"`
+	Name          string `json:"name"`
+	ProjectId     string `json:"projectId"`
+	EnvironmentId string `json:"environmentId"`
+}
+
+// GetId returns ProjectTokenFields.Id, and is useful for accessing the field via an interface.
+func (v *ProjectTokenFields) GetId() string { return v.Id }
+
+// GetName returns ProjectTokenFields.Name, and is useful for accessing the field via an interface.
+func (v *ProjectTokenFields) GetName() string { return v.Name }
+
+// GetProjectId returns ProjectTokenFields.ProjectId, and is useful for accessing the field via an interface.
+func (v *ProjectTokenFields) GetProjectId() string { return v.ProjectId }
+
+// GetEnvironmentId returns ProjectTokenFields.EnvironmentId, and is useful for accessing the field via an interface.
+func (v *ProjectTokenFields) GetEnvironmentId() string { return v.EnvironmentId }
+
 type ProjectUpdateInput struct {
 	BaseEnvironmentId *string `json:"baseEnvironmentId,omitempty"`
 	// Enable/disable pull request environments for PRs created by bots
 	BotPrEnvironments bool   `json:"botPrEnvironments"`
 	Description       string `json:"description"`
-	IsPublic          bool   `json:"isPublic"`
-	Name              string `json:"name"`
-	PrDeploys         bool   `json:"prDeploys"`
+	// Enable focused PR environments that only deploy services affected by changed files
+	FocusedPrEnvironments bool   `json:"focusedPrEnvironments"`
+	IsPublic              bool   `json:"isPublic"`
+	Name                  string `json:"name"`
+	PrDeploys             bool   `json:"prDeploys"`
 }
 
 // GetBaseEnvironmentId returns ProjectUpdateInput.BaseEnvironmentId, and is useful for accessing the field via an interface.
@@ -531,6 +768,9 @@ func (v *ProjectUpdateInput) GetBotPrEnvironments() bool { return v.BotPrEnviron
 // GetDescription returns ProjectUpdateInput.Description, and is useful for accessing the field via an interface.
 func (v *ProjectUpdateInput) GetDescription() string { return v.Description }
 
+// GetFocusedPrEnvironments returns ProjectUpdateInput.FocusedPrEnvironments, and is useful for accessing the field via an interface.
+func (v *ProjectUpdateInput) GetFocusedPrEnvironments() bool { return v.FocusedPrEnvironments }
+
 // GetIsPublic returns ProjectUpdateInput.IsPublic, and is useful for accessing the field via an interface.
 func (v *ProjectUpdateInput) GetIsPublic() bool { return v.IsPublic }
 
@@ -539,30 +779,6 @@ func (v *ProjectUpdateInput) GetName() string { return v.Name }
 
 // GetPrDeploys returns ProjectUpdateInput.PrDeploys, and is useful for accessing the field via an interface.
 func (v *ProjectUpdateInput) GetPrDeploys() bool { return v.PrDeploys }
-
-// ProjectWebhook includes the GraphQL fields of ProjectWebhook requested by the fragment ProjectWebhook.
-type ProjectWebhook struct {
-	Id         string   `json:"id"`
-	Url        string   `json:"url"`
-	ProjectId  string   `json:"projectId"`
-	Filters    []string `json:"filters"`
-	LastStatus int      `json:"lastStatus"`
-}
-
-// GetId returns ProjectWebhook.Id, and is useful for accessing the field via an interface.
-func (v *ProjectWebhook) GetId() string { return v.Id }
-
-// GetUrl returns ProjectWebhook.Url, and is useful for accessing the field via an interface.
-func (v *ProjectWebhook) GetUrl() string { return v.Url }
-
-// GetProjectId returns ProjectWebhook.ProjectId, and is useful for accessing the field via an interface.
-func (v *ProjectWebhook) GetProjectId() string { return v.ProjectId }
-
-// GetFilters returns ProjectWebhook.Filters, and is useful for accessing the field via an interface.
-func (v *ProjectWebhook) GetFilters() []string { return v.Filters }
-
-// GetLastStatus returns ProjectWebhook.LastStatus, and is useful for accessing the field via an interface.
-func (v *ProjectWebhook) GetLastStatus() int { return v.LastStatus }
 
 // ProjectWorkspace includes the requested fields of the GraphQL type Workspace.
 type ProjectWorkspace struct {
@@ -636,17 +852,18 @@ func (v *ServiceConnectInput) GetRepo() *string { return v.Repo }
 
 type ServiceCreateInput struct {
 	Branch *string `json:"branch,omitempty"`
-	// Environment ID. If the specified environment is a fork, the service will only
-	// be created in it. Otherwise it will created in all environments that are not
-	// forks of other environments
+	// Environment ID. If the specified environment is a fork, the service will only be created in it. Otherwise it will created in all environments that are not forks of other environments
 	EnvironmentId       *string                   `json:"environmentId,omitempty"`
 	Icon                *string                   `json:"icon,omitempty"`
-	Name                string                    `json:"name"`
+	Name                string                    `json:"name,omitempty"`
 	ProjectId           string                    `json:"projectId"`
 	RegistryCredentials *RegistryCredentialsInput `json:"registryCredentials,omitempty"`
 	Source              *ServiceSourceInput       `json:"source,omitempty"`
-	TemplateServiceId   *string                   `json:"templateServiceId,omitempty"`
-	Variables           map[string]interface{}    `json:"variables"`
+	// Template ID. Required when templateServiceId is provided.
+	TemplateId string `json:"templateId,omitempty"`
+	// Template service ID within the template's serializedConfig. Required when templateId is provided.
+	TemplateServiceId *string                `json:"templateServiceId,omitempty"`
+	Variables         map[string]interface{} `json:"variables,omitempty"`
 }
 
 // GetBranch returns ServiceCreateInput.Branch, and is useful for accessing the field via an interface.
@@ -671,6 +888,9 @@ func (v *ServiceCreateInput) GetRegistryCredentials() *RegistryCredentialsInput 
 
 // GetSource returns ServiceCreateInput.Source, and is useful for accessing the field via an interface.
 func (v *ServiceCreateInput) GetSource() *ServiceSourceInput { return v.Source }
+
+// GetTemplateId returns ServiceCreateInput.TemplateId, and is useful for accessing the field via an interface.
+func (v *ServiceCreateInput) GetTemplateId() string { return v.TemplateId }
 
 // GetTemplateServiceId returns ServiceCreateInput.TemplateServiceId, and is useful for accessing the field via an interface.
 func (v *ServiceCreateInput) GetTemplateServiceId() *string { return v.TemplateServiceId }
@@ -765,9 +985,11 @@ type ServiceInstanceUpdateInput struct {
 	BuildCommand            *string                   `json:"buildCommand,omitempty"`
 	Builder                 *Builder                  `json:"builder,omitempty"`
 	CronSchedule            *string                   `json:"cronSchedule"`
+	DockerfilePath          string                    `json:"dockerfilePath"`
 	DrainingSeconds         *int                      `json:"drainingSeconds,omitempty"`
 	HealthcheckPath         *string                   `json:"healthcheckPath,omitempty"`
 	HealthcheckTimeout      *int                      `json:"healthcheckTimeout,omitempty"`
+	Ipv6EgressEnabled       bool                      `json:"ipv6EgressEnabled"`
 	MultiRegionConfig       *map[string]interface{}   `json:"multiRegionConfig,omitempty"`
 	NixpacksPlan            *map[string]interface{}   `json:"nixpacksPlan,omitempty"`
 	NumReplicas             *int                      `json:"numReplicas,omitempty"`
@@ -794,6 +1016,9 @@ func (v *ServiceInstanceUpdateInput) GetBuilder() *Builder { return v.Builder }
 // GetCronSchedule returns ServiceInstanceUpdateInput.CronSchedule, and is useful for accessing the field via an interface.
 func (v *ServiceInstanceUpdateInput) GetCronSchedule() *string { return v.CronSchedule }
 
+// GetDockerfilePath returns ServiceInstanceUpdateInput.DockerfilePath, and is useful for accessing the field via an interface.
+func (v *ServiceInstanceUpdateInput) GetDockerfilePath() string { return v.DockerfilePath }
+
 // GetDrainingSeconds returns ServiceInstanceUpdateInput.DrainingSeconds, and is useful for accessing the field via an interface.
 func (v *ServiceInstanceUpdateInput) GetDrainingSeconds() *int { return v.DrainingSeconds }
 
@@ -802,6 +1027,9 @@ func (v *ServiceInstanceUpdateInput) GetHealthcheckPath() *string { return v.Hea
 
 // GetHealthcheckTimeout returns ServiceInstanceUpdateInput.HealthcheckTimeout, and is useful for accessing the field via an interface.
 func (v *ServiceInstanceUpdateInput) GetHealthcheckTimeout() *int { return v.HealthcheckTimeout }
+
+// GetIpv6EgressEnabled returns ServiceInstanceUpdateInput.Ipv6EgressEnabled, and is useful for accessing the field via an interface.
+func (v *ServiceInstanceUpdateInput) GetIpv6EgressEnabled() bool { return v.Ipv6EgressEnabled }
 
 // GetMultiRegionConfig returns ServiceInstanceUpdateInput.MultiRegionConfig, and is useful for accessing the field via an interface.
 func (v *ServiceInstanceUpdateInput) GetMultiRegionConfig() *map[string]interface{} {
@@ -878,6 +1106,49 @@ func (v *ServiceUpdateInput) GetIcon() string { return v.Icon }
 // GetName returns ServiceUpdateInput.Name, and is useful for accessing the field via an interface.
 func (v *ServiceUpdateInput) GetName() string { return v.Name }
 
+type SshPublicKeyCreateInput struct {
+	Name        string `json:"name"`
+	PublicKey   string `json:"publicKey"`
+	WorkspaceId string `json:"workspaceId"`
+}
+
+// GetName returns SshPublicKeyCreateInput.Name, and is useful for accessing the field via an interface.
+func (v *SshPublicKeyCreateInput) GetName() string { return v.Name }
+
+// GetPublicKey returns SshPublicKeyCreateInput.PublicKey, and is useful for accessing the field via an interface.
+func (v *SshPublicKeyCreateInput) GetPublicKey() string { return v.PublicKey }
+
+// GetWorkspaceId returns SshPublicKeyCreateInput.WorkspaceId, and is useful for accessing the field via an interface.
+func (v *SshPublicKeyCreateInput) GetWorkspaceId() string { return v.WorkspaceId }
+
+// SshPublicKeyFields includes the GraphQL fields of SshPublicKey requested by the fragment SshPublicKeyFields.
+type SshPublicKeyFields struct {
+	Id          string `json:"id"`
+	Name        string `json:"name"`
+	PublicKey   string `json:"publicKey"`
+	Fingerprint string `json:"fingerprint"`
+	WorkspaceId string `json:"workspaceId"`
+	UserId      string `json:"userId"`
+}
+
+// GetId returns SshPublicKeyFields.Id, and is useful for accessing the field via an interface.
+func (v *SshPublicKeyFields) GetId() string { return v.Id }
+
+// GetName returns SshPublicKeyFields.Name, and is useful for accessing the field via an interface.
+func (v *SshPublicKeyFields) GetName() string { return v.Name }
+
+// GetPublicKey returns SshPublicKeyFields.PublicKey, and is useful for accessing the field via an interface.
+func (v *SshPublicKeyFields) GetPublicKey() string { return v.PublicKey }
+
+// GetFingerprint returns SshPublicKeyFields.Fingerprint, and is useful for accessing the field via an interface.
+func (v *SshPublicKeyFields) GetFingerprint() string { return v.Fingerprint }
+
+// GetWorkspaceId returns SshPublicKeyFields.WorkspaceId, and is useful for accessing the field via an interface.
+func (v *SshPublicKeyFields) GetWorkspaceId() string { return v.WorkspaceId }
+
+// GetUserId returns SshPublicKeyFields.UserId, and is useful for accessing the field via an interface.
+func (v *SshPublicKeyFields) GetUserId() string { return v.UserId }
+
 // TCPProxy includes the GraphQL fields of TCPProxy requested by the fragment TCPProxy.
 type TCPProxy struct {
 	Id              string `json:"id"`
@@ -920,6 +1191,57 @@ func (v *TCPProxyCreateInput) GetEnvironmentId() string { return v.EnvironmentId
 
 // GetServiceId returns TCPProxyCreateInput.ServiceId, and is useful for accessing the field via an interface.
 func (v *TCPProxyCreateInput) GetServiceId() string { return v.ServiceId }
+
+// TrustedDomainFields includes the GraphQL fields of TrustedDomain requested by the fragment TrustedDomainFields.
+type TrustedDomainFields struct {
+	Id          string              `json:"id"`
+	DomainName  string              `json:"domainName"`
+	Role        string              `json:"role"`
+	Status      TrustedDomainStatus `json:"status"`
+	WorkspaceId string              `json:"workspaceId"`
+}
+
+// GetId returns TrustedDomainFields.Id, and is useful for accessing the field via an interface.
+func (v *TrustedDomainFields) GetId() string { return v.Id }
+
+// GetDomainName returns TrustedDomainFields.DomainName, and is useful for accessing the field via an interface.
+func (v *TrustedDomainFields) GetDomainName() string { return v.DomainName }
+
+// GetRole returns TrustedDomainFields.Role, and is useful for accessing the field via an interface.
+func (v *TrustedDomainFields) GetRole() string { return v.Role }
+
+// GetStatus returns TrustedDomainFields.Status, and is useful for accessing the field via an interface.
+func (v *TrustedDomainFields) GetStatus() TrustedDomainStatus { return v.Status }
+
+// GetWorkspaceId returns TrustedDomainFields.WorkspaceId, and is useful for accessing the field via an interface.
+func (v *TrustedDomainFields) GetWorkspaceId() string { return v.WorkspaceId }
+
+type TrustedDomainStatus string
+
+const (
+	TrustedDomainStatusFailed   TrustedDomainStatus = "FAILED"
+	TrustedDomainStatusPending  TrustedDomainStatus = "PENDING"
+	TrustedDomainStatusVerified TrustedDomainStatus = "VERIFIED"
+)
+
+type UpdateNotificationRuleInput struct {
+	ChannelConfigs        []json.RawMessage      `json:"channelConfigs"`
+	EphemeralEnvironments bool                   `json:"ephemeralEnvironments"`
+	EventTypes            []string               `json:"eventTypes"`
+	Severities            []NotificationSeverity `json:"severities"`
+}
+
+// GetChannelConfigs returns UpdateNotificationRuleInput.ChannelConfigs, and is useful for accessing the field via an interface.
+func (v *UpdateNotificationRuleInput) GetChannelConfigs() []json.RawMessage { return v.ChannelConfigs }
+
+// GetEphemeralEnvironments returns UpdateNotificationRuleInput.EphemeralEnvironments, and is useful for accessing the field via an interface.
+func (v *UpdateNotificationRuleInput) GetEphemeralEnvironments() bool { return v.EphemeralEnvironments }
+
+// GetEventTypes returns UpdateNotificationRuleInput.EventTypes, and is useful for accessing the field via an interface.
+func (v *UpdateNotificationRuleInput) GetEventTypes() []string { return v.EventTypes }
+
+// GetSeverities returns UpdateNotificationRuleInput.Severities, and is useful for accessing the field via an interface.
+func (v *UpdateNotificationRuleInput) GetSeverities() []NotificationSeverity { return v.Severities }
 
 type VariableCollectionUpsertInput struct {
 	EnvironmentId string `json:"environmentId"`
@@ -1016,8 +1338,7 @@ func (v *Volume) GetVolumeInstances() VolumeVolumeInstancesVolumeVolumeInstances
 }
 
 type VolumeCreateInput struct {
-	// The environment to deploy the volume instances into. If `null`, the volume
-	// will not be deployed to any environment. `undefined` will deploy to all environments.
+	// The environment to deploy the volume instances into. If `null`, the volume will not be deployed to any environment. `undefined` will deploy to all environments.
 	EnvironmentId *string `json:"environmentId,omitempty"`
 	// The path in the container to mount the volume to
 	MountPath string `json:"mountPath"`
@@ -1137,11 +1458,12 @@ func (v *VolumeVolumeInstancesVolumeVolumeInstancesConnectionEdgesVolumeVolumeIn
 
 // VolumeVolumeInstancesVolumeVolumeInstancesConnectionEdgesVolumeVolumeInstancesConnectionEdgeNodeVolumeInstance includes the requested fields of the GraphQL type VolumeInstance.
 type VolumeVolumeInstancesVolumeVolumeInstancesConnectionEdgesVolumeVolumeInstancesConnectionEdgeNodeVolumeInstance struct {
-	Id            string `json:"id"`
-	EnvironmentId string `json:"environmentId"`
-	ServiceId     string `json:"serviceId"`
-	MountPath     string `json:"mountPath"`
-	SizeMB        int    `json:"sizeMB"`
+	Id            string      `json:"id"`
+	EnvironmentId string      `json:"environmentId"`
+	ServiceId     string      `json:"serviceId"`
+	MountPath     string      `json:"mountPath"`
+	SizeMB        int         `json:"sizeMB"`
+	State         VolumeState `json:"state"`
 }
 
 // GetId returns VolumeVolumeInstancesVolumeVolumeInstancesConnectionEdgesVolumeVolumeInstancesConnectionEdgeNodeVolumeInstance.Id, and is useful for accessing the field via an interface.
@@ -1169,31 +1491,33 @@ func (v *VolumeVolumeInstancesVolumeVolumeInstancesConnectionEdgesVolumeVolumeIn
 	return v.SizeMB
 }
 
-type WebhookCreateInput struct {
-	Filters   []string `json:"filters"`
-	ProjectId string   `json:"projectId"`
-	Url       string   `json:"url"`
+// GetState returns VolumeVolumeInstancesVolumeVolumeInstancesConnectionEdgesVolumeVolumeInstancesConnectionEdgeNodeVolumeInstance.State, and is useful for accessing the field via an interface.
+func (v *VolumeVolumeInstancesVolumeVolumeInstancesConnectionEdgesVolumeVolumeInstancesConnectionEdgeNodeVolumeInstance) GetState() VolumeState {
+	return v.State
 }
 
-// GetFilters returns WebhookCreateInput.Filters, and is useful for accessing the field via an interface.
-func (v *WebhookCreateInput) GetFilters() []string { return v.Filters }
-
-// GetProjectId returns WebhookCreateInput.ProjectId, and is useful for accessing the field via an interface.
-func (v *WebhookCreateInput) GetProjectId() string { return v.ProjectId }
-
-// GetUrl returns WebhookCreateInput.Url, and is useful for accessing the field via an interface.
-func (v *WebhookCreateInput) GetUrl() string { return v.Url }
-
-type WebhookUpdateInput struct {
-	Filters []string `json:"filters"`
-	Url     string   `json:"url"`
+type WorkspaceTrustedDomainCreateInput struct {
+	DomainName  string `json:"domainName"`
+	Role        string `json:"role"`
+	WorkspaceId string `json:"workspaceId"`
 }
 
-// GetFilters returns WebhookUpdateInput.Filters, and is useful for accessing the field via an interface.
-func (v *WebhookUpdateInput) GetFilters() []string { return v.Filters }
+// GetDomainName returns WorkspaceTrustedDomainCreateInput.DomainName, and is useful for accessing the field via an interface.
+func (v *WorkspaceTrustedDomainCreateInput) GetDomainName() string { return v.DomainName }
 
-// GetUrl returns WebhookUpdateInput.Url, and is useful for accessing the field via an interface.
-func (v *WebhookUpdateInput) GetUrl() string { return v.Url }
+// GetRole returns WorkspaceTrustedDomainCreateInput.Role, and is useful for accessing the field via an interface.
+func (v *WorkspaceTrustedDomainCreateInput) GetRole() string { return v.Role }
+
+// GetWorkspaceId returns WorkspaceTrustedDomainCreateInput.WorkspaceId, and is useful for accessing the field via an interface.
+func (v *WorkspaceTrustedDomainCreateInput) GetWorkspaceId() string { return v.WorkspaceId }
+
+// __addProjectMemberInput is used internally by genqlient
+type __addProjectMemberInput struct {
+	Input ProjectMemberAddInput `json:"input"`
+}
+
+// GetInput returns __addProjectMemberInput.Input, and is useful for accessing the field via an interface.
+func (v *__addProjectMemberInput) GetInput() ProjectMemberAddInput { return v.Input }
 
 // __clearEgressGatewaysInput is used internally by genqlient
 type __clearEgressGatewaysInput struct {
@@ -1214,6 +1538,14 @@ func (v *__connectServiceInput) GetId() string { return v.Id }
 
 // GetInput returns __connectServiceInput.Input, and is useful for accessing the field via an interface.
 func (v *__connectServiceInput) GetInput() ServiceConnectInput { return v.Input }
+
+// __createBucketInput is used internally by genqlient
+type __createBucketInput struct {
+	Input BucketCreateInput `json:"input"`
+}
+
+// GetInput returns __createBucketInput.Input, and is useful for accessing the field via an interface.
+func (v *__createBucketInput) GetInput() BucketCreateInput { return v.Input }
 
 // __createCustomDomainInput is used internally by genqlient
 type __createCustomDomainInput struct {
@@ -1247,6 +1579,14 @@ type __createEnvironmentInput struct {
 // GetInput returns __createEnvironmentInput.Input, and is useful for accessing the field via an interface.
 func (v *__createEnvironmentInput) GetInput() EnvironmentCreateInput { return v.Input }
 
+// __createNotificationRuleInput is used internally by genqlient
+type __createNotificationRuleInput struct {
+	Input CreateNotificationRuleInput `json:"input"`
+}
+
+// GetInput returns __createNotificationRuleInput.Input, and is useful for accessing the field via an interface.
+func (v *__createNotificationRuleInput) GetInput() CreateNotificationRuleInput { return v.Input }
+
 // __createOrGetPrivateNetworkEndpointInput is used internally by genqlient
 type __createOrGetPrivateNetworkEndpointInput struct {
 	Input PrivateNetworkEndpointCreateOrGetInput `json:"input"`
@@ -1273,6 +1613,14 @@ type __createProjectInput struct {
 // GetInput returns __createProjectInput.Input, and is useful for accessing the field via an interface.
 func (v *__createProjectInput) GetInput() ProjectCreateInput { return v.Input }
 
+// __createProjectTokenInput is used internally by genqlient
+type __createProjectTokenInput struct {
+	Input ProjectTokenCreateInput `json:"input"`
+}
+
+// GetInput returns __createProjectTokenInput.Input, and is useful for accessing the field via an interface.
+func (v *__createProjectTokenInput) GetInput() ProjectTokenCreateInput { return v.Input }
+
 // __createServiceDomainInput is used internally by genqlient
 type __createServiceDomainInput struct {
 	Input ServiceDomainCreateInput `json:"input"`
@@ -1289,6 +1637,14 @@ type __createServiceInput struct {
 // GetInput returns __createServiceInput.Input, and is useful for accessing the field via an interface.
 func (v *__createServiceInput) GetInput() ServiceCreateInput { return v.Input }
 
+// __createSshPublicKeyInput is used internally by genqlient
+type __createSshPublicKeyInput struct {
+	Input SshPublicKeyCreateInput `json:"input"`
+}
+
+// GetInput returns __createSshPublicKeyInput.Input, and is useful for accessing the field via an interface.
+func (v *__createSshPublicKeyInput) GetInput() SshPublicKeyCreateInput { return v.Input }
+
 // __createTcpProxyInput is used internally by genqlient
 type __createTcpProxyInput struct {
 	Input TCPProxyCreateInput `json:"input"`
@@ -1297,6 +1653,14 @@ type __createTcpProxyInput struct {
 // GetInput returns __createTcpProxyInput.Input, and is useful for accessing the field via an interface.
 func (v *__createTcpProxyInput) GetInput() TCPProxyCreateInput { return v.Input }
 
+// __createTrustedDomainInput is used internally by genqlient
+type __createTrustedDomainInput struct {
+	Input WorkspaceTrustedDomainCreateInput `json:"input"`
+}
+
+// GetInput returns __createTrustedDomainInput.Input, and is useful for accessing the field via an interface.
+func (v *__createTrustedDomainInput) GetInput() WorkspaceTrustedDomainCreateInput { return v.Input }
+
 // __createVolumeInput is used internally by genqlient
 type __createVolumeInput struct {
 	Input VolumeCreateInput `json:"input"`
@@ -1304,14 +1668,6 @@ type __createVolumeInput struct {
 
 // GetInput returns __createVolumeInput.Input, and is useful for accessing the field via an interface.
 func (v *__createVolumeInput) GetInput() VolumeCreateInput { return v.Input }
-
-// __createWebhookInput is used internally by genqlient
-type __createWebhookInput struct {
-	Input WebhookCreateInput `json:"input"`
-}
-
-// GetInput returns __createWebhookInput.Input, and is useful for accessing the field via an interface.
-func (v *__createWebhookInput) GetInput() WebhookCreateInput { return v.Input }
 
 // __deleteCustomDomainInput is used internally by genqlient
 type __deleteCustomDomainInput struct {
@@ -1336,6 +1692,14 @@ type __deleteEnvironmentInput struct {
 
 // GetId returns __deleteEnvironmentInput.Id, and is useful for accessing the field via an interface.
 func (v *__deleteEnvironmentInput) GetId() string { return v.Id }
+
+// __deleteNotificationRuleInput is used internally by genqlient
+type __deleteNotificationRuleInput struct {
+	Id string `json:"id"`
+}
+
+// GetId returns __deleteNotificationRuleInput.Id, and is useful for accessing the field via an interface.
+func (v *__deleteNotificationRuleInput) GetId() string { return v.Id }
 
 // __deletePrivateNetworkEndpointInput is used internally by genqlient
 type __deletePrivateNetworkEndpointInput struct {
@@ -1363,6 +1727,14 @@ type __deleteProjectInput struct {
 // GetId returns __deleteProjectInput.Id, and is useful for accessing the field via an interface.
 func (v *__deleteProjectInput) GetId() string { return v.Id }
 
+// __deleteProjectTokenInput is used internally by genqlient
+type __deleteProjectTokenInput struct {
+	Id string `json:"id"`
+}
+
+// GetId returns __deleteProjectTokenInput.Id, and is useful for accessing the field via an interface.
+func (v *__deleteProjectTokenInput) GetId() string { return v.Id }
+
 // __deleteServiceDomainInput is used internally by genqlient
 type __deleteServiceDomainInput struct {
 	Id string `json:"id"`
@@ -1379,6 +1751,14 @@ type __deleteServiceInput struct {
 // GetId returns __deleteServiceInput.Id, and is useful for accessing the field via an interface.
 func (v *__deleteServiceInput) GetId() string { return v.Id }
 
+// __deleteSshPublicKeyInput is used internally by genqlient
+type __deleteSshPublicKeyInput struct {
+	Id string `json:"id"`
+}
+
+// GetId returns __deleteSshPublicKeyInput.Id, and is useful for accessing the field via an interface.
+func (v *__deleteSshPublicKeyInput) GetId() string { return v.Id }
+
 // __deleteTcpProxyInput is used internally by genqlient
 type __deleteTcpProxyInput struct {
 	Id string `json:"id"`
@@ -1386,6 +1766,14 @@ type __deleteTcpProxyInput struct {
 
 // GetId returns __deleteTcpProxyInput.Id, and is useful for accessing the field via an interface.
 func (v *__deleteTcpProxyInput) GetId() string { return v.Id }
+
+// __deleteTrustedDomainInput is used internally by genqlient
+type __deleteTrustedDomainInput struct {
+	Id string `json:"id"`
+}
+
+// GetId returns __deleteTrustedDomainInput.Id, and is useful for accessing the field via an interface.
+func (v *__deleteTrustedDomainInput) GetId() string { return v.Id }
 
 // __deleteVariableInput is used internally by genqlient
 type __deleteVariableInput struct {
@@ -1402,14 +1790,6 @@ type __deleteVolumeInput struct {
 
 // GetId returns __deleteVolumeInput.Id, and is useful for accessing the field via an interface.
 func (v *__deleteVolumeInput) GetId() string { return v.Id }
-
-// __deleteWebhookInput is used internally by genqlient
-type __deleteWebhookInput struct {
-	Id string `json:"id"`
-}
-
-// GetId returns __deleteWebhookInput.Id, and is useful for accessing the field via an interface.
-func (v *__deleteWebhookInput) GetId() string { return v.Id }
 
 // __deployServiceInstanceInput is used internally by genqlient
 type __deployServiceInstanceInput struct {
@@ -1475,6 +1855,18 @@ type __getEnvironmentsInput struct {
 // GetProjectId returns __getEnvironmentsInput.ProjectId, and is useful for accessing the field via an interface.
 func (v *__getEnvironmentsInput) GetProjectId() string { return v.ProjectId }
 
+// __getNotificationRulesInput is used internally by genqlient
+type __getNotificationRulesInput struct {
+	WorkspaceId string `json:"workspaceId"`
+	ProjectId   string `json:"projectId"`
+}
+
+// GetWorkspaceId returns __getNotificationRulesInput.WorkspaceId, and is useful for accessing the field via an interface.
+func (v *__getNotificationRulesInput) GetWorkspaceId() string { return v.WorkspaceId }
+
+// GetProjectId returns __getNotificationRulesInput.ProjectId, and is useful for accessing the field via an interface.
+func (v *__getNotificationRulesInput) GetProjectId() string { return v.ProjectId }
+
 // __getPrivateNetworkEndpointInput is used internally by genqlient
 type __getPrivateNetworkEndpointInput struct {
 	EnvironmentId    string `json:"environmentId"`
@@ -1499,6 +1891,14 @@ type __getPrivateNetworksInput struct {
 // GetEnvironmentId returns __getPrivateNetworksInput.EnvironmentId, and is useful for accessing the field via an interface.
 func (v *__getPrivateNetworksInput) GetEnvironmentId() string { return v.EnvironmentId }
 
+// __getProjectBucketsInput is used internally by genqlient
+type __getProjectBucketsInput struct {
+	ProjectId string `json:"projectId"`
+}
+
+// GetProjectId returns __getProjectBucketsInput.ProjectId, and is useful for accessing the field via an interface.
+func (v *__getProjectBucketsInput) GetProjectId() string { return v.ProjectId }
+
 // __getProjectInput is used internally by genqlient
 type __getProjectInput struct {
 	Id string `json:"id"`
@@ -1507,6 +1907,14 @@ type __getProjectInput struct {
 // GetId returns __getProjectInput.Id, and is useful for accessing the field via an interface.
 func (v *__getProjectInput) GetId() string { return v.Id }
 
+// __getProjectMembersInput is used internally by genqlient
+type __getProjectMembersInput struct {
+	ProjectId string `json:"projectId"`
+}
+
+// GetProjectId returns __getProjectMembersInput.ProjectId, and is useful for accessing the field via an interface.
+func (v *__getProjectMembersInput) GetProjectId() string { return v.ProjectId }
+
 // __getProjectServicesInput is used internally by genqlient
 type __getProjectServicesInput struct {
 	ProjectId string `json:"projectId"`
@@ -1514,6 +1922,14 @@ type __getProjectServicesInput struct {
 
 // GetProjectId returns __getProjectServicesInput.ProjectId, and is useful for accessing the field via an interface.
 func (v *__getProjectServicesInput) GetProjectId() string { return v.ProjectId }
+
+// __getProjectTokensInput is used internally by genqlient
+type __getProjectTokensInput struct {
+	ProjectId string `json:"projectId"`
+}
+
+// GetProjectId returns __getProjectTokensInput.ProjectId, and is useful for accessing the field via an interface.
+func (v *__getProjectTokensInput) GetProjectId() string { return v.ProjectId }
 
 // __getServiceInput is used internally by genqlient
 type __getServiceInput struct {
@@ -1567,6 +1983,14 @@ func (v *__getSharedVariablesInput) GetProjectId() string { return v.ProjectId }
 // GetEnvironmentId returns __getSharedVariablesInput.EnvironmentId, and is useful for accessing the field via an interface.
 func (v *__getSharedVariablesInput) GetEnvironmentId() string { return v.EnvironmentId }
 
+// __getSshPublicKeysInput is used internally by genqlient
+type __getSshPublicKeysInput struct {
+	WorkspaceId string `json:"workspaceId"`
+}
+
+// GetWorkspaceId returns __getSshPublicKeysInput.WorkspaceId, and is useful for accessing the field via an interface.
+func (v *__getSshPublicKeysInput) GetWorkspaceId() string { return v.WorkspaceId }
+
 // __getTcpProxyInput is used internally by genqlient
 type __getTcpProxyInput struct {
 	EnvironmentId string `json:"environmentId"`
@@ -1578,6 +2002,14 @@ func (v *__getTcpProxyInput) GetEnvironmentId() string { return v.EnvironmentId 
 
 // GetServiceId returns __getTcpProxyInput.ServiceId, and is useful for accessing the field via an interface.
 func (v *__getTcpProxyInput) GetServiceId() string { return v.ServiceId }
+
+// __getTrustedDomainsInput is used internally by genqlient
+type __getTrustedDomainsInput struct {
+	WorkspaceId string `json:"workspaceId"`
+}
+
+// GetWorkspaceId returns __getTrustedDomainsInput.WorkspaceId, and is useful for accessing the field via an interface.
+func (v *__getTrustedDomainsInput) GetWorkspaceId() string { return v.WorkspaceId }
 
 // __getVariablesInput is used internally by genqlient
 type __getVariablesInput struct {
@@ -1612,14 +2044,6 @@ type __getVolumeInstancesInput struct {
 
 // GetId returns __getVolumeInstancesInput.Id, and is useful for accessing the field via an interface.
 func (v *__getVolumeInstancesInput) GetId() string { return v.Id }
-
-// __getWebhooksInput is used internally by genqlient
-type __getWebhooksInput struct {
-	ProjectId string `json:"projectId"`
-}
-
-// GetProjectId returns __getWebhooksInput.ProjectId, and is useful for accessing the field via an interface.
-func (v *__getWebhooksInput) GetProjectId() string { return v.ProjectId }
 
 // __listCustomDomainsInput is used internally by genqlient
 type __listCustomDomainsInput struct {
@@ -1681,6 +2105,14 @@ func (v *__redeployServiceInstanceInput) GetEnvironmentId() string { return v.En
 // GetServiceId returns __redeployServiceInstanceInput.ServiceId, and is useful for accessing the field via an interface.
 func (v *__redeployServiceInstanceInput) GetServiceId() string { return v.ServiceId }
 
+// __removeProjectMemberInput is used internally by genqlient
+type __removeProjectMemberInput struct {
+	Input ProjectMemberRemoveInput `json:"input"`
+}
+
+// GetInput returns __removeProjectMemberInput.Input, and is useful for accessing the field via an interface.
+func (v *__removeProjectMemberInput) GetInput() ProjectMemberRemoveInput { return v.Input }
+
 // __renameEnvironmentInput is used internally by genqlient
 type __renameEnvironmentInput struct {
 	Id    string                 `json:"id"`
@@ -1708,6 +2140,18 @@ func (v *__renamePrivateNetworkEndpointInput) GetId() string { return v.Id }
 
 // GetPrivateNetworkId returns __renamePrivateNetworkEndpointInput.PrivateNetworkId, and is useful for accessing the field via an interface.
 func (v *__renamePrivateNetworkEndpointInput) GetPrivateNetworkId() string { return v.PrivateNetworkId }
+
+// __updateBucketInput is used internally by genqlient
+type __updateBucketInput struct {
+	Id    string            `json:"id"`
+	Input BucketUpdateInput `json:"input"`
+}
+
+// GetId returns __updateBucketInput.Id, and is useful for accessing the field via an interface.
+func (v *__updateBucketInput) GetId() string { return v.Id }
+
+// GetInput returns __updateBucketInput.Input, and is useful for accessing the field via an interface.
+func (v *__updateBucketInput) GetInput() BucketUpdateInput { return v.Input }
 
 // __updateCustomDomainInput is used internally by genqlient
 type __updateCustomDomainInput struct {
@@ -1737,6 +2181,18 @@ func (v *__updateDeploymentTriggerInput) GetId() string { return v.Id }
 // GetInput returns __updateDeploymentTriggerInput.Input, and is useful for accessing the field via an interface.
 func (v *__updateDeploymentTriggerInput) GetInput() DeploymentTriggerUpdateInput { return v.Input }
 
+// __updateNotificationRuleInput is used internally by genqlient
+type __updateNotificationRuleInput struct {
+	Id    string                      `json:"id"`
+	Input UpdateNotificationRuleInput `json:"input"`
+}
+
+// GetId returns __updateNotificationRuleInput.Id, and is useful for accessing the field via an interface.
+func (v *__updateNotificationRuleInput) GetId() string { return v.Id }
+
+// GetInput returns __updateNotificationRuleInput.Input, and is useful for accessing the field via an interface.
+func (v *__updateNotificationRuleInput) GetInput() UpdateNotificationRuleInput { return v.Input }
+
 // __updateProjectInput is used internally by genqlient
 type __updateProjectInput struct {
 	Id    string             `json:"id"`
@@ -1748,6 +2204,14 @@ func (v *__updateProjectInput) GetId() string { return v.Id }
 
 // GetInput returns __updateProjectInput.Input, and is useful for accessing the field via an interface.
 func (v *__updateProjectInput) GetInput() ProjectUpdateInput { return v.Input }
+
+// __updateProjectMemberInput is used internally by genqlient
+type __updateProjectMemberInput struct {
+	Input ProjectMemberUpdateInput `json:"input"`
+}
+
+// GetInput returns __updateProjectMemberInput.Input, and is useful for accessing the field via an interface.
+func (v *__updateProjectMemberInput) GetInput() ProjectMemberUpdateInput { return v.Input }
 
 // __updateServiceDomainInput is used internally by genqlient
 type __updateServiceDomainInput struct {
@@ -1849,18 +2313,6 @@ func (v *__updateVolumeInstanceInput) GetId() string { return v.Id }
 // GetInput returns __updateVolumeInstanceInput.Input, and is useful for accessing the field via an interface.
 func (v *__updateVolumeInstanceInput) GetInput() VolumeInstanceUpdateInput { return v.Input }
 
-// __updateWebhookInput is used internally by genqlient
-type __updateWebhookInput struct {
-	Id    string             `json:"id"`
-	Input WebhookUpdateInput `json:"input"`
-}
-
-// GetId returns __updateWebhookInput.Id, and is useful for accessing the field via an interface.
-func (v *__updateWebhookInput) GetId() string { return v.Id }
-
-// GetInput returns __updateWebhookInput.Input, and is useful for accessing the field via an interface.
-func (v *__updateWebhookInput) GetInput() WebhookUpdateInput { return v.Input }
-
 // __upsertVariableCollectionInput is used internally by genqlient
 type __upsertVariableCollectionInput struct {
 	Input VariableCollectionUpsertInput `json:"input"`
@@ -1876,6 +2328,95 @@ type __upsertVariableInput struct {
 
 // GetInput returns __upsertVariableInput.Input, and is useful for accessing the field via an interface.
 func (v *__upsertVariableInput) GetInput() VariableUpsertInput { return v.Input }
+
+// addProjectMemberProjectMemberAddProjectMember includes the requested fields of the GraphQL type ProjectMember.
+type addProjectMemberProjectMemberAddProjectMember struct {
+	ProjectMemberFields `json:"-"`
+}
+
+// GetId returns addProjectMemberProjectMemberAddProjectMember.Id, and is useful for accessing the field via an interface.
+func (v *addProjectMemberProjectMemberAddProjectMember) GetId() string {
+	return v.ProjectMemberFields.Id
+}
+
+// GetEmail returns addProjectMemberProjectMemberAddProjectMember.Email, and is useful for accessing the field via an interface.
+func (v *addProjectMemberProjectMemberAddProjectMember) GetEmail() string {
+	return v.ProjectMemberFields.Email
+}
+
+// GetName returns addProjectMemberProjectMemberAddProjectMember.Name, and is useful for accessing the field via an interface.
+func (v *addProjectMemberProjectMemberAddProjectMember) GetName() string {
+	return v.ProjectMemberFields.Name
+}
+
+// GetRole returns addProjectMemberProjectMemberAddProjectMember.Role, and is useful for accessing the field via an interface.
+func (v *addProjectMemberProjectMemberAddProjectMember) GetRole() ProjectRole {
+	return v.ProjectMemberFields.Role
+}
+
+func (v *addProjectMemberProjectMemberAddProjectMember) UnmarshalJSON(b []byte) error {
+
+	if string(b) == "null" {
+		return nil
+	}
+
+	var firstPass struct {
+		*addProjectMemberProjectMemberAddProjectMember
+		graphql.NoUnmarshalJSON
+	}
+	firstPass.addProjectMemberProjectMemberAddProjectMember = v
+
+	err := json.Unmarshal(b, &firstPass)
+	if err != nil {
+		return err
+	}
+
+	err = json.Unmarshal(
+		b, &v.ProjectMemberFields)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+type __premarshaladdProjectMemberProjectMemberAddProjectMember struct {
+	Id string `json:"id"`
+
+	Email string `json:"email"`
+
+	Name string `json:"name"`
+
+	Role ProjectRole `json:"role"`
+}
+
+func (v *addProjectMemberProjectMemberAddProjectMember) MarshalJSON() ([]byte, error) {
+	premarshaled, err := v.__premarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(premarshaled)
+}
+
+func (v *addProjectMemberProjectMemberAddProjectMember) __premarshalJSON() (*__premarshaladdProjectMemberProjectMemberAddProjectMember, error) {
+	var retval __premarshaladdProjectMemberProjectMemberAddProjectMember
+
+	retval.Id = v.ProjectMemberFields.Id
+	retval.Email = v.ProjectMemberFields.Email
+	retval.Name = v.ProjectMemberFields.Name
+	retval.Role = v.ProjectMemberFields.Role
+	return &retval, nil
+}
+
+// addProjectMemberResponse is returned by addProjectMember on success.
+type addProjectMemberResponse struct {
+	// Add a workspace member to a project with a specific role. The user must already be a member of the project's workspace.
+	ProjectMemberAdd addProjectMemberProjectMemberAddProjectMember `json:"projectMemberAdd"`
+}
+
+// GetProjectMemberAdd returns addProjectMemberResponse.ProjectMemberAdd, and is useful for accessing the field via an interface.
+func (v *addProjectMemberResponse) GetProjectMemberAdd() addProjectMemberProjectMemberAddProjectMember {
+	return v.ProjectMemberAdd
+}
 
 // clearEgressGatewaysResponse is returned by clearEgressGateways on success.
 type clearEgressGatewaysResponse struct {
@@ -1961,6 +2502,93 @@ func (v *connectServiceServiceConnectService) __premarshalJSON() (*__premarshalc
 	retval.Name = v.Service.Name
 	retval.ProjectId = v.Service.ProjectId
 	return &retval, nil
+}
+
+// createBucketBucketCreateBucket includes the requested fields of the GraphQL type Bucket.
+type createBucketBucketCreateBucket struct {
+	BucketFields `json:"-"`
+}
+
+// GetId returns createBucketBucketCreateBucket.Id, and is useful for accessing the field via an interface.
+func (v *createBucketBucketCreateBucket) GetId() string { return v.BucketFields.Id }
+
+// GetName returns createBucketBucketCreateBucket.Name, and is useful for accessing the field via an interface.
+func (v *createBucketBucketCreateBucket) GetName() string { return v.BucketFields.Name }
+
+// GetProjectId returns createBucketBucketCreateBucket.ProjectId, and is useful for accessing the field via an interface.
+func (v *createBucketBucketCreateBucket) GetProjectId() string { return v.BucketFields.ProjectId }
+
+// GetCreatedAt returns createBucketBucketCreateBucket.CreatedAt, and is useful for accessing the field via an interface.
+func (v *createBucketBucketCreateBucket) GetCreatedAt() time.Time { return v.BucketFields.CreatedAt }
+
+// GetUpdatedAt returns createBucketBucketCreateBucket.UpdatedAt, and is useful for accessing the field via an interface.
+func (v *createBucketBucketCreateBucket) GetUpdatedAt() time.Time { return v.BucketFields.UpdatedAt }
+
+func (v *createBucketBucketCreateBucket) UnmarshalJSON(b []byte) error {
+
+	if string(b) == "null" {
+		return nil
+	}
+
+	var firstPass struct {
+		*createBucketBucketCreateBucket
+		graphql.NoUnmarshalJSON
+	}
+	firstPass.createBucketBucketCreateBucket = v
+
+	err := json.Unmarshal(b, &firstPass)
+	if err != nil {
+		return err
+	}
+
+	err = json.Unmarshal(
+		b, &v.BucketFields)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+type __premarshalcreateBucketBucketCreateBucket struct {
+	Id string `json:"id"`
+
+	Name string `json:"name"`
+
+	ProjectId string `json:"projectId"`
+
+	CreatedAt time.Time `json:"createdAt"`
+
+	UpdatedAt time.Time `json:"updatedAt"`
+}
+
+func (v *createBucketBucketCreateBucket) MarshalJSON() ([]byte, error) {
+	premarshaled, err := v.__premarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(premarshaled)
+}
+
+func (v *createBucketBucketCreateBucket) __premarshalJSON() (*__premarshalcreateBucketBucketCreateBucket, error) {
+	var retval __premarshalcreateBucketBucketCreateBucket
+
+	retval.Id = v.BucketFields.Id
+	retval.Name = v.BucketFields.Name
+	retval.ProjectId = v.BucketFields.ProjectId
+	retval.CreatedAt = v.BucketFields.CreatedAt
+	retval.UpdatedAt = v.BucketFields.UpdatedAt
+	return &retval, nil
+}
+
+// createBucketResponse is returned by createBucket on success.
+type createBucketResponse struct {
+	// Create a bucket in a project
+	BucketCreate createBucketBucketCreateBucket `json:"bucketCreate"`
+}
+
+// GetBucketCreate returns createBucketResponse.BucketCreate, and is useful for accessing the field via an interface.
+func (v *createBucketResponse) GetBucketCreate() createBucketBucketCreateBucket {
+	return v.BucketCreate
 }
 
 // createCustomDomainCustomDomainCreateCustomDomain includes the requested fields of the GraphQL type CustomDomain.
@@ -2337,6 +2965,119 @@ func (v *createEnvironmentResponse) GetEnvironmentCreate() createEnvironmentEnvi
 	return v.EnvironmentCreate
 }
 
+// createNotificationRuleNotificationRuleCreateNotificationRule includes the requested fields of the GraphQL type NotificationRule.
+type createNotificationRuleNotificationRuleCreateNotificationRule struct {
+	NotificationRuleFields `json:"-"`
+}
+
+// GetId returns createNotificationRuleNotificationRuleCreateNotificationRule.Id, and is useful for accessing the field via an interface.
+func (v *createNotificationRuleNotificationRuleCreateNotificationRule) GetId() string {
+	return v.NotificationRuleFields.Id
+}
+
+// GetWorkspaceId returns createNotificationRuleNotificationRuleCreateNotificationRule.WorkspaceId, and is useful for accessing the field via an interface.
+func (v *createNotificationRuleNotificationRuleCreateNotificationRule) GetWorkspaceId() string {
+	return v.NotificationRuleFields.WorkspaceId
+}
+
+// GetProjectId returns createNotificationRuleNotificationRuleCreateNotificationRule.ProjectId, and is useful for accessing the field via an interface.
+func (v *createNotificationRuleNotificationRuleCreateNotificationRule) GetProjectId() string {
+	return v.NotificationRuleFields.ProjectId
+}
+
+// GetEventTypes returns createNotificationRuleNotificationRuleCreateNotificationRule.EventTypes, and is useful for accessing the field via an interface.
+func (v *createNotificationRuleNotificationRuleCreateNotificationRule) GetEventTypes() []string {
+	return v.NotificationRuleFields.EventTypes
+}
+
+// GetSeverities returns createNotificationRuleNotificationRuleCreateNotificationRule.Severities, and is useful for accessing the field via an interface.
+func (v *createNotificationRuleNotificationRuleCreateNotificationRule) GetSeverities() []NotificationSeverity {
+	return v.NotificationRuleFields.Severities
+}
+
+// GetEphemeralEnvironments returns createNotificationRuleNotificationRuleCreateNotificationRule.EphemeralEnvironments, and is useful for accessing the field via an interface.
+func (v *createNotificationRuleNotificationRuleCreateNotificationRule) GetEphemeralEnvironments() bool {
+	return v.NotificationRuleFields.EphemeralEnvironments
+}
+
+// GetChannels returns createNotificationRuleNotificationRuleCreateNotificationRule.Channels, and is useful for accessing the field via an interface.
+func (v *createNotificationRuleNotificationRuleCreateNotificationRule) GetChannels() []NotificationRuleFieldsChannelsNotificationChannel {
+	return v.NotificationRuleFields.Channels
+}
+
+func (v *createNotificationRuleNotificationRuleCreateNotificationRule) UnmarshalJSON(b []byte) error {
+
+	if string(b) == "null" {
+		return nil
+	}
+
+	var firstPass struct {
+		*createNotificationRuleNotificationRuleCreateNotificationRule
+		graphql.NoUnmarshalJSON
+	}
+	firstPass.createNotificationRuleNotificationRuleCreateNotificationRule = v
+
+	err := json.Unmarshal(b, &firstPass)
+	if err != nil {
+		return err
+	}
+
+	err = json.Unmarshal(
+		b, &v.NotificationRuleFields)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+type __premarshalcreateNotificationRuleNotificationRuleCreateNotificationRule struct {
+	Id string `json:"id"`
+
+	WorkspaceId string `json:"workspaceId"`
+
+	ProjectId string `json:"projectId"`
+
+	EventTypes []string `json:"eventTypes"`
+
+	Severities []NotificationSeverity `json:"severities"`
+
+	EphemeralEnvironments bool `json:"ephemeralEnvironments"`
+
+	Channels []NotificationRuleFieldsChannelsNotificationChannel `json:"channels"`
+}
+
+func (v *createNotificationRuleNotificationRuleCreateNotificationRule) MarshalJSON() ([]byte, error) {
+	premarshaled, err := v.__premarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(premarshaled)
+}
+
+func (v *createNotificationRuleNotificationRuleCreateNotificationRule) __premarshalJSON() (*__premarshalcreateNotificationRuleNotificationRuleCreateNotificationRule, error) {
+	var retval __premarshalcreateNotificationRuleNotificationRuleCreateNotificationRule
+
+	retval.Id = v.NotificationRuleFields.Id
+	retval.WorkspaceId = v.NotificationRuleFields.WorkspaceId
+	retval.ProjectId = v.NotificationRuleFields.ProjectId
+	retval.EventTypes = v.NotificationRuleFields.EventTypes
+	retval.Severities = v.NotificationRuleFields.Severities
+	retval.EphemeralEnvironments = v.NotificationRuleFields.EphemeralEnvironments
+	retval.Channels = v.NotificationRuleFields.Channels
+	return &retval, nil
+}
+
+// createNotificationRuleResponse is returned by createNotificationRule on success.
+type createNotificationRuleResponse struct {
+	// Create a new notification rule
+	NotificationRuleCreate createNotificationRuleNotificationRuleCreateNotificationRule `json:"notificationRuleCreate"`
+}
+
+// GetNotificationRuleCreate returns createNotificationRuleResponse.NotificationRuleCreate, and is useful for accessing the field via an interface.
+func (v *createNotificationRuleResponse) GetNotificationRuleCreate() createNotificationRuleNotificationRuleCreateNotificationRule {
+	return v.NotificationRuleCreate
+}
+
 // createOrGetPrivateNetworkEndpointPrivateNetworkEndpointCreateOrGetPrivateNetworkEndpoint includes the requested fields of the GraphQL type PrivateNetworkEndpoint.
 type createOrGetPrivateNetworkEndpointPrivateNetworkEndpointCreateOrGetPrivateNetworkEndpoint struct {
 	PrivateNetworkEndpointFields `json:"-"`
@@ -2650,6 +3391,15 @@ func (v *createProjectResponse) GetProjectCreate() createProjectProjectCreatePro
 	return v.ProjectCreate
 }
 
+// createProjectTokenResponse is returned by createProjectToken on success.
+type createProjectTokenResponse struct {
+	// Create a token for a project that has access to a specific environment
+	ProjectTokenCreate string `json:"projectTokenCreate"`
+}
+
+// GetProjectTokenCreate returns createProjectTokenResponse.ProjectTokenCreate, and is useful for accessing the field via an interface.
+func (v *createProjectTokenResponse) GetProjectTokenCreate() string { return v.ProjectTokenCreate }
+
 // createServiceDomainResponse is returned by createServiceDomain on success.
 type createServiceDomainResponse struct {
 	// Creates a new service domain.
@@ -2822,6 +3572,111 @@ func (v *createServiceServiceCreateService) __premarshalJSON() (*__premarshalcre
 	return &retval, nil
 }
 
+// createSshPublicKeyResponse is returned by createSshPublicKey on success.
+type createSshPublicKeyResponse struct {
+	// Creates a new SSH public key. When workspaceId is provided (or omitted under a workspace-scoped API token, in which case it defaults to the token's workspace), the key is owned by the workspace and can be used by anyone authenticating as that workspace via native SSH; requires workspace ADMIN access. Otherwise the key is owned by the authenticated user.
+	SshPublicKeyCreate createSshPublicKeySshPublicKeyCreateSshPublicKey `json:"sshPublicKeyCreate"`
+}
+
+// GetSshPublicKeyCreate returns createSshPublicKeyResponse.SshPublicKeyCreate, and is useful for accessing the field via an interface.
+func (v *createSshPublicKeyResponse) GetSshPublicKeyCreate() createSshPublicKeySshPublicKeyCreateSshPublicKey {
+	return v.SshPublicKeyCreate
+}
+
+// createSshPublicKeySshPublicKeyCreateSshPublicKey includes the requested fields of the GraphQL type SshPublicKey.
+type createSshPublicKeySshPublicKeyCreateSshPublicKey struct {
+	SshPublicKeyFields `json:"-"`
+}
+
+// GetId returns createSshPublicKeySshPublicKeyCreateSshPublicKey.Id, and is useful for accessing the field via an interface.
+func (v *createSshPublicKeySshPublicKeyCreateSshPublicKey) GetId() string {
+	return v.SshPublicKeyFields.Id
+}
+
+// GetName returns createSshPublicKeySshPublicKeyCreateSshPublicKey.Name, and is useful for accessing the field via an interface.
+func (v *createSshPublicKeySshPublicKeyCreateSshPublicKey) GetName() string {
+	return v.SshPublicKeyFields.Name
+}
+
+// GetPublicKey returns createSshPublicKeySshPublicKeyCreateSshPublicKey.PublicKey, and is useful for accessing the field via an interface.
+func (v *createSshPublicKeySshPublicKeyCreateSshPublicKey) GetPublicKey() string {
+	return v.SshPublicKeyFields.PublicKey
+}
+
+// GetFingerprint returns createSshPublicKeySshPublicKeyCreateSshPublicKey.Fingerprint, and is useful for accessing the field via an interface.
+func (v *createSshPublicKeySshPublicKeyCreateSshPublicKey) GetFingerprint() string {
+	return v.SshPublicKeyFields.Fingerprint
+}
+
+// GetWorkspaceId returns createSshPublicKeySshPublicKeyCreateSshPublicKey.WorkspaceId, and is useful for accessing the field via an interface.
+func (v *createSshPublicKeySshPublicKeyCreateSshPublicKey) GetWorkspaceId() string {
+	return v.SshPublicKeyFields.WorkspaceId
+}
+
+// GetUserId returns createSshPublicKeySshPublicKeyCreateSshPublicKey.UserId, and is useful for accessing the field via an interface.
+func (v *createSshPublicKeySshPublicKeyCreateSshPublicKey) GetUserId() string {
+	return v.SshPublicKeyFields.UserId
+}
+
+func (v *createSshPublicKeySshPublicKeyCreateSshPublicKey) UnmarshalJSON(b []byte) error {
+
+	if string(b) == "null" {
+		return nil
+	}
+
+	var firstPass struct {
+		*createSshPublicKeySshPublicKeyCreateSshPublicKey
+		graphql.NoUnmarshalJSON
+	}
+	firstPass.createSshPublicKeySshPublicKeyCreateSshPublicKey = v
+
+	err := json.Unmarshal(b, &firstPass)
+	if err != nil {
+		return err
+	}
+
+	err = json.Unmarshal(
+		b, &v.SshPublicKeyFields)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+type __premarshalcreateSshPublicKeySshPublicKeyCreateSshPublicKey struct {
+	Id string `json:"id"`
+
+	Name string `json:"name"`
+
+	PublicKey string `json:"publicKey"`
+
+	Fingerprint string `json:"fingerprint"`
+
+	WorkspaceId string `json:"workspaceId"`
+
+	UserId string `json:"userId"`
+}
+
+func (v *createSshPublicKeySshPublicKeyCreateSshPublicKey) MarshalJSON() ([]byte, error) {
+	premarshaled, err := v.__premarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(premarshaled)
+}
+
+func (v *createSshPublicKeySshPublicKeyCreateSshPublicKey) __premarshalJSON() (*__premarshalcreateSshPublicKeySshPublicKeyCreateSshPublicKey, error) {
+	var retval __premarshalcreateSshPublicKeySshPublicKeyCreateSshPublicKey
+
+	retval.Id = v.SshPublicKeyFields.Id
+	retval.Name = v.SshPublicKeyFields.Name
+	retval.PublicKey = v.SshPublicKeyFields.PublicKey
+	retval.Fingerprint = v.SshPublicKeyFields.Fingerprint
+	retval.WorkspaceId = v.SshPublicKeyFields.WorkspaceId
+	retval.UserId = v.SshPublicKeyFields.UserId
+	return &retval, nil
+}
+
 // createTcpProxyResponse is returned by createTcpProxy on success.
 type createTcpProxyResponse struct {
 	// Creates a new TCP proxy for a service instance.
@@ -2919,6 +3774,103 @@ func (v *createTcpProxyTcpProxyCreateTCPProxy) __premarshalJSON() (*__premarshal
 	return &retval, nil
 }
 
+// createTrustedDomainResponse is returned by createTrustedDomain on success.
+type createTrustedDomainResponse struct {
+	// Create a new trusted domain for this workspace
+	TrustedDomainCreate createTrustedDomainTrustedDomainCreateTrustedDomain `json:"trustedDomainCreate"`
+}
+
+// GetTrustedDomainCreate returns createTrustedDomainResponse.TrustedDomainCreate, and is useful for accessing the field via an interface.
+func (v *createTrustedDomainResponse) GetTrustedDomainCreate() createTrustedDomainTrustedDomainCreateTrustedDomain {
+	return v.TrustedDomainCreate
+}
+
+// createTrustedDomainTrustedDomainCreateTrustedDomain includes the requested fields of the GraphQL type TrustedDomain.
+type createTrustedDomainTrustedDomainCreateTrustedDomain struct {
+	TrustedDomainFields `json:"-"`
+}
+
+// GetId returns createTrustedDomainTrustedDomainCreateTrustedDomain.Id, and is useful for accessing the field via an interface.
+func (v *createTrustedDomainTrustedDomainCreateTrustedDomain) GetId() string {
+	return v.TrustedDomainFields.Id
+}
+
+// GetDomainName returns createTrustedDomainTrustedDomainCreateTrustedDomain.DomainName, and is useful for accessing the field via an interface.
+func (v *createTrustedDomainTrustedDomainCreateTrustedDomain) GetDomainName() string {
+	return v.TrustedDomainFields.DomainName
+}
+
+// GetRole returns createTrustedDomainTrustedDomainCreateTrustedDomain.Role, and is useful for accessing the field via an interface.
+func (v *createTrustedDomainTrustedDomainCreateTrustedDomain) GetRole() string {
+	return v.TrustedDomainFields.Role
+}
+
+// GetStatus returns createTrustedDomainTrustedDomainCreateTrustedDomain.Status, and is useful for accessing the field via an interface.
+func (v *createTrustedDomainTrustedDomainCreateTrustedDomain) GetStatus() TrustedDomainStatus {
+	return v.TrustedDomainFields.Status
+}
+
+// GetWorkspaceId returns createTrustedDomainTrustedDomainCreateTrustedDomain.WorkspaceId, and is useful for accessing the field via an interface.
+func (v *createTrustedDomainTrustedDomainCreateTrustedDomain) GetWorkspaceId() string {
+	return v.TrustedDomainFields.WorkspaceId
+}
+
+func (v *createTrustedDomainTrustedDomainCreateTrustedDomain) UnmarshalJSON(b []byte) error {
+
+	if string(b) == "null" {
+		return nil
+	}
+
+	var firstPass struct {
+		*createTrustedDomainTrustedDomainCreateTrustedDomain
+		graphql.NoUnmarshalJSON
+	}
+	firstPass.createTrustedDomainTrustedDomainCreateTrustedDomain = v
+
+	err := json.Unmarshal(b, &firstPass)
+	if err != nil {
+		return err
+	}
+
+	err = json.Unmarshal(
+		b, &v.TrustedDomainFields)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+type __premarshalcreateTrustedDomainTrustedDomainCreateTrustedDomain struct {
+	Id string `json:"id"`
+
+	DomainName string `json:"domainName"`
+
+	Role string `json:"role"`
+
+	Status TrustedDomainStatus `json:"status"`
+
+	WorkspaceId string `json:"workspaceId"`
+}
+
+func (v *createTrustedDomainTrustedDomainCreateTrustedDomain) MarshalJSON() ([]byte, error) {
+	premarshaled, err := v.__premarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(premarshaled)
+}
+
+func (v *createTrustedDomainTrustedDomainCreateTrustedDomain) __premarshalJSON() (*__premarshalcreateTrustedDomainTrustedDomainCreateTrustedDomain, error) {
+	var retval __premarshalcreateTrustedDomainTrustedDomainCreateTrustedDomain
+
+	retval.Id = v.TrustedDomainFields.Id
+	retval.DomainName = v.TrustedDomainFields.DomainName
+	retval.Role = v.TrustedDomainFields.Role
+	retval.Status = v.TrustedDomainFields.Status
+	retval.WorkspaceId = v.TrustedDomainFields.WorkspaceId
+	return &retval, nil
+}
+
 // createVolumeResponse is returned by createVolume on success.
 type createVolumeResponse struct {
 	// Create a persistent volume in a project
@@ -2996,99 +3948,6 @@ func (v *createVolumeVolumeCreateVolume) __premarshalJSON() (*__premarshalcreate
 	return &retval, nil
 }
 
-// createWebhookResponse is returned by createWebhook on success.
-type createWebhookResponse struct {
-	// Create a webhook on a project
-	WebhookCreate createWebhookWebhookCreateProjectWebhook `json:"webhookCreate"`
-}
-
-// GetWebhookCreate returns createWebhookResponse.WebhookCreate, and is useful for accessing the field via an interface.
-func (v *createWebhookResponse) GetWebhookCreate() createWebhookWebhookCreateProjectWebhook {
-	return v.WebhookCreate
-}
-
-// createWebhookWebhookCreateProjectWebhook includes the requested fields of the GraphQL type ProjectWebhook.
-type createWebhookWebhookCreateProjectWebhook struct {
-	ProjectWebhook `json:"-"`
-}
-
-// GetId returns createWebhookWebhookCreateProjectWebhook.Id, and is useful for accessing the field via an interface.
-func (v *createWebhookWebhookCreateProjectWebhook) GetId() string { return v.ProjectWebhook.Id }
-
-// GetUrl returns createWebhookWebhookCreateProjectWebhook.Url, and is useful for accessing the field via an interface.
-func (v *createWebhookWebhookCreateProjectWebhook) GetUrl() string { return v.ProjectWebhook.Url }
-
-// GetProjectId returns createWebhookWebhookCreateProjectWebhook.ProjectId, and is useful for accessing the field via an interface.
-func (v *createWebhookWebhookCreateProjectWebhook) GetProjectId() string {
-	return v.ProjectWebhook.ProjectId
-}
-
-// GetFilters returns createWebhookWebhookCreateProjectWebhook.Filters, and is useful for accessing the field via an interface.
-func (v *createWebhookWebhookCreateProjectWebhook) GetFilters() []string {
-	return v.ProjectWebhook.Filters
-}
-
-// GetLastStatus returns createWebhookWebhookCreateProjectWebhook.LastStatus, and is useful for accessing the field via an interface.
-func (v *createWebhookWebhookCreateProjectWebhook) GetLastStatus() int {
-	return v.ProjectWebhook.LastStatus
-}
-
-func (v *createWebhookWebhookCreateProjectWebhook) UnmarshalJSON(b []byte) error {
-
-	if string(b) == "null" {
-		return nil
-	}
-
-	var firstPass struct {
-		*createWebhookWebhookCreateProjectWebhook
-		graphql.NoUnmarshalJSON
-	}
-	firstPass.createWebhookWebhookCreateProjectWebhook = v
-
-	err := json.Unmarshal(b, &firstPass)
-	if err != nil {
-		return err
-	}
-
-	err = json.Unmarshal(
-		b, &v.ProjectWebhook)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-type __premarshalcreateWebhookWebhookCreateProjectWebhook struct {
-	Id string `json:"id"`
-
-	Url string `json:"url"`
-
-	ProjectId string `json:"projectId"`
-
-	Filters []string `json:"filters"`
-
-	LastStatus int `json:"lastStatus"`
-}
-
-func (v *createWebhookWebhookCreateProjectWebhook) MarshalJSON() ([]byte, error) {
-	premarshaled, err := v.__premarshalJSON()
-	if err != nil {
-		return nil, err
-	}
-	return json.Marshal(premarshaled)
-}
-
-func (v *createWebhookWebhookCreateProjectWebhook) __premarshalJSON() (*__premarshalcreateWebhookWebhookCreateProjectWebhook, error) {
-	var retval __premarshalcreateWebhookWebhookCreateProjectWebhook
-
-	retval.Id = v.ProjectWebhook.Id
-	retval.Url = v.ProjectWebhook.Url
-	retval.ProjectId = v.ProjectWebhook.ProjectId
-	retval.Filters = v.ProjectWebhook.Filters
-	retval.LastStatus = v.ProjectWebhook.LastStatus
-	return &retval, nil
-}
-
 // deleteCustomDomainResponse is returned by deleteCustomDomain on success.
 type deleteCustomDomainResponse struct {
 	// Deletes a custom domain.
@@ -3117,6 +3976,17 @@ type deleteEnvironmentResponse struct {
 
 // GetEnvironmentDelete returns deleteEnvironmentResponse.EnvironmentDelete, and is useful for accessing the field via an interface.
 func (v *deleteEnvironmentResponse) GetEnvironmentDelete() bool { return v.EnvironmentDelete }
+
+// deleteNotificationRuleResponse is returned by deleteNotificationRule on success.
+type deleteNotificationRuleResponse struct {
+	// Delete a notification rule
+	NotificationRuleDelete bool `json:"notificationRuleDelete"`
+}
+
+// GetNotificationRuleDelete returns deleteNotificationRuleResponse.NotificationRuleDelete, and is useful for accessing the field via an interface.
+func (v *deleteNotificationRuleResponse) GetNotificationRuleDelete() bool {
+	return v.NotificationRuleDelete
+}
 
 // deletePrivateNetworkEndpointResponse is returned by deletePrivateNetworkEndpoint on success.
 type deletePrivateNetworkEndpointResponse struct {
@@ -3149,6 +4019,15 @@ type deleteProjectResponse struct {
 // GetProjectDelete returns deleteProjectResponse.ProjectDelete, and is useful for accessing the field via an interface.
 func (v *deleteProjectResponse) GetProjectDelete() bool { return v.ProjectDelete }
 
+// deleteProjectTokenResponse is returned by deleteProjectToken on success.
+type deleteProjectTokenResponse struct {
+	// Delete a project token
+	ProjectTokenDelete bool `json:"projectTokenDelete"`
+}
+
+// GetProjectTokenDelete returns deleteProjectTokenResponse.ProjectTokenDelete, and is useful for accessing the field via an interface.
+func (v *deleteProjectTokenResponse) GetProjectTokenDelete() bool { return v.ProjectTokenDelete }
+
 // deleteServiceDomainResponse is returned by deleteServiceDomain on success.
 type deleteServiceDomainResponse struct {
 	// Deletes a service domain.
@@ -3167,6 +4046,15 @@ type deleteServiceResponse struct {
 // GetServiceDelete returns deleteServiceResponse.ServiceDelete, and is useful for accessing the field via an interface.
 func (v *deleteServiceResponse) GetServiceDelete() bool { return v.ServiceDelete }
 
+// deleteSshPublicKeyResponse is returned by deleteSshPublicKey on success.
+type deleteSshPublicKeyResponse struct {
+	// Deletes an SSH public key.
+	SshPublicKeyDelete bool `json:"sshPublicKeyDelete"`
+}
+
+// GetSshPublicKeyDelete returns deleteSshPublicKeyResponse.SshPublicKeyDelete, and is useful for accessing the field via an interface.
+func (v *deleteSshPublicKeyResponse) GetSshPublicKeyDelete() bool { return v.SshPublicKeyDelete }
+
 // deleteTcpProxyResponse is returned by deleteTcpProxy on success.
 type deleteTcpProxyResponse struct {
 	// Deletes a TCP proxy by id
@@ -3175,6 +4063,15 @@ type deleteTcpProxyResponse struct {
 
 // GetTcpProxyDelete returns deleteTcpProxyResponse.TcpProxyDelete, and is useful for accessing the field via an interface.
 func (v *deleteTcpProxyResponse) GetTcpProxyDelete() bool { return v.TcpProxyDelete }
+
+// deleteTrustedDomainResponse is returned by deleteTrustedDomain on success.
+type deleteTrustedDomainResponse struct {
+	// Delete a trusted domain
+	TrustedDomainDelete bool `json:"trustedDomainDelete"`
+}
+
+// GetTrustedDomainDelete returns deleteTrustedDomainResponse.TrustedDomainDelete, and is useful for accessing the field via an interface.
+func (v *deleteTrustedDomainResponse) GetTrustedDomainDelete() bool { return v.TrustedDomainDelete }
 
 // deleteVariableResponse is returned by deleteVariable on success.
 type deleteVariableResponse struct {
@@ -3193,15 +4090,6 @@ type deleteVolumeResponse struct {
 
 // GetVolumeDelete returns deleteVolumeResponse.VolumeDelete, and is useful for accessing the field via an interface.
 func (v *deleteVolumeResponse) GetVolumeDelete() bool { return v.VolumeDelete }
-
-// deleteWebhookResponse is returned by deleteWebhook on success.
-type deleteWebhookResponse struct {
-	// Delete a webhook from a project
-	WebhookDelete bool `json:"webhookDelete"`
-}
-
-// GetWebhookDelete returns deleteWebhookResponse.WebhookDelete, and is useful for accessing the field via an interface.
-func (v *deleteWebhookResponse) GetWebhookDelete() bool { return v.WebhookDelete }
 
 // deployServiceInstanceResponse is returned by deployServiceInstance on success.
 type deployServiceInstanceResponse struct {
@@ -3619,6 +4507,119 @@ func (v *getEnvironmentsResponse) GetEnvironments() getEnvironmentsEnvironmentsQ
 	return v.Environments
 }
 
+// getNotificationRulesNotificationRulesNotificationRule includes the requested fields of the GraphQL type NotificationRule.
+type getNotificationRulesNotificationRulesNotificationRule struct {
+	NotificationRuleFields `json:"-"`
+}
+
+// GetId returns getNotificationRulesNotificationRulesNotificationRule.Id, and is useful for accessing the field via an interface.
+func (v *getNotificationRulesNotificationRulesNotificationRule) GetId() string {
+	return v.NotificationRuleFields.Id
+}
+
+// GetWorkspaceId returns getNotificationRulesNotificationRulesNotificationRule.WorkspaceId, and is useful for accessing the field via an interface.
+func (v *getNotificationRulesNotificationRulesNotificationRule) GetWorkspaceId() string {
+	return v.NotificationRuleFields.WorkspaceId
+}
+
+// GetProjectId returns getNotificationRulesNotificationRulesNotificationRule.ProjectId, and is useful for accessing the field via an interface.
+func (v *getNotificationRulesNotificationRulesNotificationRule) GetProjectId() string {
+	return v.NotificationRuleFields.ProjectId
+}
+
+// GetEventTypes returns getNotificationRulesNotificationRulesNotificationRule.EventTypes, and is useful for accessing the field via an interface.
+func (v *getNotificationRulesNotificationRulesNotificationRule) GetEventTypes() []string {
+	return v.NotificationRuleFields.EventTypes
+}
+
+// GetSeverities returns getNotificationRulesNotificationRulesNotificationRule.Severities, and is useful for accessing the field via an interface.
+func (v *getNotificationRulesNotificationRulesNotificationRule) GetSeverities() []NotificationSeverity {
+	return v.NotificationRuleFields.Severities
+}
+
+// GetEphemeralEnvironments returns getNotificationRulesNotificationRulesNotificationRule.EphemeralEnvironments, and is useful for accessing the field via an interface.
+func (v *getNotificationRulesNotificationRulesNotificationRule) GetEphemeralEnvironments() bool {
+	return v.NotificationRuleFields.EphemeralEnvironments
+}
+
+// GetChannels returns getNotificationRulesNotificationRulesNotificationRule.Channels, and is useful for accessing the field via an interface.
+func (v *getNotificationRulesNotificationRulesNotificationRule) GetChannels() []NotificationRuleFieldsChannelsNotificationChannel {
+	return v.NotificationRuleFields.Channels
+}
+
+func (v *getNotificationRulesNotificationRulesNotificationRule) UnmarshalJSON(b []byte) error {
+
+	if string(b) == "null" {
+		return nil
+	}
+
+	var firstPass struct {
+		*getNotificationRulesNotificationRulesNotificationRule
+		graphql.NoUnmarshalJSON
+	}
+	firstPass.getNotificationRulesNotificationRulesNotificationRule = v
+
+	err := json.Unmarshal(b, &firstPass)
+	if err != nil {
+		return err
+	}
+
+	err = json.Unmarshal(
+		b, &v.NotificationRuleFields)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+type __premarshalgetNotificationRulesNotificationRulesNotificationRule struct {
+	Id string `json:"id"`
+
+	WorkspaceId string `json:"workspaceId"`
+
+	ProjectId string `json:"projectId"`
+
+	EventTypes []string `json:"eventTypes"`
+
+	Severities []NotificationSeverity `json:"severities"`
+
+	EphemeralEnvironments bool `json:"ephemeralEnvironments"`
+
+	Channels []NotificationRuleFieldsChannelsNotificationChannel `json:"channels"`
+}
+
+func (v *getNotificationRulesNotificationRulesNotificationRule) MarshalJSON() ([]byte, error) {
+	premarshaled, err := v.__premarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(premarshaled)
+}
+
+func (v *getNotificationRulesNotificationRulesNotificationRule) __premarshalJSON() (*__premarshalgetNotificationRulesNotificationRulesNotificationRule, error) {
+	var retval __premarshalgetNotificationRulesNotificationRulesNotificationRule
+
+	retval.Id = v.NotificationRuleFields.Id
+	retval.WorkspaceId = v.NotificationRuleFields.WorkspaceId
+	retval.ProjectId = v.NotificationRuleFields.ProjectId
+	retval.EventTypes = v.NotificationRuleFields.EventTypes
+	retval.Severities = v.NotificationRuleFields.Severities
+	retval.EphemeralEnvironments = v.NotificationRuleFields.EphemeralEnvironments
+	retval.Channels = v.NotificationRuleFields.Channels
+	return &retval, nil
+}
+
+// getNotificationRulesResponse is returned by getNotificationRules on success.
+type getNotificationRulesResponse struct {
+	// Get all notification rules for a workspace and project
+	NotificationRules []getNotificationRulesNotificationRulesNotificationRule `json:"notificationRules"`
+}
+
+// GetNotificationRules returns getNotificationRulesResponse.NotificationRules, and is useful for accessing the field via an interface.
+func (v *getNotificationRulesResponse) GetNotificationRules() []getNotificationRulesNotificationRulesNotificationRule {
+	return v.NotificationRules
+}
+
 // getPrivateNetworkEndpointPrivateNetworkEndpoint includes the requested fields of the GraphQL type PrivateNetworkEndpoint.
 type getPrivateNetworkEndpointPrivateNetworkEndpoint struct {
 	PrivateNetworkEndpointFields `json:"-"`
@@ -3829,6 +4830,220 @@ func (v *getPrivateNetworksResponse) GetPrivateNetworks() []getPrivateNetworksPr
 	return v.PrivateNetworks
 }
 
+// getProjectBucketsProject includes the requested fields of the GraphQL type Project.
+type getProjectBucketsProject struct {
+	Buckets getProjectBucketsProjectBucketsProjectBucketsConnection `json:"buckets"`
+}
+
+// GetBuckets returns getProjectBucketsProject.Buckets, and is useful for accessing the field via an interface.
+func (v *getProjectBucketsProject) GetBuckets() getProjectBucketsProjectBucketsProjectBucketsConnection {
+	return v.Buckets
+}
+
+// getProjectBucketsProjectBucketsProjectBucketsConnection includes the requested fields of the GraphQL type ProjectBucketsConnection.
+type getProjectBucketsProjectBucketsProjectBucketsConnection struct {
+	Edges []getProjectBucketsProjectBucketsProjectBucketsConnectionEdgesProjectBucketsConnectionEdge `json:"edges"`
+}
+
+// GetEdges returns getProjectBucketsProjectBucketsProjectBucketsConnection.Edges, and is useful for accessing the field via an interface.
+func (v *getProjectBucketsProjectBucketsProjectBucketsConnection) GetEdges() []getProjectBucketsProjectBucketsProjectBucketsConnectionEdgesProjectBucketsConnectionEdge {
+	return v.Edges
+}
+
+// getProjectBucketsProjectBucketsProjectBucketsConnectionEdgesProjectBucketsConnectionEdge includes the requested fields of the GraphQL type ProjectBucketsConnectionEdge.
+type getProjectBucketsProjectBucketsProjectBucketsConnectionEdgesProjectBucketsConnectionEdge struct {
+	Node getProjectBucketsProjectBucketsProjectBucketsConnectionEdgesProjectBucketsConnectionEdgeNodeBucket `json:"node"`
+}
+
+// GetNode returns getProjectBucketsProjectBucketsProjectBucketsConnectionEdgesProjectBucketsConnectionEdge.Node, and is useful for accessing the field via an interface.
+func (v *getProjectBucketsProjectBucketsProjectBucketsConnectionEdgesProjectBucketsConnectionEdge) GetNode() getProjectBucketsProjectBucketsProjectBucketsConnectionEdgesProjectBucketsConnectionEdgeNodeBucket {
+	return v.Node
+}
+
+// getProjectBucketsProjectBucketsProjectBucketsConnectionEdgesProjectBucketsConnectionEdgeNodeBucket includes the requested fields of the GraphQL type Bucket.
+type getProjectBucketsProjectBucketsProjectBucketsConnectionEdgesProjectBucketsConnectionEdgeNodeBucket struct {
+	BucketFields `json:"-"`
+}
+
+// GetId returns getProjectBucketsProjectBucketsProjectBucketsConnectionEdgesProjectBucketsConnectionEdgeNodeBucket.Id, and is useful for accessing the field via an interface.
+func (v *getProjectBucketsProjectBucketsProjectBucketsConnectionEdgesProjectBucketsConnectionEdgeNodeBucket) GetId() string {
+	return v.BucketFields.Id
+}
+
+// GetName returns getProjectBucketsProjectBucketsProjectBucketsConnectionEdgesProjectBucketsConnectionEdgeNodeBucket.Name, and is useful for accessing the field via an interface.
+func (v *getProjectBucketsProjectBucketsProjectBucketsConnectionEdgesProjectBucketsConnectionEdgeNodeBucket) GetName() string {
+	return v.BucketFields.Name
+}
+
+// GetProjectId returns getProjectBucketsProjectBucketsProjectBucketsConnectionEdgesProjectBucketsConnectionEdgeNodeBucket.ProjectId, and is useful for accessing the field via an interface.
+func (v *getProjectBucketsProjectBucketsProjectBucketsConnectionEdgesProjectBucketsConnectionEdgeNodeBucket) GetProjectId() string {
+	return v.BucketFields.ProjectId
+}
+
+// GetCreatedAt returns getProjectBucketsProjectBucketsProjectBucketsConnectionEdgesProjectBucketsConnectionEdgeNodeBucket.CreatedAt, and is useful for accessing the field via an interface.
+func (v *getProjectBucketsProjectBucketsProjectBucketsConnectionEdgesProjectBucketsConnectionEdgeNodeBucket) GetCreatedAt() time.Time {
+	return v.BucketFields.CreatedAt
+}
+
+// GetUpdatedAt returns getProjectBucketsProjectBucketsProjectBucketsConnectionEdgesProjectBucketsConnectionEdgeNodeBucket.UpdatedAt, and is useful for accessing the field via an interface.
+func (v *getProjectBucketsProjectBucketsProjectBucketsConnectionEdgesProjectBucketsConnectionEdgeNodeBucket) GetUpdatedAt() time.Time {
+	return v.BucketFields.UpdatedAt
+}
+
+func (v *getProjectBucketsProjectBucketsProjectBucketsConnectionEdgesProjectBucketsConnectionEdgeNodeBucket) UnmarshalJSON(b []byte) error {
+
+	if string(b) == "null" {
+		return nil
+	}
+
+	var firstPass struct {
+		*getProjectBucketsProjectBucketsProjectBucketsConnectionEdgesProjectBucketsConnectionEdgeNodeBucket
+		graphql.NoUnmarshalJSON
+	}
+	firstPass.getProjectBucketsProjectBucketsProjectBucketsConnectionEdgesProjectBucketsConnectionEdgeNodeBucket = v
+
+	err := json.Unmarshal(b, &firstPass)
+	if err != nil {
+		return err
+	}
+
+	err = json.Unmarshal(
+		b, &v.BucketFields)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+type __premarshalgetProjectBucketsProjectBucketsProjectBucketsConnectionEdgesProjectBucketsConnectionEdgeNodeBucket struct {
+	Id string `json:"id"`
+
+	Name string `json:"name"`
+
+	ProjectId string `json:"projectId"`
+
+	CreatedAt time.Time `json:"createdAt"`
+
+	UpdatedAt time.Time `json:"updatedAt"`
+}
+
+func (v *getProjectBucketsProjectBucketsProjectBucketsConnectionEdgesProjectBucketsConnectionEdgeNodeBucket) MarshalJSON() ([]byte, error) {
+	premarshaled, err := v.__premarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(premarshaled)
+}
+
+func (v *getProjectBucketsProjectBucketsProjectBucketsConnectionEdgesProjectBucketsConnectionEdgeNodeBucket) __premarshalJSON() (*__premarshalgetProjectBucketsProjectBucketsProjectBucketsConnectionEdgesProjectBucketsConnectionEdgeNodeBucket, error) {
+	var retval __premarshalgetProjectBucketsProjectBucketsProjectBucketsConnectionEdgesProjectBucketsConnectionEdgeNodeBucket
+
+	retval.Id = v.BucketFields.Id
+	retval.Name = v.BucketFields.Name
+	retval.ProjectId = v.BucketFields.ProjectId
+	retval.CreatedAt = v.BucketFields.CreatedAt
+	retval.UpdatedAt = v.BucketFields.UpdatedAt
+	return &retval, nil
+}
+
+// getProjectBucketsResponse is returned by getProjectBuckets on success.
+type getProjectBucketsResponse struct {
+	// Get a project by ID
+	Project getProjectBucketsProject `json:"project"`
+}
+
+// GetProject returns getProjectBucketsResponse.Project, and is useful for accessing the field via an interface.
+func (v *getProjectBucketsResponse) GetProject() getProjectBucketsProject { return v.Project }
+
+// getProjectMembersProjectMembersProjectMember includes the requested fields of the GraphQL type ProjectMember.
+type getProjectMembersProjectMembersProjectMember struct {
+	ProjectMemberFields `json:"-"`
+}
+
+// GetId returns getProjectMembersProjectMembersProjectMember.Id, and is useful for accessing the field via an interface.
+func (v *getProjectMembersProjectMembersProjectMember) GetId() string {
+	return v.ProjectMemberFields.Id
+}
+
+// GetEmail returns getProjectMembersProjectMembersProjectMember.Email, and is useful for accessing the field via an interface.
+func (v *getProjectMembersProjectMembersProjectMember) GetEmail() string {
+	return v.ProjectMemberFields.Email
+}
+
+// GetName returns getProjectMembersProjectMembersProjectMember.Name, and is useful for accessing the field via an interface.
+func (v *getProjectMembersProjectMembersProjectMember) GetName() string {
+	return v.ProjectMemberFields.Name
+}
+
+// GetRole returns getProjectMembersProjectMembersProjectMember.Role, and is useful for accessing the field via an interface.
+func (v *getProjectMembersProjectMembersProjectMember) GetRole() ProjectRole {
+	return v.ProjectMemberFields.Role
+}
+
+func (v *getProjectMembersProjectMembersProjectMember) UnmarshalJSON(b []byte) error {
+
+	if string(b) == "null" {
+		return nil
+	}
+
+	var firstPass struct {
+		*getProjectMembersProjectMembersProjectMember
+		graphql.NoUnmarshalJSON
+	}
+	firstPass.getProjectMembersProjectMembersProjectMember = v
+
+	err := json.Unmarshal(b, &firstPass)
+	if err != nil {
+		return err
+	}
+
+	err = json.Unmarshal(
+		b, &v.ProjectMemberFields)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+type __premarshalgetProjectMembersProjectMembersProjectMember struct {
+	Id string `json:"id"`
+
+	Email string `json:"email"`
+
+	Name string `json:"name"`
+
+	Role ProjectRole `json:"role"`
+}
+
+func (v *getProjectMembersProjectMembersProjectMember) MarshalJSON() ([]byte, error) {
+	premarshaled, err := v.__premarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(premarshaled)
+}
+
+func (v *getProjectMembersProjectMembersProjectMember) __premarshalJSON() (*__premarshalgetProjectMembersProjectMembersProjectMember, error) {
+	var retval __premarshalgetProjectMembersProjectMembersProjectMember
+
+	retval.Id = v.ProjectMemberFields.Id
+	retval.Email = v.ProjectMemberFields.Email
+	retval.Name = v.ProjectMemberFields.Name
+	retval.Role = v.ProjectMemberFields.Role
+	return &retval, nil
+}
+
+// getProjectMembersResponse is returned by getProjectMembers on success.
+type getProjectMembersResponse struct {
+	// Gets users who belong to a project along with their role
+	ProjectMembers []getProjectMembersProjectMembersProjectMember `json:"projectMembers"`
+}
+
+// GetProjectMembers returns getProjectMembersResponse.ProjectMembers, and is useful for accessing the field via an interface.
+func (v *getProjectMembersResponse) GetProjectMembers() []getProjectMembersProjectMembersProjectMember {
+	return v.ProjectMembers
+}
+
 // getProjectProject includes the requested fields of the GraphQL type Project.
 type getProjectProject struct {
 	Project `json:"-"`
@@ -3983,6 +5198,115 @@ type getProjectServicesResponse struct {
 // GetProject returns getProjectServicesResponse.Project, and is useful for accessing the field via an interface.
 func (v *getProjectServicesResponse) GetProject() getProjectServicesProject { return v.Project }
 
+// getProjectTokensProjectTokensQueryProjectTokensConnection includes the requested fields of the GraphQL type QueryProjectTokensConnection.
+type getProjectTokensProjectTokensQueryProjectTokensConnection struct {
+	Edges []getProjectTokensProjectTokensQueryProjectTokensConnectionEdgesQueryProjectTokensConnectionEdge `json:"edges"`
+}
+
+// GetEdges returns getProjectTokensProjectTokensQueryProjectTokensConnection.Edges, and is useful for accessing the field via an interface.
+func (v *getProjectTokensProjectTokensQueryProjectTokensConnection) GetEdges() []getProjectTokensProjectTokensQueryProjectTokensConnectionEdgesQueryProjectTokensConnectionEdge {
+	return v.Edges
+}
+
+// getProjectTokensProjectTokensQueryProjectTokensConnectionEdgesQueryProjectTokensConnectionEdge includes the requested fields of the GraphQL type QueryProjectTokensConnectionEdge.
+type getProjectTokensProjectTokensQueryProjectTokensConnectionEdgesQueryProjectTokensConnectionEdge struct {
+	Node getProjectTokensProjectTokensQueryProjectTokensConnectionEdgesQueryProjectTokensConnectionEdgeNodeProjectToken `json:"node"`
+}
+
+// GetNode returns getProjectTokensProjectTokensQueryProjectTokensConnectionEdgesQueryProjectTokensConnectionEdge.Node, and is useful for accessing the field via an interface.
+func (v *getProjectTokensProjectTokensQueryProjectTokensConnectionEdgesQueryProjectTokensConnectionEdge) GetNode() getProjectTokensProjectTokensQueryProjectTokensConnectionEdgesQueryProjectTokensConnectionEdgeNodeProjectToken {
+	return v.Node
+}
+
+// getProjectTokensProjectTokensQueryProjectTokensConnectionEdgesQueryProjectTokensConnectionEdgeNodeProjectToken includes the requested fields of the GraphQL type ProjectToken.
+type getProjectTokensProjectTokensQueryProjectTokensConnectionEdgesQueryProjectTokensConnectionEdgeNodeProjectToken struct {
+	ProjectTokenFields `json:"-"`
+}
+
+// GetId returns getProjectTokensProjectTokensQueryProjectTokensConnectionEdgesQueryProjectTokensConnectionEdgeNodeProjectToken.Id, and is useful for accessing the field via an interface.
+func (v *getProjectTokensProjectTokensQueryProjectTokensConnectionEdgesQueryProjectTokensConnectionEdgeNodeProjectToken) GetId() string {
+	return v.ProjectTokenFields.Id
+}
+
+// GetName returns getProjectTokensProjectTokensQueryProjectTokensConnectionEdgesQueryProjectTokensConnectionEdgeNodeProjectToken.Name, and is useful for accessing the field via an interface.
+func (v *getProjectTokensProjectTokensQueryProjectTokensConnectionEdgesQueryProjectTokensConnectionEdgeNodeProjectToken) GetName() string {
+	return v.ProjectTokenFields.Name
+}
+
+// GetProjectId returns getProjectTokensProjectTokensQueryProjectTokensConnectionEdgesQueryProjectTokensConnectionEdgeNodeProjectToken.ProjectId, and is useful for accessing the field via an interface.
+func (v *getProjectTokensProjectTokensQueryProjectTokensConnectionEdgesQueryProjectTokensConnectionEdgeNodeProjectToken) GetProjectId() string {
+	return v.ProjectTokenFields.ProjectId
+}
+
+// GetEnvironmentId returns getProjectTokensProjectTokensQueryProjectTokensConnectionEdgesQueryProjectTokensConnectionEdgeNodeProjectToken.EnvironmentId, and is useful for accessing the field via an interface.
+func (v *getProjectTokensProjectTokensQueryProjectTokensConnectionEdgesQueryProjectTokensConnectionEdgeNodeProjectToken) GetEnvironmentId() string {
+	return v.ProjectTokenFields.EnvironmentId
+}
+
+func (v *getProjectTokensProjectTokensQueryProjectTokensConnectionEdgesQueryProjectTokensConnectionEdgeNodeProjectToken) UnmarshalJSON(b []byte) error {
+
+	if string(b) == "null" {
+		return nil
+	}
+
+	var firstPass struct {
+		*getProjectTokensProjectTokensQueryProjectTokensConnectionEdgesQueryProjectTokensConnectionEdgeNodeProjectToken
+		graphql.NoUnmarshalJSON
+	}
+	firstPass.getProjectTokensProjectTokensQueryProjectTokensConnectionEdgesQueryProjectTokensConnectionEdgeNodeProjectToken = v
+
+	err := json.Unmarshal(b, &firstPass)
+	if err != nil {
+		return err
+	}
+
+	err = json.Unmarshal(
+		b, &v.ProjectTokenFields)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+type __premarshalgetProjectTokensProjectTokensQueryProjectTokensConnectionEdgesQueryProjectTokensConnectionEdgeNodeProjectToken struct {
+	Id string `json:"id"`
+
+	Name string `json:"name"`
+
+	ProjectId string `json:"projectId"`
+
+	EnvironmentId string `json:"environmentId"`
+}
+
+func (v *getProjectTokensProjectTokensQueryProjectTokensConnectionEdgesQueryProjectTokensConnectionEdgeNodeProjectToken) MarshalJSON() ([]byte, error) {
+	premarshaled, err := v.__premarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(premarshaled)
+}
+
+func (v *getProjectTokensProjectTokensQueryProjectTokensConnectionEdgesQueryProjectTokensConnectionEdgeNodeProjectToken) __premarshalJSON() (*__premarshalgetProjectTokensProjectTokensQueryProjectTokensConnectionEdgesQueryProjectTokensConnectionEdgeNodeProjectToken, error) {
+	var retval __premarshalgetProjectTokensProjectTokensQueryProjectTokensConnectionEdgesQueryProjectTokensConnectionEdgeNodeProjectToken
+
+	retval.Id = v.ProjectTokenFields.Id
+	retval.Name = v.ProjectTokenFields.Name
+	retval.ProjectId = v.ProjectTokenFields.ProjectId
+	retval.EnvironmentId = v.ProjectTokenFields.EnvironmentId
+	return &retval, nil
+}
+
+// getProjectTokensResponse is returned by getProjectTokens on success.
+type getProjectTokensResponse struct {
+	// Get all project tokens for a project
+	ProjectTokens getProjectTokensProjectTokensQueryProjectTokensConnection `json:"projectTokens"`
+}
+
+// GetProjectTokens returns getProjectTokensResponse.ProjectTokens, and is useful for accessing the field via an interface.
+func (v *getProjectTokensResponse) GetProjectTokens() getProjectTokensProjectTokensQueryProjectTokensConnection {
+	return v.ProjectTokens
+}
+
 // getServiceInstanceDetailedResponse is returned by getServiceInstanceDetailed on success.
 type getServiceInstanceDetailedResponse struct {
 	// Get a service instance belonging to a service and environment
@@ -4014,7 +5338,8 @@ type getServiceInstanceDetailedServiceInstance struct {
 	DrainingSeconds         *int                                                          `json:"drainingSeconds"`
 	PreDeployCommand        *map[string]interface{}                                       `json:"preDeployCommand"`
 	WatchPatterns           []string                                                      `json:"watchPatterns"`
-	LatestDeployment        getServiceInstanceDetailedServiceInstanceLatestDeployment     `json:"latestDeployment"`
+	// The most recent deployment for this service instance
+	LatestDeployment getServiceInstanceDetailedServiceInstanceLatestDeployment `json:"latestDeployment"`
 }
 
 // GetSource returns getServiceInstanceDetailedServiceInstance.Source, and is useful for accessing the field via an interface.
@@ -4141,7 +5466,8 @@ type getServiceInstanceServiceInstance struct {
 	RootDirectory     *string                                               `json:"rootDirectory"`
 	RailwayConfigFile *string                                               `json:"railwayConfigFile"`
 	CronSchedule      *string                                               `json:"cronSchedule"`
-	LatestDeployment  getServiceInstanceServiceInstanceLatestDeployment     `json:"latestDeployment"`
+	// The most recent deployment for this service instance
+	LatestDeployment getServiceInstanceServiceInstanceLatestDeployment `json:"latestDeployment"`
 }
 
 // GetSource returns getServiceInstanceServiceInstance.Source, and is useful for accessing the field via an interface.
@@ -4324,6 +5650,131 @@ type getSharedVariablesResponse struct {
 // GetVariables returns getSharedVariablesResponse.Variables, and is useful for accessing the field via an interface.
 func (v *getSharedVariablesResponse) GetVariables() map[string]interface{} { return v.Variables }
 
+// getSshPublicKeysResponse is returned by getSshPublicKeys on success.
+type getSshPublicKeysResponse struct {
+	// Gets SSH public keys. If workspaceId is provided, returns the keys owned by that workspace (requires workspace MEMBER access). Under a workspace-scoped API token, workspaceId defaults to the token's workspace when omitted; otherwise returns the authenticated user's personal keys.
+	SshPublicKeys getSshPublicKeysSshPublicKeysQuerySshPublicKeysConnection `json:"sshPublicKeys"`
+}
+
+// GetSshPublicKeys returns getSshPublicKeysResponse.SshPublicKeys, and is useful for accessing the field via an interface.
+func (v *getSshPublicKeysResponse) GetSshPublicKeys() getSshPublicKeysSshPublicKeysQuerySshPublicKeysConnection {
+	return v.SshPublicKeys
+}
+
+// getSshPublicKeysSshPublicKeysQuerySshPublicKeysConnection includes the requested fields of the GraphQL type QuerySshPublicKeysConnection.
+type getSshPublicKeysSshPublicKeysQuerySshPublicKeysConnection struct {
+	Edges []getSshPublicKeysSshPublicKeysQuerySshPublicKeysConnectionEdgesQuerySshPublicKeysConnectionEdge `json:"edges"`
+}
+
+// GetEdges returns getSshPublicKeysSshPublicKeysQuerySshPublicKeysConnection.Edges, and is useful for accessing the field via an interface.
+func (v *getSshPublicKeysSshPublicKeysQuerySshPublicKeysConnection) GetEdges() []getSshPublicKeysSshPublicKeysQuerySshPublicKeysConnectionEdgesQuerySshPublicKeysConnectionEdge {
+	return v.Edges
+}
+
+// getSshPublicKeysSshPublicKeysQuerySshPublicKeysConnectionEdgesQuerySshPublicKeysConnectionEdge includes the requested fields of the GraphQL type QuerySshPublicKeysConnectionEdge.
+type getSshPublicKeysSshPublicKeysQuerySshPublicKeysConnectionEdgesQuerySshPublicKeysConnectionEdge struct {
+	Node getSshPublicKeysSshPublicKeysQuerySshPublicKeysConnectionEdgesQuerySshPublicKeysConnectionEdgeNodeSshPublicKey `json:"node"`
+}
+
+// GetNode returns getSshPublicKeysSshPublicKeysQuerySshPublicKeysConnectionEdgesQuerySshPublicKeysConnectionEdge.Node, and is useful for accessing the field via an interface.
+func (v *getSshPublicKeysSshPublicKeysQuerySshPublicKeysConnectionEdgesQuerySshPublicKeysConnectionEdge) GetNode() getSshPublicKeysSshPublicKeysQuerySshPublicKeysConnectionEdgesQuerySshPublicKeysConnectionEdgeNodeSshPublicKey {
+	return v.Node
+}
+
+// getSshPublicKeysSshPublicKeysQuerySshPublicKeysConnectionEdgesQuerySshPublicKeysConnectionEdgeNodeSshPublicKey includes the requested fields of the GraphQL type SshPublicKey.
+type getSshPublicKeysSshPublicKeysQuerySshPublicKeysConnectionEdgesQuerySshPublicKeysConnectionEdgeNodeSshPublicKey struct {
+	SshPublicKeyFields `json:"-"`
+}
+
+// GetId returns getSshPublicKeysSshPublicKeysQuerySshPublicKeysConnectionEdgesQuerySshPublicKeysConnectionEdgeNodeSshPublicKey.Id, and is useful for accessing the field via an interface.
+func (v *getSshPublicKeysSshPublicKeysQuerySshPublicKeysConnectionEdgesQuerySshPublicKeysConnectionEdgeNodeSshPublicKey) GetId() string {
+	return v.SshPublicKeyFields.Id
+}
+
+// GetName returns getSshPublicKeysSshPublicKeysQuerySshPublicKeysConnectionEdgesQuerySshPublicKeysConnectionEdgeNodeSshPublicKey.Name, and is useful for accessing the field via an interface.
+func (v *getSshPublicKeysSshPublicKeysQuerySshPublicKeysConnectionEdgesQuerySshPublicKeysConnectionEdgeNodeSshPublicKey) GetName() string {
+	return v.SshPublicKeyFields.Name
+}
+
+// GetPublicKey returns getSshPublicKeysSshPublicKeysQuerySshPublicKeysConnectionEdgesQuerySshPublicKeysConnectionEdgeNodeSshPublicKey.PublicKey, and is useful for accessing the field via an interface.
+func (v *getSshPublicKeysSshPublicKeysQuerySshPublicKeysConnectionEdgesQuerySshPublicKeysConnectionEdgeNodeSshPublicKey) GetPublicKey() string {
+	return v.SshPublicKeyFields.PublicKey
+}
+
+// GetFingerprint returns getSshPublicKeysSshPublicKeysQuerySshPublicKeysConnectionEdgesQuerySshPublicKeysConnectionEdgeNodeSshPublicKey.Fingerprint, and is useful for accessing the field via an interface.
+func (v *getSshPublicKeysSshPublicKeysQuerySshPublicKeysConnectionEdgesQuerySshPublicKeysConnectionEdgeNodeSshPublicKey) GetFingerprint() string {
+	return v.SshPublicKeyFields.Fingerprint
+}
+
+// GetWorkspaceId returns getSshPublicKeysSshPublicKeysQuerySshPublicKeysConnectionEdgesQuerySshPublicKeysConnectionEdgeNodeSshPublicKey.WorkspaceId, and is useful for accessing the field via an interface.
+func (v *getSshPublicKeysSshPublicKeysQuerySshPublicKeysConnectionEdgesQuerySshPublicKeysConnectionEdgeNodeSshPublicKey) GetWorkspaceId() string {
+	return v.SshPublicKeyFields.WorkspaceId
+}
+
+// GetUserId returns getSshPublicKeysSshPublicKeysQuerySshPublicKeysConnectionEdgesQuerySshPublicKeysConnectionEdgeNodeSshPublicKey.UserId, and is useful for accessing the field via an interface.
+func (v *getSshPublicKeysSshPublicKeysQuerySshPublicKeysConnectionEdgesQuerySshPublicKeysConnectionEdgeNodeSshPublicKey) GetUserId() string {
+	return v.SshPublicKeyFields.UserId
+}
+
+func (v *getSshPublicKeysSshPublicKeysQuerySshPublicKeysConnectionEdgesQuerySshPublicKeysConnectionEdgeNodeSshPublicKey) UnmarshalJSON(b []byte) error {
+
+	if string(b) == "null" {
+		return nil
+	}
+
+	var firstPass struct {
+		*getSshPublicKeysSshPublicKeysQuerySshPublicKeysConnectionEdgesQuerySshPublicKeysConnectionEdgeNodeSshPublicKey
+		graphql.NoUnmarshalJSON
+	}
+	firstPass.getSshPublicKeysSshPublicKeysQuerySshPublicKeysConnectionEdgesQuerySshPublicKeysConnectionEdgeNodeSshPublicKey = v
+
+	err := json.Unmarshal(b, &firstPass)
+	if err != nil {
+		return err
+	}
+
+	err = json.Unmarshal(
+		b, &v.SshPublicKeyFields)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+type __premarshalgetSshPublicKeysSshPublicKeysQuerySshPublicKeysConnectionEdgesQuerySshPublicKeysConnectionEdgeNodeSshPublicKey struct {
+	Id string `json:"id"`
+
+	Name string `json:"name"`
+
+	PublicKey string `json:"publicKey"`
+
+	Fingerprint string `json:"fingerprint"`
+
+	WorkspaceId string `json:"workspaceId"`
+
+	UserId string `json:"userId"`
+}
+
+func (v *getSshPublicKeysSshPublicKeysQuerySshPublicKeysConnectionEdgesQuerySshPublicKeysConnectionEdgeNodeSshPublicKey) MarshalJSON() ([]byte, error) {
+	premarshaled, err := v.__premarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(premarshaled)
+}
+
+func (v *getSshPublicKeysSshPublicKeysQuerySshPublicKeysConnectionEdgesQuerySshPublicKeysConnectionEdgeNodeSshPublicKey) __premarshalJSON() (*__premarshalgetSshPublicKeysSshPublicKeysQuerySshPublicKeysConnectionEdgesQuerySshPublicKeysConnectionEdgeNodeSshPublicKey, error) {
+	var retval __premarshalgetSshPublicKeysSshPublicKeysQuerySshPublicKeysConnectionEdgesQuerySshPublicKeysConnectionEdgeNodeSshPublicKey
+
+	retval.Id = v.SshPublicKeyFields.Id
+	retval.Name = v.SshPublicKeyFields.Name
+	retval.PublicKey = v.SshPublicKeyFields.PublicKey
+	retval.Fingerprint = v.SshPublicKeyFields.Fingerprint
+	retval.WorkspaceId = v.SshPublicKeyFields.WorkspaceId
+	retval.UserId = v.SshPublicKeyFields.UserId
+	return &retval, nil
+}
+
 // getTcpProxyResponse is returned by getTcpProxy on success.
 type getTcpProxyResponse struct {
 	// All TCP proxies for a service instance
@@ -4412,6 +5863,123 @@ func (v *getTcpProxyTcpProxiesTCPProxy) __premarshalJSON() (*__premarshalgetTcpP
 	retval.Domain = v.TCPProxy.Domain
 	retval.EnvironmentId = v.TCPProxy.EnvironmentId
 	retval.ServiceId = v.TCPProxy.ServiceId
+	return &retval, nil
+}
+
+// getTrustedDomainsResponse is returned by getTrustedDomains on success.
+type getTrustedDomainsResponse struct {
+	// Get all trusted domains for a workspace
+	TrustedDomains getTrustedDomainsTrustedDomainsQueryTrustedDomainsConnection `json:"trustedDomains"`
+}
+
+// GetTrustedDomains returns getTrustedDomainsResponse.TrustedDomains, and is useful for accessing the field via an interface.
+func (v *getTrustedDomainsResponse) GetTrustedDomains() getTrustedDomainsTrustedDomainsQueryTrustedDomainsConnection {
+	return v.TrustedDomains
+}
+
+// getTrustedDomainsTrustedDomainsQueryTrustedDomainsConnection includes the requested fields of the GraphQL type QueryTrustedDomainsConnection.
+type getTrustedDomainsTrustedDomainsQueryTrustedDomainsConnection struct {
+	Edges []getTrustedDomainsTrustedDomainsQueryTrustedDomainsConnectionEdgesQueryTrustedDomainsConnectionEdge `json:"edges"`
+}
+
+// GetEdges returns getTrustedDomainsTrustedDomainsQueryTrustedDomainsConnection.Edges, and is useful for accessing the field via an interface.
+func (v *getTrustedDomainsTrustedDomainsQueryTrustedDomainsConnection) GetEdges() []getTrustedDomainsTrustedDomainsQueryTrustedDomainsConnectionEdgesQueryTrustedDomainsConnectionEdge {
+	return v.Edges
+}
+
+// getTrustedDomainsTrustedDomainsQueryTrustedDomainsConnectionEdgesQueryTrustedDomainsConnectionEdge includes the requested fields of the GraphQL type QueryTrustedDomainsConnectionEdge.
+type getTrustedDomainsTrustedDomainsQueryTrustedDomainsConnectionEdgesQueryTrustedDomainsConnectionEdge struct {
+	Node getTrustedDomainsTrustedDomainsQueryTrustedDomainsConnectionEdgesQueryTrustedDomainsConnectionEdgeNodeTrustedDomain `json:"node"`
+}
+
+// GetNode returns getTrustedDomainsTrustedDomainsQueryTrustedDomainsConnectionEdgesQueryTrustedDomainsConnectionEdge.Node, and is useful for accessing the field via an interface.
+func (v *getTrustedDomainsTrustedDomainsQueryTrustedDomainsConnectionEdgesQueryTrustedDomainsConnectionEdge) GetNode() getTrustedDomainsTrustedDomainsQueryTrustedDomainsConnectionEdgesQueryTrustedDomainsConnectionEdgeNodeTrustedDomain {
+	return v.Node
+}
+
+// getTrustedDomainsTrustedDomainsQueryTrustedDomainsConnectionEdgesQueryTrustedDomainsConnectionEdgeNodeTrustedDomain includes the requested fields of the GraphQL type TrustedDomain.
+type getTrustedDomainsTrustedDomainsQueryTrustedDomainsConnectionEdgesQueryTrustedDomainsConnectionEdgeNodeTrustedDomain struct {
+	TrustedDomainFields `json:"-"`
+}
+
+// GetId returns getTrustedDomainsTrustedDomainsQueryTrustedDomainsConnectionEdgesQueryTrustedDomainsConnectionEdgeNodeTrustedDomain.Id, and is useful for accessing the field via an interface.
+func (v *getTrustedDomainsTrustedDomainsQueryTrustedDomainsConnectionEdgesQueryTrustedDomainsConnectionEdgeNodeTrustedDomain) GetId() string {
+	return v.TrustedDomainFields.Id
+}
+
+// GetDomainName returns getTrustedDomainsTrustedDomainsQueryTrustedDomainsConnectionEdgesQueryTrustedDomainsConnectionEdgeNodeTrustedDomain.DomainName, and is useful for accessing the field via an interface.
+func (v *getTrustedDomainsTrustedDomainsQueryTrustedDomainsConnectionEdgesQueryTrustedDomainsConnectionEdgeNodeTrustedDomain) GetDomainName() string {
+	return v.TrustedDomainFields.DomainName
+}
+
+// GetRole returns getTrustedDomainsTrustedDomainsQueryTrustedDomainsConnectionEdgesQueryTrustedDomainsConnectionEdgeNodeTrustedDomain.Role, and is useful for accessing the field via an interface.
+func (v *getTrustedDomainsTrustedDomainsQueryTrustedDomainsConnectionEdgesQueryTrustedDomainsConnectionEdgeNodeTrustedDomain) GetRole() string {
+	return v.TrustedDomainFields.Role
+}
+
+// GetStatus returns getTrustedDomainsTrustedDomainsQueryTrustedDomainsConnectionEdgesQueryTrustedDomainsConnectionEdgeNodeTrustedDomain.Status, and is useful for accessing the field via an interface.
+func (v *getTrustedDomainsTrustedDomainsQueryTrustedDomainsConnectionEdgesQueryTrustedDomainsConnectionEdgeNodeTrustedDomain) GetStatus() TrustedDomainStatus {
+	return v.TrustedDomainFields.Status
+}
+
+// GetWorkspaceId returns getTrustedDomainsTrustedDomainsQueryTrustedDomainsConnectionEdgesQueryTrustedDomainsConnectionEdgeNodeTrustedDomain.WorkspaceId, and is useful for accessing the field via an interface.
+func (v *getTrustedDomainsTrustedDomainsQueryTrustedDomainsConnectionEdgesQueryTrustedDomainsConnectionEdgeNodeTrustedDomain) GetWorkspaceId() string {
+	return v.TrustedDomainFields.WorkspaceId
+}
+
+func (v *getTrustedDomainsTrustedDomainsQueryTrustedDomainsConnectionEdgesQueryTrustedDomainsConnectionEdgeNodeTrustedDomain) UnmarshalJSON(b []byte) error {
+
+	if string(b) == "null" {
+		return nil
+	}
+
+	var firstPass struct {
+		*getTrustedDomainsTrustedDomainsQueryTrustedDomainsConnectionEdgesQueryTrustedDomainsConnectionEdgeNodeTrustedDomain
+		graphql.NoUnmarshalJSON
+	}
+	firstPass.getTrustedDomainsTrustedDomainsQueryTrustedDomainsConnectionEdgesQueryTrustedDomainsConnectionEdgeNodeTrustedDomain = v
+
+	err := json.Unmarshal(b, &firstPass)
+	if err != nil {
+		return err
+	}
+
+	err = json.Unmarshal(
+		b, &v.TrustedDomainFields)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+type __premarshalgetTrustedDomainsTrustedDomainsQueryTrustedDomainsConnectionEdgesQueryTrustedDomainsConnectionEdgeNodeTrustedDomain struct {
+	Id string `json:"id"`
+
+	DomainName string `json:"domainName"`
+
+	Role string `json:"role"`
+
+	Status TrustedDomainStatus `json:"status"`
+
+	WorkspaceId string `json:"workspaceId"`
+}
+
+func (v *getTrustedDomainsTrustedDomainsQueryTrustedDomainsConnectionEdgesQueryTrustedDomainsConnectionEdgeNodeTrustedDomain) MarshalJSON() ([]byte, error) {
+	premarshaled, err := v.__premarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(premarshaled)
+}
+
+func (v *getTrustedDomainsTrustedDomainsQueryTrustedDomainsConnectionEdgesQueryTrustedDomainsConnectionEdgeNodeTrustedDomain) __premarshalJSON() (*__premarshalgetTrustedDomainsTrustedDomainsQueryTrustedDomainsConnectionEdgesQueryTrustedDomainsConnectionEdgeNodeTrustedDomain, error) {
+	var retval __premarshalgetTrustedDomainsTrustedDomainsQueryTrustedDomainsConnectionEdgesQueryTrustedDomainsConnectionEdgeNodeTrustedDomain
+
+	retval.Id = v.TrustedDomainFields.Id
+	retval.DomainName = v.TrustedDomainFields.DomainName
+	retval.Role = v.TrustedDomainFields.Role
+	retval.Status = v.TrustedDomainFields.Status
+	retval.WorkspaceId = v.TrustedDomainFields.WorkspaceId
 	return &retval, nil
 }
 
@@ -4629,123 +6197,6 @@ type getVolumeInstancesResponse struct {
 
 // GetProject returns getVolumeInstancesResponse.Project, and is useful for accessing the field via an interface.
 func (v *getVolumeInstancesResponse) GetProject() getVolumeInstancesProject { return v.Project }
-
-// getWebhooksResponse is returned by getWebhooks on success.
-type getWebhooksResponse struct {
-	// Get all webhooks for a project
-	Webhooks getWebhooksWebhooksQueryWebhooksConnection `json:"webhooks"`
-}
-
-// GetWebhooks returns getWebhooksResponse.Webhooks, and is useful for accessing the field via an interface.
-func (v *getWebhooksResponse) GetWebhooks() getWebhooksWebhooksQueryWebhooksConnection {
-	return v.Webhooks
-}
-
-// getWebhooksWebhooksQueryWebhooksConnection includes the requested fields of the GraphQL type QueryWebhooksConnection.
-type getWebhooksWebhooksQueryWebhooksConnection struct {
-	Edges []getWebhooksWebhooksQueryWebhooksConnectionEdgesQueryWebhooksConnectionEdge `json:"edges"`
-}
-
-// GetEdges returns getWebhooksWebhooksQueryWebhooksConnection.Edges, and is useful for accessing the field via an interface.
-func (v *getWebhooksWebhooksQueryWebhooksConnection) GetEdges() []getWebhooksWebhooksQueryWebhooksConnectionEdgesQueryWebhooksConnectionEdge {
-	return v.Edges
-}
-
-// getWebhooksWebhooksQueryWebhooksConnectionEdgesQueryWebhooksConnectionEdge includes the requested fields of the GraphQL type QueryWebhooksConnectionEdge.
-type getWebhooksWebhooksQueryWebhooksConnectionEdgesQueryWebhooksConnectionEdge struct {
-	Node getWebhooksWebhooksQueryWebhooksConnectionEdgesQueryWebhooksConnectionEdgeNodeProjectWebhook `json:"node"`
-}
-
-// GetNode returns getWebhooksWebhooksQueryWebhooksConnectionEdgesQueryWebhooksConnectionEdge.Node, and is useful for accessing the field via an interface.
-func (v *getWebhooksWebhooksQueryWebhooksConnectionEdgesQueryWebhooksConnectionEdge) GetNode() getWebhooksWebhooksQueryWebhooksConnectionEdgesQueryWebhooksConnectionEdgeNodeProjectWebhook {
-	return v.Node
-}
-
-// getWebhooksWebhooksQueryWebhooksConnectionEdgesQueryWebhooksConnectionEdgeNodeProjectWebhook includes the requested fields of the GraphQL type ProjectWebhook.
-type getWebhooksWebhooksQueryWebhooksConnectionEdgesQueryWebhooksConnectionEdgeNodeProjectWebhook struct {
-	ProjectWebhook `json:"-"`
-}
-
-// GetId returns getWebhooksWebhooksQueryWebhooksConnectionEdgesQueryWebhooksConnectionEdgeNodeProjectWebhook.Id, and is useful for accessing the field via an interface.
-func (v *getWebhooksWebhooksQueryWebhooksConnectionEdgesQueryWebhooksConnectionEdgeNodeProjectWebhook) GetId() string {
-	return v.ProjectWebhook.Id
-}
-
-// GetUrl returns getWebhooksWebhooksQueryWebhooksConnectionEdgesQueryWebhooksConnectionEdgeNodeProjectWebhook.Url, and is useful for accessing the field via an interface.
-func (v *getWebhooksWebhooksQueryWebhooksConnectionEdgesQueryWebhooksConnectionEdgeNodeProjectWebhook) GetUrl() string {
-	return v.ProjectWebhook.Url
-}
-
-// GetProjectId returns getWebhooksWebhooksQueryWebhooksConnectionEdgesQueryWebhooksConnectionEdgeNodeProjectWebhook.ProjectId, and is useful for accessing the field via an interface.
-func (v *getWebhooksWebhooksQueryWebhooksConnectionEdgesQueryWebhooksConnectionEdgeNodeProjectWebhook) GetProjectId() string {
-	return v.ProjectWebhook.ProjectId
-}
-
-// GetFilters returns getWebhooksWebhooksQueryWebhooksConnectionEdgesQueryWebhooksConnectionEdgeNodeProjectWebhook.Filters, and is useful for accessing the field via an interface.
-func (v *getWebhooksWebhooksQueryWebhooksConnectionEdgesQueryWebhooksConnectionEdgeNodeProjectWebhook) GetFilters() []string {
-	return v.ProjectWebhook.Filters
-}
-
-// GetLastStatus returns getWebhooksWebhooksQueryWebhooksConnectionEdgesQueryWebhooksConnectionEdgeNodeProjectWebhook.LastStatus, and is useful for accessing the field via an interface.
-func (v *getWebhooksWebhooksQueryWebhooksConnectionEdgesQueryWebhooksConnectionEdgeNodeProjectWebhook) GetLastStatus() int {
-	return v.ProjectWebhook.LastStatus
-}
-
-func (v *getWebhooksWebhooksQueryWebhooksConnectionEdgesQueryWebhooksConnectionEdgeNodeProjectWebhook) UnmarshalJSON(b []byte) error {
-
-	if string(b) == "null" {
-		return nil
-	}
-
-	var firstPass struct {
-		*getWebhooksWebhooksQueryWebhooksConnectionEdgesQueryWebhooksConnectionEdgeNodeProjectWebhook
-		graphql.NoUnmarshalJSON
-	}
-	firstPass.getWebhooksWebhooksQueryWebhooksConnectionEdgesQueryWebhooksConnectionEdgeNodeProjectWebhook = v
-
-	err := json.Unmarshal(b, &firstPass)
-	if err != nil {
-		return err
-	}
-
-	err = json.Unmarshal(
-		b, &v.ProjectWebhook)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-type __premarshalgetWebhooksWebhooksQueryWebhooksConnectionEdgesQueryWebhooksConnectionEdgeNodeProjectWebhook struct {
-	Id string `json:"id"`
-
-	Url string `json:"url"`
-
-	ProjectId string `json:"projectId"`
-
-	Filters []string `json:"filters"`
-
-	LastStatus int `json:"lastStatus"`
-}
-
-func (v *getWebhooksWebhooksQueryWebhooksConnectionEdgesQueryWebhooksConnectionEdgeNodeProjectWebhook) MarshalJSON() ([]byte, error) {
-	premarshaled, err := v.__premarshalJSON()
-	if err != nil {
-		return nil, err
-	}
-	return json.Marshal(premarshaled)
-}
-
-func (v *getWebhooksWebhooksQueryWebhooksConnectionEdgesQueryWebhooksConnectionEdgeNodeProjectWebhook) __premarshalJSON() (*__premarshalgetWebhooksWebhooksQueryWebhooksConnectionEdgesQueryWebhooksConnectionEdgeNodeProjectWebhook, error) {
-	var retval __premarshalgetWebhooksWebhooksQueryWebhooksConnectionEdgesQueryWebhooksConnectionEdgeNodeProjectWebhook
-
-	retval.Id = v.ProjectWebhook.Id
-	retval.Url = v.ProjectWebhook.Url
-	retval.ProjectId = v.ProjectWebhook.ProjectId
-	retval.Filters = v.ProjectWebhook.Filters
-	retval.LastStatus = v.ProjectWebhook.LastStatus
-	return &retval, nil
-}
 
 // listCustomDomainsDomainsAllDomains includes the requested fields of the GraphQL type AllDomains.
 type listCustomDomainsDomainsAllDomains struct {
@@ -5078,6 +6529,95 @@ func (v *redeployServiceInstanceResponse) GetServiceInstanceRedeploy() bool {
 	return v.ServiceInstanceRedeploy
 }
 
+// removeProjectMemberProjectMemberRemoveProjectMember includes the requested fields of the GraphQL type ProjectMember.
+type removeProjectMemberProjectMemberRemoveProjectMember struct {
+	ProjectMemberFields `json:"-"`
+}
+
+// GetId returns removeProjectMemberProjectMemberRemoveProjectMember.Id, and is useful for accessing the field via an interface.
+func (v *removeProjectMemberProjectMemberRemoveProjectMember) GetId() string {
+	return v.ProjectMemberFields.Id
+}
+
+// GetEmail returns removeProjectMemberProjectMemberRemoveProjectMember.Email, and is useful for accessing the field via an interface.
+func (v *removeProjectMemberProjectMemberRemoveProjectMember) GetEmail() string {
+	return v.ProjectMemberFields.Email
+}
+
+// GetName returns removeProjectMemberProjectMemberRemoveProjectMember.Name, and is useful for accessing the field via an interface.
+func (v *removeProjectMemberProjectMemberRemoveProjectMember) GetName() string {
+	return v.ProjectMemberFields.Name
+}
+
+// GetRole returns removeProjectMemberProjectMemberRemoveProjectMember.Role, and is useful for accessing the field via an interface.
+func (v *removeProjectMemberProjectMemberRemoveProjectMember) GetRole() ProjectRole {
+	return v.ProjectMemberFields.Role
+}
+
+func (v *removeProjectMemberProjectMemberRemoveProjectMember) UnmarshalJSON(b []byte) error {
+
+	if string(b) == "null" {
+		return nil
+	}
+
+	var firstPass struct {
+		*removeProjectMemberProjectMemberRemoveProjectMember
+		graphql.NoUnmarshalJSON
+	}
+	firstPass.removeProjectMemberProjectMemberRemoveProjectMember = v
+
+	err := json.Unmarshal(b, &firstPass)
+	if err != nil {
+		return err
+	}
+
+	err = json.Unmarshal(
+		b, &v.ProjectMemberFields)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+type __premarshalremoveProjectMemberProjectMemberRemoveProjectMember struct {
+	Id string `json:"id"`
+
+	Email string `json:"email"`
+
+	Name string `json:"name"`
+
+	Role ProjectRole `json:"role"`
+}
+
+func (v *removeProjectMemberProjectMemberRemoveProjectMember) MarshalJSON() ([]byte, error) {
+	premarshaled, err := v.__premarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(premarshaled)
+}
+
+func (v *removeProjectMemberProjectMemberRemoveProjectMember) __premarshalJSON() (*__premarshalremoveProjectMemberProjectMemberRemoveProjectMember, error) {
+	var retval __premarshalremoveProjectMemberProjectMemberRemoveProjectMember
+
+	retval.Id = v.ProjectMemberFields.Id
+	retval.Email = v.ProjectMemberFields.Email
+	retval.Name = v.ProjectMemberFields.Name
+	retval.Role = v.ProjectMemberFields.Role
+	return &retval, nil
+}
+
+// removeProjectMemberResponse is returned by removeProjectMember on success.
+type removeProjectMemberResponse struct {
+	// Remove user from a project
+	ProjectMemberRemove []removeProjectMemberProjectMemberRemoveProjectMember `json:"projectMemberRemove"`
+}
+
+// GetProjectMemberRemove returns removeProjectMemberResponse.ProjectMemberRemove, and is useful for accessing the field via an interface.
+func (v *removeProjectMemberResponse) GetProjectMemberRemove() []removeProjectMemberProjectMemberRemoveProjectMember {
+	return v.ProjectMemberRemove
+}
+
 // renameEnvironmentEnvironmentRenameEnvironment includes the requested fields of the GraphQL type Environment.
 type renameEnvironmentEnvironmentRenameEnvironment struct {
 	Environment `json:"-"`
@@ -5164,6 +6704,93 @@ type renamePrivateNetworkEndpointResponse struct {
 // GetPrivateNetworkEndpointRename returns renamePrivateNetworkEndpointResponse.PrivateNetworkEndpointRename, and is useful for accessing the field via an interface.
 func (v *renamePrivateNetworkEndpointResponse) GetPrivateNetworkEndpointRename() bool {
 	return v.PrivateNetworkEndpointRename
+}
+
+// updateBucketBucketUpdateBucket includes the requested fields of the GraphQL type Bucket.
+type updateBucketBucketUpdateBucket struct {
+	BucketFields `json:"-"`
+}
+
+// GetId returns updateBucketBucketUpdateBucket.Id, and is useful for accessing the field via an interface.
+func (v *updateBucketBucketUpdateBucket) GetId() string { return v.BucketFields.Id }
+
+// GetName returns updateBucketBucketUpdateBucket.Name, and is useful for accessing the field via an interface.
+func (v *updateBucketBucketUpdateBucket) GetName() string { return v.BucketFields.Name }
+
+// GetProjectId returns updateBucketBucketUpdateBucket.ProjectId, and is useful for accessing the field via an interface.
+func (v *updateBucketBucketUpdateBucket) GetProjectId() string { return v.BucketFields.ProjectId }
+
+// GetCreatedAt returns updateBucketBucketUpdateBucket.CreatedAt, and is useful for accessing the field via an interface.
+func (v *updateBucketBucketUpdateBucket) GetCreatedAt() time.Time { return v.BucketFields.CreatedAt }
+
+// GetUpdatedAt returns updateBucketBucketUpdateBucket.UpdatedAt, and is useful for accessing the field via an interface.
+func (v *updateBucketBucketUpdateBucket) GetUpdatedAt() time.Time { return v.BucketFields.UpdatedAt }
+
+func (v *updateBucketBucketUpdateBucket) UnmarshalJSON(b []byte) error {
+
+	if string(b) == "null" {
+		return nil
+	}
+
+	var firstPass struct {
+		*updateBucketBucketUpdateBucket
+		graphql.NoUnmarshalJSON
+	}
+	firstPass.updateBucketBucketUpdateBucket = v
+
+	err := json.Unmarshal(b, &firstPass)
+	if err != nil {
+		return err
+	}
+
+	err = json.Unmarshal(
+		b, &v.BucketFields)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+type __premarshalupdateBucketBucketUpdateBucket struct {
+	Id string `json:"id"`
+
+	Name string `json:"name"`
+
+	ProjectId string `json:"projectId"`
+
+	CreatedAt time.Time `json:"createdAt"`
+
+	UpdatedAt time.Time `json:"updatedAt"`
+}
+
+func (v *updateBucketBucketUpdateBucket) MarshalJSON() ([]byte, error) {
+	premarshaled, err := v.__premarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(premarshaled)
+}
+
+func (v *updateBucketBucketUpdateBucket) __premarshalJSON() (*__premarshalupdateBucketBucketUpdateBucket, error) {
+	var retval __premarshalupdateBucketBucketUpdateBucket
+
+	retval.Id = v.BucketFields.Id
+	retval.Name = v.BucketFields.Name
+	retval.ProjectId = v.BucketFields.ProjectId
+	retval.CreatedAt = v.BucketFields.CreatedAt
+	retval.UpdatedAt = v.BucketFields.UpdatedAt
+	return &retval, nil
+}
+
+// updateBucketResponse is returned by updateBucket on success.
+type updateBucketResponse struct {
+	// Updates a bucket.
+	BucketUpdate updateBucketBucketUpdateBucket `json:"bucketUpdate"`
+}
+
+// GetBucketUpdate returns updateBucketResponse.BucketUpdate, and is useful for accessing the field via an interface.
+func (v *updateBucketResponse) GetBucketUpdate() updateBucketBucketUpdateBucket {
+	return v.BucketUpdate
 }
 
 // updateCustomDomainResponse is returned by updateCustomDomain on success.
@@ -5294,6 +6921,208 @@ type updateDeploymentTriggerResponse struct {
 // GetDeploymentTriggerUpdate returns updateDeploymentTriggerResponse.DeploymentTriggerUpdate, and is useful for accessing the field via an interface.
 func (v *updateDeploymentTriggerResponse) GetDeploymentTriggerUpdate() updateDeploymentTriggerDeploymentTriggerUpdateDeploymentTrigger {
 	return v.DeploymentTriggerUpdate
+}
+
+// updateNotificationRuleNotificationRuleUpdateNotificationRule includes the requested fields of the GraphQL type NotificationRule.
+type updateNotificationRuleNotificationRuleUpdateNotificationRule struct {
+	NotificationRuleFields `json:"-"`
+}
+
+// GetId returns updateNotificationRuleNotificationRuleUpdateNotificationRule.Id, and is useful for accessing the field via an interface.
+func (v *updateNotificationRuleNotificationRuleUpdateNotificationRule) GetId() string {
+	return v.NotificationRuleFields.Id
+}
+
+// GetWorkspaceId returns updateNotificationRuleNotificationRuleUpdateNotificationRule.WorkspaceId, and is useful for accessing the field via an interface.
+func (v *updateNotificationRuleNotificationRuleUpdateNotificationRule) GetWorkspaceId() string {
+	return v.NotificationRuleFields.WorkspaceId
+}
+
+// GetProjectId returns updateNotificationRuleNotificationRuleUpdateNotificationRule.ProjectId, and is useful for accessing the field via an interface.
+func (v *updateNotificationRuleNotificationRuleUpdateNotificationRule) GetProjectId() string {
+	return v.NotificationRuleFields.ProjectId
+}
+
+// GetEventTypes returns updateNotificationRuleNotificationRuleUpdateNotificationRule.EventTypes, and is useful for accessing the field via an interface.
+func (v *updateNotificationRuleNotificationRuleUpdateNotificationRule) GetEventTypes() []string {
+	return v.NotificationRuleFields.EventTypes
+}
+
+// GetSeverities returns updateNotificationRuleNotificationRuleUpdateNotificationRule.Severities, and is useful for accessing the field via an interface.
+func (v *updateNotificationRuleNotificationRuleUpdateNotificationRule) GetSeverities() []NotificationSeverity {
+	return v.NotificationRuleFields.Severities
+}
+
+// GetEphemeralEnvironments returns updateNotificationRuleNotificationRuleUpdateNotificationRule.EphemeralEnvironments, and is useful for accessing the field via an interface.
+func (v *updateNotificationRuleNotificationRuleUpdateNotificationRule) GetEphemeralEnvironments() bool {
+	return v.NotificationRuleFields.EphemeralEnvironments
+}
+
+// GetChannels returns updateNotificationRuleNotificationRuleUpdateNotificationRule.Channels, and is useful for accessing the field via an interface.
+func (v *updateNotificationRuleNotificationRuleUpdateNotificationRule) GetChannels() []NotificationRuleFieldsChannelsNotificationChannel {
+	return v.NotificationRuleFields.Channels
+}
+
+func (v *updateNotificationRuleNotificationRuleUpdateNotificationRule) UnmarshalJSON(b []byte) error {
+
+	if string(b) == "null" {
+		return nil
+	}
+
+	var firstPass struct {
+		*updateNotificationRuleNotificationRuleUpdateNotificationRule
+		graphql.NoUnmarshalJSON
+	}
+	firstPass.updateNotificationRuleNotificationRuleUpdateNotificationRule = v
+
+	err := json.Unmarshal(b, &firstPass)
+	if err != nil {
+		return err
+	}
+
+	err = json.Unmarshal(
+		b, &v.NotificationRuleFields)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+type __premarshalupdateNotificationRuleNotificationRuleUpdateNotificationRule struct {
+	Id string `json:"id"`
+
+	WorkspaceId string `json:"workspaceId"`
+
+	ProjectId string `json:"projectId"`
+
+	EventTypes []string `json:"eventTypes"`
+
+	Severities []NotificationSeverity `json:"severities"`
+
+	EphemeralEnvironments bool `json:"ephemeralEnvironments"`
+
+	Channels []NotificationRuleFieldsChannelsNotificationChannel `json:"channels"`
+}
+
+func (v *updateNotificationRuleNotificationRuleUpdateNotificationRule) MarshalJSON() ([]byte, error) {
+	premarshaled, err := v.__premarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(premarshaled)
+}
+
+func (v *updateNotificationRuleNotificationRuleUpdateNotificationRule) __premarshalJSON() (*__premarshalupdateNotificationRuleNotificationRuleUpdateNotificationRule, error) {
+	var retval __premarshalupdateNotificationRuleNotificationRuleUpdateNotificationRule
+
+	retval.Id = v.NotificationRuleFields.Id
+	retval.WorkspaceId = v.NotificationRuleFields.WorkspaceId
+	retval.ProjectId = v.NotificationRuleFields.ProjectId
+	retval.EventTypes = v.NotificationRuleFields.EventTypes
+	retval.Severities = v.NotificationRuleFields.Severities
+	retval.EphemeralEnvironments = v.NotificationRuleFields.EphemeralEnvironments
+	retval.Channels = v.NotificationRuleFields.Channels
+	return &retval, nil
+}
+
+// updateNotificationRuleResponse is returned by updateNotificationRule on success.
+type updateNotificationRuleResponse struct {
+	// Update a notification rule
+	NotificationRuleUpdate updateNotificationRuleNotificationRuleUpdateNotificationRule `json:"notificationRuleUpdate"`
+}
+
+// GetNotificationRuleUpdate returns updateNotificationRuleResponse.NotificationRuleUpdate, and is useful for accessing the field via an interface.
+func (v *updateNotificationRuleResponse) GetNotificationRuleUpdate() updateNotificationRuleNotificationRuleUpdateNotificationRule {
+	return v.NotificationRuleUpdate
+}
+
+// updateProjectMemberProjectMemberUpdateProjectMember includes the requested fields of the GraphQL type ProjectMember.
+type updateProjectMemberProjectMemberUpdateProjectMember struct {
+	ProjectMemberFields `json:"-"`
+}
+
+// GetId returns updateProjectMemberProjectMemberUpdateProjectMember.Id, and is useful for accessing the field via an interface.
+func (v *updateProjectMemberProjectMemberUpdateProjectMember) GetId() string {
+	return v.ProjectMemberFields.Id
+}
+
+// GetEmail returns updateProjectMemberProjectMemberUpdateProjectMember.Email, and is useful for accessing the field via an interface.
+func (v *updateProjectMemberProjectMemberUpdateProjectMember) GetEmail() string {
+	return v.ProjectMemberFields.Email
+}
+
+// GetName returns updateProjectMemberProjectMemberUpdateProjectMember.Name, and is useful for accessing the field via an interface.
+func (v *updateProjectMemberProjectMemberUpdateProjectMember) GetName() string {
+	return v.ProjectMemberFields.Name
+}
+
+// GetRole returns updateProjectMemberProjectMemberUpdateProjectMember.Role, and is useful for accessing the field via an interface.
+func (v *updateProjectMemberProjectMemberUpdateProjectMember) GetRole() ProjectRole {
+	return v.ProjectMemberFields.Role
+}
+
+func (v *updateProjectMemberProjectMemberUpdateProjectMember) UnmarshalJSON(b []byte) error {
+
+	if string(b) == "null" {
+		return nil
+	}
+
+	var firstPass struct {
+		*updateProjectMemberProjectMemberUpdateProjectMember
+		graphql.NoUnmarshalJSON
+	}
+	firstPass.updateProjectMemberProjectMemberUpdateProjectMember = v
+
+	err := json.Unmarshal(b, &firstPass)
+	if err != nil {
+		return err
+	}
+
+	err = json.Unmarshal(
+		b, &v.ProjectMemberFields)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+type __premarshalupdateProjectMemberProjectMemberUpdateProjectMember struct {
+	Id string `json:"id"`
+
+	Email string `json:"email"`
+
+	Name string `json:"name"`
+
+	Role ProjectRole `json:"role"`
+}
+
+func (v *updateProjectMemberProjectMemberUpdateProjectMember) MarshalJSON() ([]byte, error) {
+	premarshaled, err := v.__premarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(premarshaled)
+}
+
+func (v *updateProjectMemberProjectMemberUpdateProjectMember) __premarshalJSON() (*__premarshalupdateProjectMemberProjectMemberUpdateProjectMember, error) {
+	var retval __premarshalupdateProjectMemberProjectMemberUpdateProjectMember
+
+	retval.Id = v.ProjectMemberFields.Id
+	retval.Email = v.ProjectMemberFields.Email
+	retval.Name = v.ProjectMemberFields.Name
+	retval.Role = v.ProjectMemberFields.Role
+	return &retval, nil
+}
+
+// updateProjectMemberResponse is returned by updateProjectMember on success.
+type updateProjectMemberResponse struct {
+	// Change the role for a user within a project
+	ProjectMemberUpdate updateProjectMemberProjectMemberUpdateProjectMember `json:"projectMemberUpdate"`
+}
+
+// GetProjectMemberUpdate returns updateProjectMemberResponse.ProjectMemberUpdate, and is useful for accessing the field via an interface.
+func (v *updateProjectMemberResponse) GetProjectMemberUpdate() updateProjectMemberProjectMemberUpdateProjectMember {
+	return v.ProjectMemberUpdate
 }
 
 // updateProjectProjectUpdateProject includes the requested fields of the GraphQL type Project.
@@ -5613,99 +7442,6 @@ func (v *updateVolumeVolumeUpdateVolume) __premarshalJSON() (*__premarshalupdate
 	return &retval, nil
 }
 
-// updateWebhookResponse is returned by updateWebhook on success.
-type updateWebhookResponse struct {
-	// Update a webhook on a project
-	WebhookUpdate updateWebhookWebhookUpdateProjectWebhook `json:"webhookUpdate"`
-}
-
-// GetWebhookUpdate returns updateWebhookResponse.WebhookUpdate, and is useful for accessing the field via an interface.
-func (v *updateWebhookResponse) GetWebhookUpdate() updateWebhookWebhookUpdateProjectWebhook {
-	return v.WebhookUpdate
-}
-
-// updateWebhookWebhookUpdateProjectWebhook includes the requested fields of the GraphQL type ProjectWebhook.
-type updateWebhookWebhookUpdateProjectWebhook struct {
-	ProjectWebhook `json:"-"`
-}
-
-// GetId returns updateWebhookWebhookUpdateProjectWebhook.Id, and is useful for accessing the field via an interface.
-func (v *updateWebhookWebhookUpdateProjectWebhook) GetId() string { return v.ProjectWebhook.Id }
-
-// GetUrl returns updateWebhookWebhookUpdateProjectWebhook.Url, and is useful for accessing the field via an interface.
-func (v *updateWebhookWebhookUpdateProjectWebhook) GetUrl() string { return v.ProjectWebhook.Url }
-
-// GetProjectId returns updateWebhookWebhookUpdateProjectWebhook.ProjectId, and is useful for accessing the field via an interface.
-func (v *updateWebhookWebhookUpdateProjectWebhook) GetProjectId() string {
-	return v.ProjectWebhook.ProjectId
-}
-
-// GetFilters returns updateWebhookWebhookUpdateProjectWebhook.Filters, and is useful for accessing the field via an interface.
-func (v *updateWebhookWebhookUpdateProjectWebhook) GetFilters() []string {
-	return v.ProjectWebhook.Filters
-}
-
-// GetLastStatus returns updateWebhookWebhookUpdateProjectWebhook.LastStatus, and is useful for accessing the field via an interface.
-func (v *updateWebhookWebhookUpdateProjectWebhook) GetLastStatus() int {
-	return v.ProjectWebhook.LastStatus
-}
-
-func (v *updateWebhookWebhookUpdateProjectWebhook) UnmarshalJSON(b []byte) error {
-
-	if string(b) == "null" {
-		return nil
-	}
-
-	var firstPass struct {
-		*updateWebhookWebhookUpdateProjectWebhook
-		graphql.NoUnmarshalJSON
-	}
-	firstPass.updateWebhookWebhookUpdateProjectWebhook = v
-
-	err := json.Unmarshal(b, &firstPass)
-	if err != nil {
-		return err
-	}
-
-	err = json.Unmarshal(
-		b, &v.ProjectWebhook)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-type __premarshalupdateWebhookWebhookUpdateProjectWebhook struct {
-	Id string `json:"id"`
-
-	Url string `json:"url"`
-
-	ProjectId string `json:"projectId"`
-
-	Filters []string `json:"filters"`
-
-	LastStatus int `json:"lastStatus"`
-}
-
-func (v *updateWebhookWebhookUpdateProjectWebhook) MarshalJSON() ([]byte, error) {
-	premarshaled, err := v.__premarshalJSON()
-	if err != nil {
-		return nil, err
-	}
-	return json.Marshal(premarshaled)
-}
-
-func (v *updateWebhookWebhookUpdateProjectWebhook) __premarshalJSON() (*__premarshalupdateWebhookWebhookUpdateProjectWebhook, error) {
-	var retval __premarshalupdateWebhookWebhookUpdateProjectWebhook
-
-	retval.Id = v.ProjectWebhook.Id
-	retval.Url = v.ProjectWebhook.Url
-	retval.ProjectId = v.ProjectWebhook.ProjectId
-	retval.Filters = v.ProjectWebhook.Filters
-	retval.LastStatus = v.ProjectWebhook.LastStatus
-	return &retval, nil
-}
-
 // upsertVariableCollectionResponse is returned by upsertVariableCollection on success.
 type upsertVariableCollectionResponse struct {
 	// Upserts a collection of variables.
@@ -5725,6 +7461,44 @@ type upsertVariableResponse struct {
 
 // GetVariableUpsert returns upsertVariableResponse.VariableUpsert, and is useful for accessing the field via an interface.
 func (v *upsertVariableResponse) GetVariableUpsert() bool { return v.VariableUpsert }
+
+func addProjectMember(
+	ctx context.Context,
+	client graphql.Client,
+	input ProjectMemberAddInput,
+) (*addProjectMemberResponse, error) {
+	req := &graphql.Request{
+		OpName: "addProjectMember",
+		Query: `
+mutation addProjectMember ($input: ProjectMemberAddInput!) {
+	projectMemberAdd(input: $input) {
+		... ProjectMemberFields
+	}
+}
+fragment ProjectMemberFields on ProjectMember {
+	id
+	email
+	name
+	role
+}
+`,
+		Variables: &__addProjectMemberInput{
+			Input: input,
+		},
+	}
+	var err error
+
+	var data addProjectMemberResponse
+	resp := &graphql.Response{Data: &data}
+
+	err = client.MakeRequest(
+		ctx,
+		req,
+		resp,
+	)
+
+	return &data, err
+}
 
 func clearEgressGateways(
 	ctx context.Context,
@@ -5784,6 +7558,45 @@ fragment Service on Service {
 	var err error
 
 	var data connectServiceResponse
+	resp := &graphql.Response{Data: &data}
+
+	err = client.MakeRequest(
+		ctx,
+		req,
+		resp,
+	)
+
+	return &data, err
+}
+
+func createBucket(
+	ctx context.Context,
+	client graphql.Client,
+	input BucketCreateInput,
+) (*createBucketResponse, error) {
+	req := &graphql.Request{
+		OpName: "createBucket",
+		Query: `
+mutation createBucket ($input: BucketCreateInput!) {
+	bucketCreate(input: $input) {
+		... BucketFields
+	}
+}
+fragment BucketFields on Bucket {
+	id
+	name
+	projectId
+	createdAt
+	updatedAt
+}
+`,
+		Variables: &__createBucketInput{
+			Input: input,
+		},
+	}
+	var err error
+
+	var data createBucketResponse
 	resp := &graphql.Response{Data: &data}
 
 	err = client.MakeRequest(
@@ -5956,6 +7769,50 @@ fragment Environment on Environment {
 	return &data, err
 }
 
+func createNotificationRule(
+	ctx context.Context,
+	client graphql.Client,
+	input CreateNotificationRuleInput,
+) (*createNotificationRuleResponse, error) {
+	req := &graphql.Request{
+		OpName: "createNotificationRule",
+		Query: `
+mutation createNotificationRule ($input: CreateNotificationRuleInput!) {
+	notificationRuleCreate(input: $input) {
+		... NotificationRuleFields
+	}
+}
+fragment NotificationRuleFields on NotificationRule {
+	id
+	workspaceId
+	projectId
+	eventTypes
+	severities
+	ephemeralEnvironments
+	channels {
+		id
+		config
+	}
+}
+`,
+		Variables: &__createNotificationRuleInput{
+			Input: input,
+		},
+	}
+	var err error
+
+	var data createNotificationRuleResponse
+	resp := &graphql.Response{Data: &data}
+
+	err = client.MakeRequest(
+		ctx,
+		req,
+		resp,
+	)
+
+	return &data, err
+}
+
 func createOrGetPrivateNetwork(
 	ctx context.Context,
 	client graphql.Client,
@@ -6087,6 +7944,36 @@ fragment Project on Project {
 	return &data, err
 }
 
+func createProjectToken(
+	ctx context.Context,
+	client graphql.Client,
+	input ProjectTokenCreateInput,
+) (*createProjectTokenResponse, error) {
+	req := &graphql.Request{
+		OpName: "createProjectToken",
+		Query: `
+mutation createProjectToken ($input: ProjectTokenCreateInput!) {
+	projectTokenCreate(input: $input)
+}
+`,
+		Variables: &__createProjectTokenInput{
+			Input: input,
+		},
+	}
+	var err error
+
+	var data createProjectTokenResponse
+	resp := &graphql.Response{Data: &data}
+
+	err = client.MakeRequest(
+		ctx,
+		req,
+		resp,
+	)
+
+	return &data, err
+}
+
 func createService(
 	ctx context.Context,
 	client graphql.Client,
@@ -6163,6 +8050,46 @@ fragment ServiceDomain on ServiceDomain {
 	return &data, err
 }
 
+func createSshPublicKey(
+	ctx context.Context,
+	client graphql.Client,
+	input SshPublicKeyCreateInput,
+) (*createSshPublicKeyResponse, error) {
+	req := &graphql.Request{
+		OpName: "createSshPublicKey",
+		Query: `
+mutation createSshPublicKey ($input: SshPublicKeyCreateInput!) {
+	sshPublicKeyCreate(input: $input) {
+		... SshPublicKeyFields
+	}
+}
+fragment SshPublicKeyFields on SshPublicKey {
+	id
+	name
+	publicKey
+	fingerprint
+	workspaceId
+	userId
+}
+`,
+		Variables: &__createSshPublicKeyInput{
+			Input: input,
+		},
+	}
+	var err error
+
+	var data createSshPublicKeyResponse
+	resp := &graphql.Response{Data: &data}
+
+	err = client.MakeRequest(
+		ctx,
+		req,
+		resp,
+	)
+
+	return &data, err
+}
+
 func createTcpProxy(
 	ctx context.Context,
 	client graphql.Client,
@@ -6203,6 +8130,45 @@ fragment TCPProxy on TCPProxy {
 	return &data, err
 }
 
+func createTrustedDomain(
+	ctx context.Context,
+	client graphql.Client,
+	input WorkspaceTrustedDomainCreateInput,
+) (*createTrustedDomainResponse, error) {
+	req := &graphql.Request{
+		OpName: "createTrustedDomain",
+		Query: `
+mutation createTrustedDomain ($input: WorkspaceTrustedDomainCreateInput!) {
+	trustedDomainCreate(input: $input) {
+		... TrustedDomainFields
+	}
+}
+fragment TrustedDomainFields on TrustedDomain {
+	id
+	domainName
+	role
+	status
+	workspaceId
+}
+`,
+		Variables: &__createTrustedDomainInput{
+			Input: input,
+		},
+	}
+	var err error
+
+	var data createTrustedDomainResponse
+	resp := &graphql.Response{Data: &data}
+
+	err = client.MakeRequest(
+		ctx,
+		req,
+		resp,
+	)
+
+	return &data, err
+}
+
 func createVolume(
 	ctx context.Context,
 	client graphql.Client,
@@ -6227,6 +8193,7 @@ fragment Volume on Volume {
 				serviceId
 				mountPath
 				sizeMB
+				state
 			}
 		}
 	}
@@ -6239,45 +8206,6 @@ fragment Volume on Volume {
 	var err error
 
 	var data createVolumeResponse
-	resp := &graphql.Response{Data: &data}
-
-	err = client.MakeRequest(
-		ctx,
-		req,
-		resp,
-	)
-
-	return &data, err
-}
-
-func createWebhook(
-	ctx context.Context,
-	client graphql.Client,
-	input WebhookCreateInput,
-) (*createWebhookResponse, error) {
-	req := &graphql.Request{
-		OpName: "createWebhook",
-		Query: `
-mutation createWebhook ($input: WebhookCreateInput!) {
-	webhookCreate(input: $input) {
-		... ProjectWebhook
-	}
-}
-fragment ProjectWebhook on ProjectWebhook {
-	id
-	url
-	projectId
-	filters
-	lastStatus
-}
-`,
-		Variables: &__createWebhookInput{
-			Input: input,
-		},
-	}
-	var err error
-
-	var data createWebhookResponse
 	resp := &graphql.Response{Data: &data}
 
 	err = client.MakeRequest(
@@ -6379,6 +8307,36 @@ mutation deleteEnvironment ($id: String!) {
 	return &data, err
 }
 
+func deleteNotificationRule(
+	ctx context.Context,
+	client graphql.Client,
+	id string,
+) (*deleteNotificationRuleResponse, error) {
+	req := &graphql.Request{
+		OpName: "deleteNotificationRule",
+		Query: `
+mutation deleteNotificationRule ($id: String!) {
+	notificationRuleDelete(id: $id)
+}
+`,
+		Variables: &__deleteNotificationRuleInput{
+			Id: id,
+		},
+	}
+	var err error
+
+	var data deleteNotificationRuleResponse
+	resp := &graphql.Response{Data: &data}
+
+	err = client.MakeRequest(
+		ctx,
+		req,
+		resp,
+	)
+
+	return &data, err
+}
+
 func deletePrivateNetworkEndpoint(
 	ctx context.Context,
 	client graphql.Client,
@@ -6469,6 +8427,36 @@ mutation deleteProject ($id: String!) {
 	return &data, err
 }
 
+func deleteProjectToken(
+	ctx context.Context,
+	client graphql.Client,
+	id string,
+) (*deleteProjectTokenResponse, error) {
+	req := &graphql.Request{
+		OpName: "deleteProjectToken",
+		Query: `
+mutation deleteProjectToken ($id: String!) {
+	projectTokenDelete(id: $id)
+}
+`,
+		Variables: &__deleteProjectTokenInput{
+			Id: id,
+		},
+	}
+	var err error
+
+	var data deleteProjectTokenResponse
+	resp := &graphql.Response{Data: &data}
+
+	err = client.MakeRequest(
+		ctx,
+		req,
+		resp,
+	)
+
+	return &data, err
+}
+
 func deleteService(
 	ctx context.Context,
 	client graphql.Client,
@@ -6529,6 +8517,36 @@ mutation deleteServiceDomain ($id: String!) {
 	return &data, err
 }
 
+func deleteSshPublicKey(
+	ctx context.Context,
+	client graphql.Client,
+	id string,
+) (*deleteSshPublicKeyResponse, error) {
+	req := &graphql.Request{
+		OpName: "deleteSshPublicKey",
+		Query: `
+mutation deleteSshPublicKey ($id: String!) {
+	sshPublicKeyDelete(id: $id)
+}
+`,
+		Variables: &__deleteSshPublicKeyInput{
+			Id: id,
+		},
+	}
+	var err error
+
+	var data deleteSshPublicKeyResponse
+	resp := &graphql.Response{Data: &data}
+
+	err = client.MakeRequest(
+		ctx,
+		req,
+		resp,
+	)
+
+	return &data, err
+}
+
 func deleteTcpProxy(
 	ctx context.Context,
 	client graphql.Client,
@@ -6548,6 +8566,36 @@ mutation deleteTcpProxy ($id: String!) {
 	var err error
 
 	var data deleteTcpProxyResponse
+	resp := &graphql.Response{Data: &data}
+
+	err = client.MakeRequest(
+		ctx,
+		req,
+		resp,
+	)
+
+	return &data, err
+}
+
+func deleteTrustedDomain(
+	ctx context.Context,
+	client graphql.Client,
+	id string,
+) (*deleteTrustedDomainResponse, error) {
+	req := &graphql.Request{
+		OpName: "deleteTrustedDomain",
+		Query: `
+mutation deleteTrustedDomain ($id: String!) {
+	trustedDomainDelete(id: $id)
+}
+`,
+		Variables: &__deleteTrustedDomainInput{
+			Id: id,
+		},
+	}
+	var err error
+
+	var data deleteTrustedDomainResponse
 	resp := &graphql.Response{Data: &data}
 
 	err = client.MakeRequest(
@@ -6608,36 +8656,6 @@ mutation deleteVolume ($id: String!) {
 	var err error
 
 	var data deleteVolumeResponse
-	resp := &graphql.Response{Data: &data}
-
-	err = client.MakeRequest(
-		ctx,
-		req,
-		resp,
-	)
-
-	return &data, err
-}
-
-func deleteWebhook(
-	ctx context.Context,
-	client graphql.Client,
-	id string,
-) (*deleteWebhookResponse, error) {
-	req := &graphql.Request{
-		OpName: "deleteWebhook",
-		Query: `
-mutation deleteWebhook ($id: String!) {
-	webhookDelete(id: $id)
-}
-`,
-		Variables: &__deleteWebhookInput{
-			Id: id,
-		},
-	}
-	var err error
-
-	var data deleteWebhookResponse
 	resp := &graphql.Response{Data: &data}
 
 	err = client.MakeRequest(
@@ -6881,6 +8899,52 @@ fragment Environment on Environment {
 	return &data, err
 }
 
+func getNotificationRules(
+	ctx context.Context,
+	client graphql.Client,
+	workspaceId string,
+	projectId string,
+) (*getNotificationRulesResponse, error) {
+	req := &graphql.Request{
+		OpName: "getNotificationRules",
+		Query: `
+query getNotificationRules ($workspaceId: String!, $projectId: String) {
+	notificationRules(workspaceId: $workspaceId, projectId: $projectId) {
+		... NotificationRuleFields
+	}
+}
+fragment NotificationRuleFields on NotificationRule {
+	id
+	workspaceId
+	projectId
+	eventTypes
+	severities
+	ephemeralEnvironments
+	channels {
+		id
+		config
+	}
+}
+`,
+		Variables: &__getNotificationRulesInput{
+			WorkspaceId: workspaceId,
+			ProjectId:   projectId,
+		},
+	}
+	var err error
+
+	var data getNotificationRulesResponse
+	resp := &graphql.Response{Data: &data}
+
+	err = client.MakeRequest(
+		ctx,
+		req,
+		resp,
+	)
+
+	return &data, err
+}
+
 func getPrivateNetworkEndpoint(
 	ctx context.Context,
 	client graphql.Client,
@@ -7016,6 +9080,89 @@ fragment Project on Project {
 	return &data, err
 }
 
+func getProjectBuckets(
+	ctx context.Context,
+	client graphql.Client,
+	projectId string,
+) (*getProjectBucketsResponse, error) {
+	req := &graphql.Request{
+		OpName: "getProjectBuckets",
+		Query: `
+query getProjectBuckets ($projectId: String!) {
+	project(id: $projectId) {
+		buckets(first: 1000) {
+			edges {
+				node {
+					... BucketFields
+				}
+			}
+		}
+	}
+}
+fragment BucketFields on Bucket {
+	id
+	name
+	projectId
+	createdAt
+	updatedAt
+}
+`,
+		Variables: &__getProjectBucketsInput{
+			ProjectId: projectId,
+		},
+	}
+	var err error
+
+	var data getProjectBucketsResponse
+	resp := &graphql.Response{Data: &data}
+
+	err = client.MakeRequest(
+		ctx,
+		req,
+		resp,
+	)
+
+	return &data, err
+}
+
+func getProjectMembers(
+	ctx context.Context,
+	client graphql.Client,
+	projectId string,
+) (*getProjectMembersResponse, error) {
+	req := &graphql.Request{
+		OpName: "getProjectMembers",
+		Query: `
+query getProjectMembers ($projectId: String!) {
+	projectMembers(projectId: $projectId) {
+		... ProjectMemberFields
+	}
+}
+fragment ProjectMemberFields on ProjectMember {
+	id
+	email
+	name
+	role
+}
+`,
+		Variables: &__getProjectMembersInput{
+			ProjectId: projectId,
+		},
+	}
+	var err error
+
+	var data getProjectMembersResponse
+	resp := &graphql.Response{Data: &data}
+
+	err = client.MakeRequest(
+		ctx,
+		req,
+		resp,
+	)
+
+	return &data, err
+}
+
 func getProjectServices(
 	ctx context.Context,
 	client graphql.Client,
@@ -7044,6 +9191,48 @@ query getProjectServices ($projectId: String!) {
 	var err error
 
 	var data getProjectServicesResponse
+	resp := &graphql.Response{Data: &data}
+
+	err = client.MakeRequest(
+		ctx,
+		req,
+		resp,
+	)
+
+	return &data, err
+}
+
+func getProjectTokens(
+	ctx context.Context,
+	client graphql.Client,
+	projectId string,
+) (*getProjectTokensResponse, error) {
+	req := &graphql.Request{
+		OpName: "getProjectTokens",
+		Query: `
+query getProjectTokens ($projectId: String!) {
+	projectTokens(projectId: $projectId, first: 1000) {
+		edges {
+			node {
+				... ProjectTokenFields
+			}
+		}
+	}
+}
+fragment ProjectTokenFields on ProjectToken {
+	id
+	name
+	projectId
+	environmentId
+}
+`,
+		Variables: &__getProjectTokensInput{
+			ProjectId: projectId,
+		},
+	}
+	var err error
+
+	var data getProjectTokensResponse
 	resp := &graphql.Response{Data: &data}
 
 	err = client.MakeRequest(
@@ -7263,6 +9452,50 @@ query getSharedVariables ($projectId: String!, $environmentId: String!) {
 	return &data, err
 }
 
+func getSshPublicKeys(
+	ctx context.Context,
+	client graphql.Client,
+	workspaceId string,
+) (*getSshPublicKeysResponse, error) {
+	req := &graphql.Request{
+		OpName: "getSshPublicKeys",
+		Query: `
+query getSshPublicKeys ($workspaceId: String) {
+	sshPublicKeys(workspaceId: $workspaceId, first: 1000) {
+		edges {
+			node {
+				... SshPublicKeyFields
+			}
+		}
+	}
+}
+fragment SshPublicKeyFields on SshPublicKey {
+	id
+	name
+	publicKey
+	fingerprint
+	workspaceId
+	userId
+}
+`,
+		Variables: &__getSshPublicKeysInput{
+			WorkspaceId: workspaceId,
+		},
+	}
+	var err error
+
+	var data getSshPublicKeysResponse
+	resp := &graphql.Response{Data: &data}
+
+	err = client.MakeRequest(
+		ctx,
+		req,
+		resp,
+	)
+
+	return &data, err
+}
+
 func getTcpProxy(
 	ctx context.Context,
 	client graphql.Client,
@@ -7294,6 +9527,49 @@ fragment TCPProxy on TCPProxy {
 	var err error
 
 	var data getTcpProxyResponse
+	resp := &graphql.Response{Data: &data}
+
+	err = client.MakeRequest(
+		ctx,
+		req,
+		resp,
+	)
+
+	return &data, err
+}
+
+func getTrustedDomains(
+	ctx context.Context,
+	client graphql.Client,
+	workspaceId string,
+) (*getTrustedDomainsResponse, error) {
+	req := &graphql.Request{
+		OpName: "getTrustedDomains",
+		Query: `
+query getTrustedDomains ($workspaceId: String!) {
+	trustedDomains(workspaceId: $workspaceId, first: 1000) {
+		edges {
+			node {
+				... TrustedDomainFields
+			}
+		}
+	}
+}
+fragment TrustedDomainFields on TrustedDomain {
+	id
+	domainName
+	role
+	status
+	workspaceId
+}
+`,
+		Variables: &__getTrustedDomainsInput{
+			WorkspaceId: workspaceId,
+		},
+	}
+	var err error
+
+	var data getTrustedDomainsResponse
 	resp := &graphql.Response{Data: &data}
 
 	err = client.MakeRequest(
@@ -7408,6 +9684,7 @@ fragment Volume on Volume {
 				serviceId
 				mountPath
 				sizeMB
+				state
 			}
 		}
 	}
@@ -7420,49 +9697,6 @@ fragment Volume on Volume {
 	var err error
 
 	var data getVolumeInstancesResponse
-	resp := &graphql.Response{Data: &data}
-
-	err = client.MakeRequest(
-		ctx,
-		req,
-		resp,
-	)
-
-	return &data, err
-}
-
-func getWebhooks(
-	ctx context.Context,
-	client graphql.Client,
-	projectId string,
-) (*getWebhooksResponse, error) {
-	req := &graphql.Request{
-		OpName: "getWebhooks",
-		Query: `
-query getWebhooks ($projectId: String!) {
-	webhooks(projectId: $projectId) {
-		edges {
-			node {
-				... ProjectWebhook
-			}
-		}
-	}
-}
-fragment ProjectWebhook on ProjectWebhook {
-	id
-	url
-	projectId
-	filters
-	lastStatus
-}
-`,
-		Variables: &__getWebhooksInput{
-			ProjectId: projectId,
-		},
-	}
-	var err error
-
-	var data getWebhooksResponse
 	resp := &graphql.Response{Data: &data}
 
 	err = client.MakeRequest(
@@ -7678,6 +9912,44 @@ mutation redeployServiceInstance ($environmentId: String!, $serviceId: String!) 
 	return &data, err
 }
 
+func removeProjectMember(
+	ctx context.Context,
+	client graphql.Client,
+	input ProjectMemberRemoveInput,
+) (*removeProjectMemberResponse, error) {
+	req := &graphql.Request{
+		OpName: "removeProjectMember",
+		Query: `
+mutation removeProjectMember ($input: ProjectMemberRemoveInput!) {
+	projectMemberRemove(input: $input) {
+		... ProjectMemberFields
+	}
+}
+fragment ProjectMemberFields on ProjectMember {
+	id
+	email
+	name
+	role
+}
+`,
+		Variables: &__removeProjectMemberInput{
+			Input: input,
+		},
+	}
+	var err error
+
+	var data removeProjectMemberResponse
+	resp := &graphql.Response{Data: &data}
+
+	err = client.MakeRequest(
+		ctx,
+		req,
+		resp,
+	)
+
+	return &data, err
+}
+
 func renameEnvironment(
 	ctx context.Context,
 	client graphql.Client,
@@ -7740,6 +10012,47 @@ mutation renamePrivateNetworkEndpoint ($dnsName: String!, $id: String!, $private
 	var err error
 
 	var data renamePrivateNetworkEndpointResponse
+	resp := &graphql.Response{Data: &data}
+
+	err = client.MakeRequest(
+		ctx,
+		req,
+		resp,
+	)
+
+	return &data, err
+}
+
+func updateBucket(
+	ctx context.Context,
+	client graphql.Client,
+	id string,
+	input BucketUpdateInput,
+) (*updateBucketResponse, error) {
+	req := &graphql.Request{
+		OpName: "updateBucket",
+		Query: `
+mutation updateBucket ($id: String!, $input: BucketUpdateInput!) {
+	bucketUpdate(id: $id, input: $input) {
+		... BucketFields
+	}
+}
+fragment BucketFields on Bucket {
+	id
+	name
+	projectId
+	createdAt
+	updatedAt
+}
+`,
+		Variables: &__updateBucketInput{
+			Id:    id,
+			Input: input,
+		},
+	}
+	var err error
+
+	var data updateBucketResponse
 	resp := &graphql.Response{Data: &data}
 
 	err = client.MakeRequest(
@@ -7829,6 +10142,52 @@ fragment DeploymentTrigger on DeploymentTrigger {
 	return &data, err
 }
 
+func updateNotificationRule(
+	ctx context.Context,
+	client graphql.Client,
+	id string,
+	input UpdateNotificationRuleInput,
+) (*updateNotificationRuleResponse, error) {
+	req := &graphql.Request{
+		OpName: "updateNotificationRule",
+		Query: `
+mutation updateNotificationRule ($id: String!, $input: UpdateNotificationRuleInput!) {
+	notificationRuleUpdate(id: $id, input: $input) {
+		... NotificationRuleFields
+	}
+}
+fragment NotificationRuleFields on NotificationRule {
+	id
+	workspaceId
+	projectId
+	eventTypes
+	severities
+	ephemeralEnvironments
+	channels {
+		id
+		config
+	}
+}
+`,
+		Variables: &__updateNotificationRuleInput{
+			Id:    id,
+			Input: input,
+		},
+	}
+	var err error
+
+	var data updateNotificationRuleResponse
+	resp := &graphql.Response{Data: &data}
+
+	err = client.MakeRequest(
+		ctx,
+		req,
+		resp,
+	)
+
+	return &data, err
+}
+
 func updateProject(
 	ctx context.Context,
 	client graphql.Client,
@@ -7871,6 +10230,44 @@ fragment Project on Project {
 	var err error
 
 	var data updateProjectResponse
+	resp := &graphql.Response{Data: &data}
+
+	err = client.MakeRequest(
+		ctx,
+		req,
+		resp,
+	)
+
+	return &data, err
+}
+
+func updateProjectMember(
+	ctx context.Context,
+	client graphql.Client,
+	input ProjectMemberUpdateInput,
+) (*updateProjectMemberResponse, error) {
+	req := &graphql.Request{
+		OpName: "updateProjectMember",
+		Query: `
+mutation updateProjectMember ($input: ProjectMemberUpdateInput!) {
+	projectMemberUpdate(input: $input) {
+		... ProjectMemberFields
+	}
+}
+fragment ProjectMemberFields on ProjectMember {
+	id
+	email
+	name
+	role
+}
+`,
+		Variables: &__updateProjectMemberInput{
+			Input: input,
+		},
+	}
+	var err error
+
+	var data updateProjectMemberResponse
 	resp := &graphql.Response{Data: &data}
 
 	err = client.MakeRequest(
@@ -8072,6 +10469,7 @@ fragment Volume on Volume {
 				serviceId
 				mountPath
 				sizeMB
+				state
 			}
 		}
 	}
@@ -8149,47 +10547,6 @@ mutation updateVolumeInstanceBackupSchedule ($kinds: [VolumeInstanceBackupSchedu
 	var err error
 
 	var data updateVolumeInstanceBackupScheduleResponse
-	resp := &graphql.Response{Data: &data}
-
-	err = client.MakeRequest(
-		ctx,
-		req,
-		resp,
-	)
-
-	return &data, err
-}
-
-func updateWebhook(
-	ctx context.Context,
-	client graphql.Client,
-	id string,
-	input WebhookUpdateInput,
-) (*updateWebhookResponse, error) {
-	req := &graphql.Request{
-		OpName: "updateWebhook",
-		Query: `
-mutation updateWebhook ($id: String!, $input: WebhookUpdateInput!) {
-	webhookUpdate(id: $id, input: $input) {
-		... ProjectWebhook
-	}
-}
-fragment ProjectWebhook on ProjectWebhook {
-	id
-	url
-	projectId
-	filters
-	lastStatus
-}
-`,
-		Variables: &__updateWebhookInput{
-			Id:    id,
-			Input: input,
-		},
-	}
-	var err error
-
-	var data updateWebhookResponse
 	resp := &graphql.Response{Data: &data}
 
 	err = client.MakeRequest(

@@ -634,6 +634,7 @@ func (r *ServiceResource) Update(ctx context.Context, req resource.UpdateRequest
 	tflog.Debug(ctx, "updated service settings")
 
 	// Delete volume if it was removed
+	volumeDeleted := false
 	if data.Volume.IsNull() && !state.Volume.IsNull() {
 		resp.Diagnostics.Append(state.Volume.As(ctx, &volumeState, basetypes.ObjectAsOptions{})...)
 
@@ -648,6 +649,7 @@ func (r *ServiceResource) Update(ctx context.Context, req resource.UpdateRequest
 			return
 		}
 
+		volumeDeleted = true
 		tflog.Debug(ctx, "deleted a volume")
 	}
 
@@ -779,11 +781,16 @@ func (r *ServiceResource) Update(ctx context.Context, req resource.UpdateRequest
 		return
 	}
 
-	err = getAndBuildVolumeInstance(ctx, *r.client, data.ProjectId.ValueString(), data.Id.ValueString(), data)
+	// Skip volume readback if we just deleted it. Railway's volumeDelete API
+	// retains volumes for data protection, so the readback would find the volume
+	// still present and set data.Volume to non-null, contradicting the plan.
+	if !volumeDeleted {
+		err = getAndBuildVolumeInstance(ctx, *r.client, data.ProjectId.ValueString(), data.Id.ValueString(), data)
 
-	if err != nil {
-		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to read volume settings, got error: %s", err))
-		return
+		if err != nil {
+			resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to read volume settings, got error: %s", err))
+			return
+		}
 	}
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
@@ -1007,6 +1014,9 @@ func getAndBuildVolumeInstance(ctx context.Context, client graphql.Client, proje
 
 	for _, volume := range response.Project.Volumes.Edges {
 		for _, volumeInstance := range volume.Node.VolumeInstances.Edges {
+			if volumeInstance.Node.State == VolumeStateDeleted || volumeInstance.Node.State == VolumeStateDeleting {
+				continue
+			}
 			if volumeInstance.Node.ServiceId == serviceId && volumeInstance.Node.EnvironmentId == environment.Id {
 				data.Volume = types.ObjectValueMust(
 					volumeAttrTypes,

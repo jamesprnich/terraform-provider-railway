@@ -24,7 +24,7 @@ jobs:
       - name: Install OpenTofu
         uses: opentofu/setup-opentofu@v1
         with:
-          tofu_version: 1.9.0
+          tofu_version: 1.11.8
           tofu_wrapper: false
       - name: Install deps
         run: go mod download
@@ -32,7 +32,7 @@ jobs:
         env:
           TF_ACC: 1
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
-          TF_ACC_PROVIDER_NAMESPACE: hashicorp
+          TF_ACC_PROVIDER_NAMESPACE: jamesprnich
           TF_ACC_PROVIDER_HOST: registry.opentofu.org
         run: |
           export TF_ACC_TERRAFORM_PATH="$(which tofu)"

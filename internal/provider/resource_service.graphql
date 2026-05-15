@@ -121,6 +121,7 @@ fragment Volume on Volume {
         serviceId
         mountPath
         sizeMB
+        state
       }
     }
   }

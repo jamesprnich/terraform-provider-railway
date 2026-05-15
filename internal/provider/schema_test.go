@@ -28,11 +28,16 @@ func TestAllResourcesHaveSchemas(t *testing.T) {
 		{"railway_service_domain", NewServiceDomainResource},
 		{"railway_custom_domain", NewCustomDomainResource},
 		{"railway_tcp_proxy", NewTcpProxyResource},
-		{"railway_webhook", NewWebhookResource},
 		{"railway_deployment_trigger", NewDeploymentTriggerResource},
 		{"railway_egress_gateway", NewEgressGatewayResource},
 		{"railway_private_network", NewPrivateNetworkResource},
 		{"railway_private_network_endpoint", NewPrivateNetworkEndpointResource},
+		{"railway_project_token", NewProjectTokenResource},
+		{"railway_trusted_domain", NewTrustedDomainResource},
+		{"railway_notification_rule", NewNotificationRuleResource},
+		{"railway_bucket", NewBucketResource},
+		{"railway_ssh_public_key", NewSshPublicKeyResource},
+		{"railway_project_member", NewProjectMemberResource},
 	}
 
 	for _, tc := range resources {
@@ -82,51 +87,6 @@ func TestAllDataSourcesHaveSchemas(t *testing.T) {
 				t.Fatal("schema has no attributes")
 			}
 		})
-	}
-}
-
-func TestWebhookResourceSchema_attributes(t *testing.T) {
-	t.Parallel()
-
-	ctx := context.Background()
-	schemaResp := &fwresource.SchemaResponse{}
-	NewWebhookResource().Schema(ctx, fwresource.SchemaRequest{}, schemaResp)
-
-	attrs := schemaResp.Schema.Attributes
-
-	// Check required attributes
-	for _, name := range []string{"project_id", "url"} {
-		attr, ok := attrs[name]
-		if !ok {
-			t.Errorf("attribute %q not found", name)
-			continue
-		}
-		strAttr, ok := attr.(fwschema.StringAttribute)
-		if !ok {
-			t.Errorf("attribute %q is not StringAttribute", name)
-			continue
-		}
-		if !strAttr.Required {
-			t.Errorf("attribute %q should be Required", name)
-		}
-	}
-
-	// Check computed attributes
-	idAttr, ok := attrs["id"].(fwschema.StringAttribute)
-	if !ok {
-		t.Fatal("id attribute not found or wrong type")
-	}
-	if !idAttr.Computed {
-		t.Error("id should be Computed")
-	}
-
-	// Check filters is Optional list
-	filtersAttr, ok := attrs["filters"].(fwschema.ListAttribute)
-	if !ok {
-		t.Fatal("filters attribute not found or wrong type")
-	}
-	if !filtersAttr.Optional {
-		t.Error("filters should be Optional")
 	}
 }
 

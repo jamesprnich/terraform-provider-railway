@@ -15,3 +15,29 @@ bindings:
     type: map[string]interface{}
   BigInt:
     type: int64
+  NotificationChannelConfig:
+    type: encoding/json.RawMessage
+  EnvironmentConfig:
+    type: map[string]interface{}
+  ServiceInstanceLimit:
+    type: map[string]interface{}
+  TemplateConfig:
+    type: map[string]interface{}
+  TemplateServiceConfig:
+    type: map[string]interface{}
+  TemplateMetadata:
+    type: map[string]interface{}
+  SerializedTemplateConfig:
+    type: map[string]interface{}
+  CanvasState:
+    type: map[string]interface{}
+  TemplateVolume:
+    type: map[string]interface{}
+  ObservabilityDashboardItemConfig:
+    type: map[string]interface{}
+  ResourceAccess:
+    type: map[string]interface{}
+  AllPolicies:
+    type: map[string]interface{}
+  Patch:
+    type: map[string]interface{}

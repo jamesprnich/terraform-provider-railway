@@ -89,11 +89,16 @@ tofu apply -var='postgres_password=secretpassword'
 | [`railway_service_domain`](resources/service_domain.md) | Auto-generated `.up.railway.app` domain |
 | [`railway_custom_domain`](resources/custom_domain.md) | Custom domain with DNS verification |
 | [`railway_tcp_proxy`](resources/tcp_proxy.md) | TCP proxy for non-HTTP services |
-| [`railway_webhook`](resources/webhook.md) | HTTP webhook notifications for project events |
 | [`railway_deployment_trigger`](resources/deployment_trigger.md) | Auto-deploy from GitHub/GitLab on push |
 | [`railway_egress_gateway`](resources/egress_gateway.md) | Static egress IP for external service allowlisting |
 | [`railway_private_network`](resources/private_network.md) | Private network for internal service-to-service communication |
 | [`railway_private_network_endpoint`](resources/private_network_endpoint.md) | Connects a service to a private network with DNS name |
+| [`railway_project_token`](resources/project_token.md) | Project-scoped deploy token (sensitive) for CI/CD |
+| [`railway_trusted_domain`](resources/trusted_domain.md) | Workspace-level trusted domain for SSO |
+| [`railway_notification_rule`](resources/notification_rule.md) | Notification rule (webhooks, Slack, email) — replaces `railway_webhook` |
+| [`railway_bucket`](resources/bucket.md) | S3-compatible object storage bucket |
+| [`railway_ssh_public_key`](resources/ssh_public_key.md) | SSH public key for workspace |
+| [`railway_project_member`](resources/project_member.md) | Project membership with role |
 
 ## Data Sources
 
@@ -105,7 +110,6 @@ tofu apply -var='postgres_password=secretpassword'
 
 ## Known Issues
 
-- **Webhook types not in public schema** — `railway_webhook` works with mock tests but live API calls will fail until Railway re-adds webhook types to their public GraphQL schema.
 - **Private networking** requires a manual redeploy of the target service after the first provider-created deployment (Railway platform bug with Wireguard tunnel setup).
 - **Service domain subdomains** are auto-generated and cannot be customized via the API. Use `railway_custom_domain` for specific domain names.
 - **`vcpus` and `memory_gb`** on `railway_service_instance` are write-only — they can be set but not read back. Import will not capture them.

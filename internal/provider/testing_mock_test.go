@@ -99,6 +99,14 @@ func newDisappearsMockServer(t *testing.T, fixtures mockFixtures, readOperation 
 // testUnitProviderConfig returns an HCL provider block pointing at the mock server.
 func testUnitProviderConfig(serverURL string) string {
 	return fmt.Sprintf(`
+terraform {
+  required_providers {
+    railway = {
+      source = "registry.opentofu.org/jamesprnich/railway"
+    }
+  }
+}
+
 provider "railway" {
   token   = "test-token"
   api_url = "%s"

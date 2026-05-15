@@ -12,6 +12,8 @@ Railway volume. Creates a persistent volume attached to a service in a specific 
 
 Unlike the `volume` block on `railway_service` (which only targets the default environment), this standalone resource allows creating volumes in any environment — essential for multi-environment setups where each environment needs its own persistent storage.
 
+~> **Note:** Railway queues volumes for deletion with a 48-hour retention period for data protection. When this resource is destroyed, the provider calls the `volumeDelete` API which queues the volume for permanent deletion — Railway sends an email notification and provides a restore link during this window. The volume remains visible in the API during the retention period but is considered deleted from Terraform's perspective. This is a Railway platform behaviour, not a provider limitation.
+
 ## Example Usage
 
 ```terraform

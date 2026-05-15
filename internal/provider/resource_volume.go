@@ -350,6 +350,11 @@ func (r *VolumeResource) readVolumeState(ctx context.Context, data *VolumeResour
 		data.Name = types.StringValue(volume.Node.Name)
 
 		for _, instance := range volume.Node.VolumeInstances.Edges {
+			// Treat DELETED/DELETING volume instances as gone.
+			if instance.Node.State == VolumeStateDeleted || instance.Node.State == VolumeStateDeleting {
+				continue
+			}
+
 			// Match by environment and service
 			matchesEnvironment := data.EnvironmentId.IsNull() || data.EnvironmentId.IsUnknown() || instance.Node.EnvironmentId == data.EnvironmentId.ValueString()
 			matchesService := data.ServiceId.IsNull() || data.ServiceId.IsUnknown() || instance.Node.ServiceId == data.ServiceId.ValueString()

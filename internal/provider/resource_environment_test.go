@@ -3,6 +3,7 @@ package provider
 import (
 	"fmt"
 	"testing"
+	"time"
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
@@ -44,6 +45,10 @@ func TestAccEnvironmentResourceDefault(t *testing.T) {
 }
 
 func TestAccEnvironmentResource_disappears(t *testing.T) {
+	// Railway enforces a 30-second cooldown on environment creation per user.
+	// The prior test (TestAccEnvironmentResourceDefault) creates an environment,
+	// so we must wait before creating another.
+	time.Sleep(35 * time.Second)
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,

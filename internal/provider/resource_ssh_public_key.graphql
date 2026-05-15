@@ -1,0 +1,28 @@
+fragment SshPublicKeyFields on SshPublicKey {
+  id
+  name
+  publicKey
+  fingerprint
+  workspaceId
+  userId
+}
+
+query getSshPublicKeys($workspaceId: String) {
+  sshPublicKeys(workspaceId: $workspaceId, first: 1000) {
+    edges {
+      node {
+        ...SshPublicKeyFields
+      }
+    }
+  }
+}
+
+mutation createSshPublicKey($input: SshPublicKeyCreateInput!) {
+  sshPublicKeyCreate(input: $input) {
+    ...SshPublicKeyFields
+  }
+}
+
+mutation deleteSshPublicKey($id: String!) {
+  sshPublicKeyDelete(id: $id)
+}

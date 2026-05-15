@@ -1,0 +1,30 @@
+fragment ProjectMemberFields on ProjectMember {
+  id
+  email
+  name
+  role
+}
+
+query getProjectMembers($projectId: String!) {
+  projectMembers(projectId: $projectId) {
+    ...ProjectMemberFields
+  }
+}
+
+mutation addProjectMember($input: ProjectMemberAddInput!) {
+  projectMemberAdd(input: $input) {
+    ...ProjectMemberFields
+  }
+}
+
+mutation updateProjectMember($input: ProjectMemberUpdateInput!) {
+  projectMemberUpdate(input: $input) {
+    ...ProjectMemberFields
+  }
+}
+
+mutation removeProjectMember($input: ProjectMemberRemoveInput!) {
+  projectMemberRemove(input: $input) {
+    ...ProjectMemberFields
+  }
+}

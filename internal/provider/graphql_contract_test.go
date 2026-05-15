@@ -12,23 +12,6 @@ import (
 
 // --- Fragment deserialization tests ---
 
-func TestGraphQLContract_ProjectWebhookFragment(t *testing.T) {
-	t.Parallel()
-
-	raw := `{"id":"wh-1","url":"https://example.com","projectId":"proj-1","filters":["deploy.completed"],"lastStatus":200}`
-
-	var fragment ProjectWebhook
-	if err := json.Unmarshal([]byte(raw), &fragment); err != nil {
-		t.Fatalf("failed to deserialize ProjectWebhook: %s", err)
-	}
-
-	assertEqual(t, "Id", fragment.Id, "wh-1")
-	assertEqual(t, "Url", fragment.Url, "https://example.com")
-	assertEqual(t, "ProjectId", fragment.ProjectId, "proj-1")
-	assertIntEqual(t, "LastStatus", fragment.LastStatus, 200)
-	assertSliceEqual(t, "Filters", fragment.Filters, []string{"deploy.completed"})
-}
-
 func TestGraphQLContract_EgressGatewayFragment(t *testing.T) {
 	t.Parallel()
 
@@ -132,46 +115,6 @@ func TestGraphQLContract_VolumeInstanceBackupScheduleFragment(t *testing.T) {
 
 // --- Full response deserialization tests ---
 // These test the complete response wrapper structure including edges/nodes.
-
-func TestGraphQLContract_getWebhooksResponse(t *testing.T) {
-	t.Parallel()
-
-	raw := `{"data":{"webhooks":{"edges":[{"node":{"id":"wh-1","url":"https://example.com","projectId":"proj-1","filters":["deploy.completed"],"lastStatus":200}}]}}}`
-
-	var envelope struct {
-		Data getWebhooksResponse `json:"data"`
-	}
-	if err := json.Unmarshal([]byte(raw), &envelope); err != nil {
-		t.Fatalf("failed to deserialize getWebhooksResponse: %s", err)
-	}
-
-	edges := envelope.Data.Webhooks.Edges
-	if len(edges) != 1 {
-		t.Fatalf("expected 1 edge, got %d", len(edges))
-	}
-
-	node := edges[0].Node
-	assertEqual(t, "Id", node.Id, "wh-1")
-	assertEqual(t, "Url", node.Url, "https://example.com")
-	assertEqual(t, "ProjectId", node.ProjectId, "proj-1")
-}
-
-func TestGraphQLContract_createWebhookResponse(t *testing.T) {
-	t.Parallel()
-
-	raw := `{"data":{"webhookCreate":{"id":"wh-1","url":"https://example.com","projectId":"proj-1","filters":[],"lastStatus":0}}}`
-
-	var envelope struct {
-		Data createWebhookResponse `json:"data"`
-	}
-	if err := json.Unmarshal([]byte(raw), &envelope); err != nil {
-		t.Fatalf("failed to deserialize createWebhookResponse: %s", err)
-	}
-
-	webhook := envelope.Data.WebhookCreate
-	assertEqual(t, "Id", webhook.Id, "wh-1")
-	assertEqual(t, "Url", webhook.Url, "https://example.com")
-}
 
 func TestGraphQLContract_getEgressGatewaysResponse(t *testing.T) {
 	t.Parallel()
@@ -360,32 +303,6 @@ func TestGraphQLContract_getProjectServicesResponse(t *testing.T) {
 // --- Input type serialization tests ---
 // Verify input structs serialize to the JSON the API expects.
 
-func TestGraphQLContract_WebhookCreateInput_serialization(t *testing.T) {
-	t.Parallel()
-
-	input := WebhookCreateInput{
-		ProjectId: "proj-1",
-		Url:       "https://example.com",
-		Filters:   []string{"deploy.completed"},
-	}
-
-	b, err := json.Marshal(input)
-	if err != nil {
-		t.Fatalf("failed to marshal WebhookCreateInput: %s", err)
-	}
-
-	var m map[string]interface{}
-	json.Unmarshal(b, &m)
-
-	assertEqual(t, "projectId", m["projectId"].(string), "proj-1")
-	assertEqual(t, "url", m["url"].(string), "https://example.com")
-
-	filters := m["filters"].([]interface{})
-	if len(filters) != 1 || filters[0].(string) != "deploy.completed" {
-		t.Errorf("filters mismatch: got %v", filters)
-	}
-}
-
 func TestGraphQLContract_EgressGatewayCreateInput_serialization(t *testing.T) {
 	t.Parallel()
 
@@ -545,19 +462,6 @@ func TestGraphQLContract_mutationResponseFieldNames(t *testing.T) {
 		json     string
 		validate func(t *testing.T, raw []byte)
 	}{
-		{
-			name: "webhookDelete returns boolean at webhookDelete key",
-			json: `{"data":{"webhookDelete":true}}`,
-			validate: func(t *testing.T, raw []byte) {
-				var envelope struct {
-					Data deleteWebhookResponse `json:"data"`
-				}
-				if err := json.Unmarshal(raw, &envelope); err != nil {
-					t.Fatalf("deserialize error: %s", err)
-				}
-				assertBoolEqual(t, "WebhookDelete", envelope.Data.WebhookDelete, true)
-			},
-		},
 		{
 			name: "egressGatewayAssociationsClear returns boolean",
 			json: `{"data":{"egressGatewayAssociationsClear":true}}`,
