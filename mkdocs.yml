@@ -57,11 +57,16 @@ nav:
     - service_domain: resources/service_domain.md
     - custom_domain: resources/custom_domain.md
     - tcp_proxy: resources/tcp_proxy.md
-    - webhook: resources/webhook.md
     - deployment_trigger: resources/deployment_trigger.md
     - egress_gateway: resources/egress_gateway.md
     - private_network: resources/private_network.md
     - private_network_endpoint: resources/private_network_endpoint.md
+    - project_token: resources/project_token.md
+    - trusted_domain: resources/trusted_domain.md
+    - notification_rule: resources/notification_rule.md
+    - bucket: resources/bucket.md
+    - ssh_public_key: resources/ssh_public_key.md
+    - project_member: resources/project_member.md
   - Data Sources:
     - project: data-sources/project.md
     - environment: data-sources/environment.md
