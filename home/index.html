@@ -877,34 +877,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../resources/webhook/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    webhook
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../resources/deployment_trigger/" class="md-nav__link">
         
   
@@ -997,6 +969,174 @@
     
   
     private_network_endpoint
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../resources/project_token/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    project_token
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../resources/trusted_domain/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    trusted_domain
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../resources/notification_rule/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    notification_rule
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../resources/bucket/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    bucket
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../resources/ssh_public_key/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ssh_public_key
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../resources/project_member/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    project_member
   
 
     
@@ -1388,10 +1528,6 @@
 <td>TCP proxy for non-HTTP services</td>
 </tr>
 <tr>
-<td><a href="../resources/webhook/"><code>railway_webhook</code></a></td>
-<td>HTTP webhook notifications for project events</td>
-</tr>
-<tr>
 <td><a href="../resources/deployment_trigger/"><code>railway_deployment_trigger</code></a></td>
 <td>Auto-deploy from GitHub/GitLab on push</td>
 </tr>
@@ -1406,6 +1542,30 @@
 <tr>
 <td><a href="../resources/private_network_endpoint/"><code>railway_private_network_endpoint</code></a></td>
 <td>Connects a service to a private network with DNS name</td>
+</tr>
+<tr>
+<td><a href="../resources/project_token/"><code>railway_project_token</code></a></td>
+<td>Project-scoped deploy token (sensitive) for CI/CD</td>
+</tr>
+<tr>
+<td><a href="../resources/trusted_domain/"><code>railway_trusted_domain</code></a></td>
+<td>Workspace-level trusted domain for SSO</td>
+</tr>
+<tr>
+<td><a href="../resources/notification_rule/"><code>railway_notification_rule</code></a></td>
+<td>Notification rule (webhooks, Slack, email) — replaces <code>railway_webhook</code></td>
+</tr>
+<tr>
+<td><a href="../resources/bucket/"><code>railway_bucket</code></a></td>
+<td>S3-compatible object storage bucket</td>
+</tr>
+<tr>
+<td><a href="../resources/ssh_public_key/"><code>railway_ssh_public_key</code></a></td>
+<td>SSH public key for workspace</td>
+</tr>
+<tr>
+<td><a href="../resources/project_member/"><code>railway_project_member</code></a></td>
+<td>Project membership with role</td>
 </tr>
 </tbody>
 </table>
@@ -1434,7 +1594,6 @@
 </table>
 <h2 id="known-issues">Known Issues<a class="headerlink" href="#known-issues" title="Permanent link">&para;</a></h2>
 <ul>
-<li><strong>Webhook types not in public schema</strong> — <code>railway_webhook</code> works with mock tests but live API calls will fail until Railway re-adds webhook types to their public GraphQL schema.</li>
 <li><strong>Private networking</strong> requires a manual redeploy of the target service after the first provider-created deployment (Railway platform bug with Wireguard tunnel setup).</li>
 <li><strong>Service domain subdomains</strong> are auto-generated and cannot be customized via the API. Use <code>railway_custom_domain</code> for specific domain names.</li>
 <li><strong><code>vcpus</code> and <code>memory_gb</code></strong> on <code>railway_service_instance</code> are write-only — they can be set but not read back. Import will not capture them.</li>
