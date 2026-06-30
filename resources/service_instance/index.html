@@ -573,34 +573,6 @@
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Example Usage">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#github-repo-based-service" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        GitHub repo-based service
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#docker-image-based-service-eg-postgres" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Docker image-based service (e.g. Postgres)
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
 </li>
       
         <li class="md-nav__item">
@@ -642,6 +614,17 @@
     <span class="md-ellipsis">
       
         Read-Only
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#nested-schema-for-registry_credentials" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Nested Schema for registry_credentials
       
     </span>
   </a>
@@ -1357,34 +1340,6 @@
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Example Usage">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#github-repo-based-service" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        GitHub repo-based service
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#docker-image-based-service-eg-postgres" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Docker image-based service (e.g. Postgres)
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
 </li>
       
         <li class="md-nav__item">
@@ -1432,6 +1387,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#nested-schema-for-registry_credentials" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Nested Schema for registry_credentials
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -1470,53 +1436,47 @@
 
 <h1 id="railway_service_instance-resource">railway_service_instance (Resource)<a class="headerlink" href="#railway_service_instance-resource" title="Permanent link">&para;</a></h1>
 <p>Railway service instance. Configures a service in a specific environment, including source, build, deploy settings, and resource limits.</p>
-<p>In Railway's data model, a <strong>Service</strong> is a project-level resource that exists across all environments. The actual configuration — source, build, deploy settings, and resource limits — lives on the <strong>Service Instance</strong>, which is the per-environment representation of that service.</p>
-<p>The existing <code>railway_service</code> resource only configures the default environment's service instance. This resource allows configuring any environment's service instance independently.</p>
-<p>For multi-environment setups, create services without sources via <code>railway_service</code> and use this resource to set the source, build, deploy settings, and resource limits per environment.</p>
 <h2 id="example-usage">Example Usage<a class="headerlink" href="#example-usage" title="Permanent link">&para;</a></h2>
-<h3 id="github-repo-based-service">GitHub repo-based service<a class="headerlink" href="#github-repo-based-service" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kr">resource</span><span class="w"> </span><span class="nc">&quot;railway_service_instance&quot;</span><span class="w"> </span><span class="nv">&quot;backend_dev&quot;</span><span class="w"> </span><span class="p">{</span>
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="w">  </span><span class="na">service_id</span><span class="w">     </span><span class="o">=</span><span class="w"> </span><span class="nv">railway_service.backend.id</span>
-<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="w">  </span><span class="na">environment_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nv">railway_environment.dev.id</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kr">resource</span><span class="w"> </span><span class="nc">&quot;railway_service_instance&quot;</span><span class="w"> </span><span class="nv">&quot;api_staging&quot;</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="w">  </span><span class="na">service_id</span><span class="w">     </span><span class="o">=</span><span class="w"> </span><span class="nv">railway_service.api.id</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="w">  </span><span class="na">environment_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nv">railway_environment.staging.id</span>
 <a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>
-<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="w">  </span><span class="na">source_repo</span><span class="w">    </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;myorg/myapp&quot;</span>
-<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="w">  </span><span class="na">root_directory</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;/backend&quot;</span>
-<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="w">  </span><span class="na">config_path</span><span class="w">    </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;backend/railway.toml&quot;</span>
-<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>
-<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="w">  </span><span class="na">build_command</span><span class="w">  </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;pip install -r requirements.txt&quot;</span>
-<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="w">  </span><span class="na">start_command</span><span class="w">  </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;gunicorn myapp.wsgi&quot;</span>
-<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>
-<a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a><span class="w">  </span><span class="na">vcpus</span><span class="w">     </span><span class="o">=</span><span class="w"> </span><span class="m">2</span>
-<a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a><span class="w">  </span><span class="na">memory_gb</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nv">0.5</span>
-<a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>
-<a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a><span class="w">  </span><span class="na">healthcheck_path</span><span class="w">    </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;/health/&quot;</span>
-<a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a><span class="w">  </span><span class="na">healthcheck_timeout</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">300</span>
-<a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a><span class="w">  </span><span class="na">num_replicas</span><span class="w">        </span><span class="o">=</span><span class="w"> </span><span class="m">1</span>
-<a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a>
-<a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a><span class="w">  </span><span class="na">restart_policy_type</span><span class="w">        </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;ON_FAILURE&quot;</span>
-<a id="__codelineno-0-20" name="__codelineno-0-20" href="#__codelineno-0-20"></a><span class="w">  </span><span class="na">restart_policy_max_retries</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">3</span>
-<a id="__codelineno-0-21" name="__codelineno-0-21" href="#__codelineno-0-21"></a>
-<a id="__codelineno-0-22" name="__codelineno-0-22" href="#__codelineno-0-22"></a><span class="w">  </span><span class="na">overlap_seconds</span><span class="w">  </span><span class="o">=</span><span class="w"> </span><span class="m">5</span>
-<a id="__codelineno-0-23" name="__codelineno-0-23" href="#__codelineno-0-23"></a><span class="w">  </span><span class="na">draining_seconds</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">10</span>
-<a id="__codelineno-0-24" name="__codelineno-0-24" href="#__codelineno-0-24"></a><span class="p">}</span>
-</code></pre></div>
-<h3 id="docker-image-based-service-eg-postgres">Docker image-based service (e.g. Postgres)<a class="headerlink" href="#docker-image-based-service-eg-postgres" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="kr">resource</span><span class="w"> </span><span class="nc">&quot;railway_service_instance&quot;</span><span class="w"> </span><span class="nv">&quot;postgres_dev&quot;</span><span class="w"> </span><span class="p">{</span>
-<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="w">  </span><span class="na">service_id</span><span class="w">     </span><span class="o">=</span><span class="w"> </span><span class="nv">railway_service.postgres.id</span>
-<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="w">  </span><span class="na">environment_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nv">railway_environment.dev.id</span>
-<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>
-<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="w">  </span><span class="na">source_image</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;postgres:17.5-alpine&quot;</span>
-<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>
-<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="w">  </span><span class="na">vcpus</span><span class="w">     </span><span class="o">=</span><span class="w"> </span><span class="m">1</span>
-<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="w">  </span><span class="na">memory_gb</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nv">0.5</span>
-<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a><span class="p">}</span>
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="c1">  # Optional: override source for this environment (public image)</span>
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="c1">  # source_image = &quot;myorg/myapp:staging&quot;</span>
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="c1">  # Optional: private registry credentials (required when source_image is a private image)</span>
+<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="c1">  # registry_credentials = {</span>
+<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="c1">  #   username = &quot;myuser&quot;</span>
+<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="c1">  #   password = var.registry_token   # mark as sensitive in your vars</span>
+<a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a><span class="c1">  # }</span>
+<a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>
+<a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a><span class="c1">  # Optional: build and deploy settings</span>
+<a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a><span class="c1">  # build_command    = &quot;npm run build&quot;</span>
+<a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a><span class="c1">  # start_command    = &quot;npm start&quot;</span>
+<a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a><span class="c1">  # healthcheck_path = &quot;/health&quot;</span>
+<a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a><span class="c1">  # num_replicas     = 1</span>
+<a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a><span class="c1">  # region           = &quot;us-west1&quot;</span>
+<a id="__codelineno-0-20" name="__codelineno-0-20" href="#__codelineno-0-20"></a><span class="c1">  # vcpus            = 2</span>
+<a id="__codelineno-0-21" name="__codelineno-0-21" href="#__codelineno-0-21"></a><span class="c1">  # memory_gb        = 0.5</span>
+<a id="__codelineno-0-22" name="__codelineno-0-22" href="#__codelineno-0-22"></a>
+<a id="__codelineno-0-23" name="__codelineno-0-23" href="#__codelineno-0-23"></a><span class="c1">  # Optional: deploy behavior</span>
+<a id="__codelineno-0-24" name="__codelineno-0-24" href="#__codelineno-0-24"></a><span class="c1">  # sleep_application          = true</span>
+<a id="__codelineno-0-25" name="__codelineno-0-25" href="#__codelineno-0-25"></a><span class="c1">  # overlap_seconds            = 5</span>
+<a id="__codelineno-0-26" name="__codelineno-0-26" href="#__codelineno-0-26"></a><span class="c1">  # draining_seconds           = 10</span>
+<a id="__codelineno-0-27" name="__codelineno-0-27" href="#__codelineno-0-27"></a><span class="c1">  # healthcheck_timeout        = 300</span>
+<a id="__codelineno-0-28" name="__codelineno-0-28" href="#__codelineno-0-28"></a><span class="c1">  # restart_policy_type        = &quot;ON_FAILURE&quot;</span>
+<a id="__codelineno-0-29" name="__codelineno-0-29" href="#__codelineno-0-29"></a><span class="c1">  # restart_policy_max_retries = 3</span>
+<a id="__codelineno-0-30" name="__codelineno-0-30" href="#__codelineno-0-30"></a><span class="c1">  # builder                    = &quot;RAILPACK&quot;</span>
+<a id="__codelineno-0-31" name="__codelineno-0-31" href="#__codelineno-0-31"></a><span class="c1">  # watch_patterns             = [&quot;backend/**&quot;]</span>
+<a id="__codelineno-0-32" name="__codelineno-0-32" href="#__codelineno-0-32"></a><span class="c1">  # pre_deploy_command         = [&quot;python manage.py migrate&quot;]</span>
+<a id="__codelineno-0-33" name="__codelineno-0-33" href="#__codelineno-0-33"></a><span class="p">}</span>
 </code></pre></div>
 <!-- schema generated by tfplugindocs -->
 <h2 id="schema">Schema<a class="headerlink" href="#schema" title="Permanent link">&para;</a></h2>
 <h3 id="required">Required<a class="headerlink" href="#required" title="Permanent link">&para;</a></h3>
 <ul>
-<li><code>environment_id</code> (String) Identifier of the environment.</li>
-<li><code>service_id</code> (String) Identifier of the service.</li>
+<li><code>environment_id</code> (String) Identifier of the environment. ~&gt; <strong>Warning:</strong> Changing this forces resource destruction and recreation.</li>
+<li><code>service_id</code> (String) Identifier of the service. ~&gt; <strong>Warning:</strong> Changing this forces resource destruction and recreation.</li>
 </ul>
 <h3 id="optional">Optional<a class="headerlink" href="#optional" title="Permanent link">&para;</a></h3>
 <ul>
@@ -1532,6 +1492,7 @@
 <li><code>overlap_seconds</code> (Number) Number of seconds to keep the old deployment running alongside the new one during a rollout.</li>
 <li><code>pre_deploy_command</code> (List of String) Pre-deploy command(s) to run before starting the service.</li>
 <li><code>region</code> (String) Region to deploy the service instance in.</li>
+<li><code>registry_credentials</code> (Attributes) Credentials for a private Docker registry. Required when <code>source_image</code> references a private image. Only available on Railway Pro plan. The <code>password</code> is write-only — it is sent to Railway on create/update but is never returned on read; plan output will not show diffs on the password after the initial apply. <strong>Important:</strong> always source <code>password</code> from a <code>sensitive</code> Terraform variable or a secrets data source (e.g. Vault). Ensure your Terraform state backend uses encryption at rest — the credential is stored in state for the lifetime of the resource. (see <a href="#nestedatt--registry_credentials">below for nested schema</a>)</li>
 <li><code>restart_policy_max_retries</code> (Number) Maximum number of restart retries when <code>restart_policy_type</code> is <code>ON_FAILURE</code>.</li>
 <li><code>restart_policy_type</code> (String) Restart policy type. Valid values: <code>ALWAYS</code>, <code>ON_FAILURE</code>, <code>NEVER</code>.</li>
 <li><code>root_directory</code> (String) Root directory for the service within the repository.</li>
@@ -1546,9 +1507,17 @@
 <ul>
 <li><code>id</code> (String) Identifier of the service instance (service_id:environment_id).</li>
 </ul>
+<p><a id="nestedatt--registry_credentials"></a></p>
+<h3 id="nested-schema-for-registry_credentials">Nested Schema for <code>registry_credentials</code><a class="headerlink" href="#nested-schema-for-registry_credentials" title="Permanent link">&para;</a></h3>
+<p>Required:</p>
+<ul>
+<li><code>password</code> (String, Sensitive) Registry password or access token.</li>
+<li><code>username</code> (String) Registry username.</li>
+</ul>
 <h2 id="import">Import<a class="headerlink" href="#import" title="Permanent link">&para;</a></h2>
 <p>Import is supported using the following syntax:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>tofu<span class="w"> </span>import<span class="w"> </span>railway_service_instance.backend_dev<span class="w"> </span>&lt;service_id&gt;:&lt;environment_id&gt;
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="c1"># Import by service_id:environment_id</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>tofu<span class="w"> </span>import<span class="w"> </span>railway_service_instance.api_staging<span class="w"> </span>your-service-id:your-environment-id
 </code></pre></div>
 
 

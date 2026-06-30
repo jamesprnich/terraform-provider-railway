@@ -1393,7 +1393,7 @@
 <h1 id="railway_environment-resource">railway_environment (Resource)<a class="headerlink" href="#railway_environment-resource" title="Permanent link">&para;</a></h1>
 <p>Railway environment.</p>
 <h2 id="example-usage">Example Usage<a class="headerlink" href="#example-usage" title="Permanent link">&para;</a></h2>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kr">resource</span><span class="w"> </span><span class="nc">&quot;railway_environment&quot;</span><span class="w"> </span><span class="nv">&quot;example&quot;</span><span class="w"> </span><span class="p">{</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kr">resource</span><span class="w"> </span><span class="nc">&quot;railway_environment&quot;</span><span class="w"> </span><span class="nv">&quot;staging&quot;</span><span class="w"> </span><span class="p">{</span>
 <a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="w">  </span><span class="na">name</span><span class="w">       </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;staging&quot;</span>
 <a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="w">  </span><span class="na">project_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nv">railway_project.example.id</span>
 <a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="p">}</span>
@@ -1411,7 +1411,8 @@
 </ul>
 <h2 id="import">Import<a class="headerlink" href="#import" title="Permanent link">&para;</a></h2>
 <p>Import is supported using the following syntax:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>tofu<span class="w"> </span>import<span class="w"> </span>railway_environment.example<span class="w"> </span>0bb01547-570d-4109-a5e8-138691f6a2d1:staging
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="c1"># Import by project_id:environment_name</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>tofu<span class="w"> </span>import<span class="w"> </span>railway_environment.staging<span class="w"> </span>your-project-id:staging
 </code></pre></div>
 
 

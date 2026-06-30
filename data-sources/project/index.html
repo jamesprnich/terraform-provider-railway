@@ -1159,34 +1159,6 @@
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Example Usage">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#by-name" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        By Name
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#by-id" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        By ID
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
 </li>
       
         <li class="md-nav__item">
@@ -1335,34 +1307,6 @@
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Example Usage">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#by-name" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        By Name
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#by-id" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        By ID
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
 </li>
       
         <li class="md-nav__item">
@@ -1425,24 +1369,24 @@
 
 
 <h1 id="railway_project-data-source">railway_project (Data Source)<a class="headerlink" href="#railway_project-data-source" title="Permanent link">&para;</a></h1>
-<p>Look up an existing Railway project by ID or name. Exactly one of <code>id</code> or <code>name</code> must be specified.</p>
+<p>Look up an existing Railway project by ID or name.</p>
 <h2 id="example-usage">Example Usage<a class="headerlink" href="#example-usage" title="Permanent link">&para;</a></h2>
-<h3 id="by-name">By Name<a class="headerlink" href="#by-name" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kr">data</span><span class="w"> </span><span class="nc">&quot;railway_project&quot;</span><span class="w"> </span><span class="nv">&quot;example&quot;</span><span class="w"> </span><span class="p">{</span>
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="w">  </span><span class="na">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;my-project&quot;</span>
-<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="p">}</span>
-</code></pre></div>
-<h3 id="by-id">By ID<a class="headerlink" href="#by-id" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="kr">data</span><span class="w"> </span><span class="nc">&quot;railway_project&quot;</span><span class="w"> </span><span class="nv">&quot;example&quot;</span><span class="w"> </span><span class="p">{</span>
-<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="w">  </span><span class="na">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;0bb01547-570d-4109-a5e8-138691f6a2d1&quot;</span>
-<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="p">}</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="c1"># Look up by name</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="kr">data</span><span class="w"> </span><span class="nc">&quot;railway_project&quot;</span><span class="w"> </span><span class="nv">&quot;by_name&quot;</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="w">  </span><span class="na">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;my-project&quot;</span>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="p">}</span>
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="c1"># Or look up by ID</span>
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="kr">data</span><span class="w"> </span><span class="nc">&quot;railway_project&quot;</span><span class="w"> </span><span class="nv">&quot;by_id&quot;</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="w">  </span><span class="na">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;your-project-id&quot;</span>
+<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="p">}</span>
 </code></pre></div>
 <!-- schema generated by tfplugindocs -->
 <h2 id="schema">Schema<a class="headerlink" href="#schema" title="Permanent link">&para;</a></h2>
 <h3 id="optional">Optional<a class="headerlink" href="#optional" title="Permanent link">&para;</a></h3>
 <ul>
-<li><code>id</code> (String) Identifier of the project. Exactly one of <code>id</code> or <code>name</code> must be specified.</li>
-<li><code>name</code> (String) Name of the project. Exactly one of <code>id</code> or <code>name</code> must be specified.</li>
+<li><code>id</code> (String) Identifier of the project. Exactly one of <code>id</code> or <code>name</code> must be provided.</li>
+<li><code>name</code> (String) Name of the project. Exactly one of <code>id</code> or <code>name</code> must be provided.</li>
 </ul>
 <h3 id="read-only">Read-Only<a class="headerlink" href="#read-only" title="Permanent link">&para;</a></h3>
 <ul>

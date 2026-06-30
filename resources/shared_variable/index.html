@@ -1393,9 +1393,9 @@
 <h1 id="railway_shared_variable-resource">railway_shared_variable (Resource)<a class="headerlink" href="#railway_shared_variable-resource" title="Permanent link">&para;</a></h1>
 <p>Railway shared variable.</p>
 <h2 id="example-usage">Example Usage<a class="headerlink" href="#example-usage" title="Permanent link">&para;</a></h2>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kr">resource</span><span class="w"> </span><span class="nc">&quot;railway_shared_variable&quot;</span><span class="w"> </span><span class="nv">&quot;example&quot;</span><span class="w"> </span><span class="p">{</span>
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="w">  </span><span class="na">name</span><span class="w">           </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;SENTRY_KEY&quot;</span>
-<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="w">  </span><span class="na">value</span><span class="w">          </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;1234567890&quot;</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kr">resource</span><span class="w"> </span><span class="nc">&quot;railway_shared_variable&quot;</span><span class="w"> </span><span class="nv">&quot;sentry_dsn&quot;</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="w">  </span><span class="na">name</span><span class="w">           </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;SENTRY_DSN&quot;</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="w">  </span><span class="na">value</span><span class="w">          </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;https://key@sentry.io/123&quot;</span>
 <a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="w">  </span><span class="na">project_id</span><span class="w">     </span><span class="o">=</span><span class="w"> </span><span class="nv">railway_project.example.id</span>
 <a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="w">  </span><span class="na">environment_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nv">railway_project.example.default_environment.id</span>
 <a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="p">}</span>
@@ -1415,7 +1415,8 @@
 </ul>
 <h2 id="import">Import<a class="headerlink" href="#import" title="Permanent link">&para;</a></h2>
 <p>Import is supported using the following syntax:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>tofu<span class="w"> </span>import<span class="w"> </span>railway_shared_variable.sentry<span class="w"> </span>0bb01547-570d-4109-a5e8-138691f6a2d1:staging:SENTRY_KEY
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="c1"># Import by project_id:environment_name:variable_name</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>tofu<span class="w"> </span>import<span class="w"> </span>railway_shared_variable.sentry_dsn<span class="w"> </span>your-project-id:production:SENTRY_DSN
 </code></pre></div>
 
 
