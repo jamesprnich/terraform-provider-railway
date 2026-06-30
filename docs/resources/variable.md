@@ -8,19 +8,16 @@ description: |-
 
 # railway_variable (Resource)
 
-Railway variable. Each create, update, or delete triggers a service redeployment.
-
-!!! tip "Prefer `railway_variable_collection` for multiple variables"
-    Each individual `railway_variable` on the same service triggers a separate redeployment. If you're setting 2+ variables on one service, use [`railway_variable_collection`](variable_collection.md) instead — it sets all variables in a single API call, triggering only one redeployment.
+Railway variable. Any changes in collection triggers service redeployment.
 
 ## Example Usage
 
 ```terraform
-resource "railway_variable" "example" {
-  name           = "SENTRY_KEY"
-  value          = "1234567890"
+resource "railway_variable" "database_url" {
+  name           = "DATABASE_URL"
+  value          = "postgres://user:pass@host:5432/db"
   environment_id = railway_project.example.default_environment.id
-  service_id     = railway_service.example.id
+  service_id     = railway_service.api.id
 }
 ```
 
@@ -44,5 +41,6 @@ resource "railway_variable" "example" {
 Import is supported using the following syntax:
 
 ```shell
-tofu import railway_variable.sentry 89fa0236-2b1b-4a8c-b12d-ae3634b30d97:staging:SENTRY_KEY
+# Import by service_id:environment_name:variable_name
+tofu import railway_variable.database_url your-service-id:production:DATABASE_URL
 ```

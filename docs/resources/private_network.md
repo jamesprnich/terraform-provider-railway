@@ -8,7 +8,7 @@ description: |-
 
 # railway_private_network (Resource)
 
-Railway private network. Creates a private network in a specific environment for internal service-to-service communication. Use `railway_private_network_endpoint` to connect services to the network.
+Railway private network. Creates a private network in a specific environment for internal service-to-service communication.
 
 ## Example Usage
 
@@ -17,6 +17,9 @@ resource "railway_private_network" "internal" {
   project_id     = railway_project.example.id
   environment_id = railway_project.example.default_environment.id
   name           = "internal"
+
+  # Optional
+  # tags = ["backend"]
 }
 ```
 
@@ -39,12 +42,11 @@ resource "railway_private_network" "internal" {
 - `id` (String) Identifier of the private network (publicId).
 - `network_id` (Number) Numeric network identifier.
 
-~> **Warning:** The Railway API only supports deleting all private networks in an environment at once. Destroying this resource will delete **all** private networks in the same environment, not just this one. Use caution if you have multiple private networks in the same environment.
-
 ## Import
 
 Import is supported using the following syntax:
 
 ```shell
-tofu import railway_private_network.internal <environment_id>:<network_public_id>
+# Import by environment_id:network_public_id
+tofu import railway_private_network.internal your-environment-id:your-network-public-id
 ```

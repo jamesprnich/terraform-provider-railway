@@ -8,14 +8,16 @@ description: |-
 
 # railway_volume_backup_schedule (Resource)
 
-Railway volume backup schedule. Manages the backup schedule for a volume instance. Enables automatic backups on a daily, weekly, and/or monthly cadence.
+Railway volume backup schedule. Manages the backup schedule for a volume instance.
 
 ## Example Usage
 
 ```terraform
-resource "railway_volume_backup_schedule" "postgres_data" {
-  volume_instance_id = railway_volume.postgres_data.volume_instance_id
-  kinds              = ["DAILY", "WEEKLY"]
+resource "railway_volume_backup_schedule" "daily" {
+  volume_instance_id = railway_volume.data.volume_instance_id
+  kinds              = ["DAILY"]
+
+  # Valid values: "DAILY", "WEEKLY", "MONTHLY"
 }
 ```
 
@@ -25,7 +27,7 @@ resource "railway_volume_backup_schedule" "postgres_data" {
 ### Required
 
 - `kinds` (List of String) List of backup schedule kinds to enable. Valid values: `DAILY`, `WEEKLY`, `MONTHLY`.
-- `volume_instance_id` (String) Identifier of the volume instance.
+- `volume_instance_id` (String) Identifier of the volume instance. ~> **Warning:** Changing this forces resource destruction and recreation.
 
 ### Read-Only
 
@@ -36,5 +38,6 @@ resource "railway_volume_backup_schedule" "postgres_data" {
 Import is supported using the following syntax:
 
 ```shell
-tofu import railway_volume_backup_schedule.postgres_data <volume_instance_id>
+# Import by volume_instance_id
+tofu import railway_volume_backup_schedule.daily your-volume-instance-id
 ```

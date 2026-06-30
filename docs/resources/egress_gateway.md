@@ -8,9 +8,7 @@ description: |-
 
 # railway_egress_gateway (Resource)
 
-Railway egress gateway. Associates a static egress IP with a service in a specific environment, enabling allowlisting on external services that require a fixed source IP.
-
-~> **Note:** Egress gateways require a **Pro plan** workspace. The service must have at least one deployment before the static IP can be assigned — the IP is tied to the service's deployment region. If `region` is omitted, Railway uses the service's current deployment region.
+Railway egress gateway. Associates a static egress IP with a service in a specific environment.
 
 ## Example Usage
 
@@ -18,6 +16,9 @@ Railway egress gateway. Associates a static egress IP with a service in a specif
 resource "railway_egress_gateway" "api" {
   service_id     = railway_service.api.id
   environment_id = railway_project.example.default_environment.id
+
+  # Optional
+  # region = "us-west1"
 }
 ```
 
@@ -43,5 +44,6 @@ resource "railway_egress_gateway" "api" {
 Import is supported using the following syntax:
 
 ```shell
-tofu import railway_egress_gateway.api <service_id>:<environment_id>
+# Import by service_id:environment_id
+tofu import railway_egress_gateway.api your-service-id:your-environment-id
 ```

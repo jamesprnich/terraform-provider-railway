@@ -3,29 +3,25 @@
 page_title: "railway_service Data Source - terraform-provider-railway"
 subcategory: ""
 description: |-
-  Look up an existing Railway service by ID or name.
+  Look up an existing Railway service by ID or by name within a project.
 ---
 
 # railway_service (Data Source)
 
-Look up an existing Railway service by ID or name. Exactly one of `id` or `name` must be specified. When looking up by `name`, `project_id` is required.
+Look up an existing Railway service by ID or by name within a project.
 
 ## Example Usage
 
-### By Name
-
 ```terraform
+# Look up by name (requires project_id)
 data "railway_service" "api" {
-  project_id = railway_project.example.id
   name       = "api"
+  project_id = railway_project.example.id
 }
-```
 
-### By ID
-
-```terraform
-data "railway_service" "api" {
-  id = "0bb01547-570d-4109-a5e8-138691f6a2d1"
+# Or look up by ID
+data "railway_service" "by_id" {
+  id = "your-service-id"
 }
 ```
 
@@ -34,6 +30,8 @@ data "railway_service" "api" {
 
 ### Optional
 
-- `id` (String) Identifier of the service. Exactly one of `id` or `name` must be specified.
-- `name` (String) Name of the service. Exactly one of `id` or `name` must be specified. Requires `project_id`.
-- `project_id` (String) Identifier of the project. Required when looking up by name, computed when looking up by ID.
+- `id` (String) Identifier of the service. Exactly one of `id` or `name` must be provided.
+- `name` (String) Name of the service. Exactly one of `id` or `name` must be provided. Requires `project_id`.
+- `project_id` (String) Identifier of the project the service belongs to. Required when looking up by `name`. Computed when looking up by `id`.
+
+

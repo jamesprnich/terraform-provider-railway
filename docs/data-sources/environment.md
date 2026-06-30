@@ -3,29 +3,25 @@
 page_title: "railway_environment Data Source - terraform-provider-railway"
 subcategory: ""
 description: |-
-  Look up an existing Railway environment by ID or name.
+  Look up an existing Railway environment by ID or by name within a project.
 ---
 
 # railway_environment (Data Source)
 
-Look up an existing Railway environment by ID or name. Exactly one of `id` or `name` must be specified. When looking up by `name`, `project_id` is required.
+Look up an existing Railway environment by ID or by name within a project.
 
 ## Example Usage
 
-### By Name
-
 ```terraform
+# Look up by name (requires project_id)
 data "railway_environment" "staging" {
-  project_id = railway_project.example.id
   name       = "staging"
+  project_id = railway_project.example.id
 }
-```
 
-### By ID
-
-```terraform
-data "railway_environment" "staging" {
-  id = "0bb01547-570d-4109-a5e8-138691f6a2d1"
+# Or look up by ID
+data "railway_environment" "by_id" {
+  id = "your-environment-id"
 }
 ```
 
@@ -34,10 +30,8 @@ data "railway_environment" "staging" {
 
 ### Optional
 
-- `id` (String) Identifier of the environment. Exactly one of `id` or `name` must be specified.
-- `name` (String) Name of the environment. Exactly one of `id` or `name` must be specified. Requires `project_id`.
-- `project_id` (String) Identifier of the project. Required when looking up by name.
+- `id` (String) Identifier of the environment. Exactly one of `id` or `name` must be provided.
+- `name` (String) Name of the environment. Exactly one of `id` or `name` must be provided. Requires `project_id`.
+- `project_id` (String) Identifier of the project the environment belongs to. Required when looking up by `name`.
 
-### Read-Only
 
-(All attributes above are also computed when looked up.)

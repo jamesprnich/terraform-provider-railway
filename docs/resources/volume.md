@@ -10,19 +10,17 @@ description: |-
 
 Railway volume. Creates a persistent volume attached to a service in a specific environment.
 
-Unlike the `volume` block on `railway_service` (which only targets the default environment), this standalone resource allows creating volumes in any environment — essential for multi-environment setups where each environment needs its own persistent storage.
-
-~> **Note:** Railway queues volumes for deletion with a 48-hour retention period for data protection. When this resource is destroyed, the provider calls the `volumeDelete` API which queues the volume for permanent deletion — Railway sends an email notification and provides a restore link during this window. The volume remains visible in the API during the retention period but is considered deleted from Terraform's perspective. This is a Railway platform behaviour, not a provider limitation.
-
 ## Example Usage
 
 ```terraform
-resource "railway_volume" "postgres_data" {
+resource "railway_volume" "data" {
   project_id     = railway_project.example.id
   service_id     = railway_service.postgres.id
-  environment_id = railway_environment.dev.id
+  environment_id = railway_project.example.default_environment.id
   mount_path     = "/var/lib/postgresql/data"
-  name           = "postgres-data"
+
+  # Optional
+  # name = "postgres-data"
 }
 ```
 
@@ -31,10 +29,10 @@ resource "railway_volume" "postgres_data" {
 
 ### Required
 
-- `environment_id` (String) Identifier of the environment the volume belongs to.
+- `environment_id` (String) Identifier of the environment the volume belongs to. ~> **Warning:** Changing this forces resource destruction and recreation.
 - `mount_path` (String) Mount path of the volume in the container.
-- `project_id` (String) Identifier of the project the volume belongs to.
-- `service_id` (String) Identifier of the service the volume is attached to.
+- `project_id` (String) Identifier of the project the volume belongs to. ~> **Warning:** Changing this forces resource destruction and recreation.
+- `service_id` (String) Identifier of the service the volume is attached to. ~> **Warning:** Changing this forces resource destruction and recreation.
 
 ### Optional
 
@@ -51,5 +49,6 @@ resource "railway_volume" "postgres_data" {
 Import is supported using the following syntax:
 
 ```shell
-tofu import railway_volume.postgres_data <project_id>:<volume_id>:<service_id>:<environment_id>
+# Import by project_id:volume_id:service_id:environment_id
+tofu import railway_volume.data your-project-id:your-volume-id:your-service-id:your-environment-id
 ```
