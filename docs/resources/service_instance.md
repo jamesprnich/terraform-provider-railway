@@ -70,7 +70,7 @@ resource "railway_service_instance" "api_staging" {
 - `overlap_seconds` (Number) Number of seconds to keep the old deployment running alongside the new one during a rollout.
 - `pre_deploy_command` (List of String) Pre-deploy command(s) to run before starting the service.
 - `region` (String) Region to deploy the service instance in.
-- `registry_credentials` (Attributes) Credentials for a private Docker registry. Required when `source_image` references a private image. Only available on Railway Pro plan. The `password` is write-only — it is sent to Railway on create/update but is never returned on read; plan output will not show diffs on the password after the initial apply. (see [below for nested schema](#nestedatt--registry_credentials))
+- `registry_credentials` (Attributes) Credentials for a private Docker registry. Required when `source_image` references a private image. Only available on Railway Pro plan. The `password` is write-only — it is sent to Railway on create/update but is never returned on read; plan output will not show diffs on the password after the initial apply. **Important:** always source `password` from a `sensitive` Terraform variable or a secrets data source (e.g. Vault). Ensure your Terraform state backend uses encryption at rest — the credential is stored in state for the lifetime of the resource. (see [below for nested schema](#nestedatt--registry_credentials))
 - `restart_policy_max_retries` (Number) Maximum number of restart retries when `restart_policy_type` is `ON_FAILURE`.
 - `restart_policy_type` (String) Restart policy type. Valid values: `ALWAYS`, `ON_FAILURE`, `NEVER`.
 - `root_directory` (String) Root directory for the service within the repository.
