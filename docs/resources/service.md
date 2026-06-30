@@ -4,6 +4,7 @@ page_title: "railway_service Resource - terraform-provider-railway"
 subcategory: ""
 description: |-
   Railway service.
+  ⚠️ NOTE: All the other settings not specified here are recommended to be specified in the Railway config file.
 ---
 
 # railway_service (Resource)
@@ -12,30 +13,19 @@ Railway service.
 
 > ⚠️ **NOTE:** All the other settings not specified here are recommended to be specified in the Railway config file.
 
-## Services vs Service Instances
-
-In Railway, a **Service** is a project-level resource that exists across all environments. When you set `source_image` or `source_repo` on a service, Railway immediately deploys it into the default environment and applies the same source to every environment.
-
-If you need **per-environment control** over what source, version, or resource limits each environment uses, create services without sources here and use [`railway_service_instance`](service_instance.md) to configure each environment independently.
-
 ## Example Usage
 
-### Empty service (recommended for multi-environment setups)
-
 ```terraform
-resource "railway_service" "backend" {
-  name       = "backend"
-  project_id = railway_project.main.id
-}
-```
+resource "railway_service" "api" {
+  name       = "api"
+  project_id = railway_project.example.id
 
-### Service with source (single-environment or quick start)
+  # Optional: deploy from a Docker image
+  # source_image = "nginx:1.27-alpine"
 
-```terraform
-resource "railway_service" "example" {
-  name         = "api"
-  project_id   = railway_project.example.id
-  source_image = "nginx:1.27.5-alpine"
+  # Optional: deploy from a GitHub repo (requires both)
+  # source_repo        = "myorg/myapp"
+  # source_repo_branch = "main"
 }
 ```
 
@@ -45,7 +35,7 @@ resource "railway_service" "example" {
 ### Required
 
 - `name` (String) Name of the service.
-- `project_id` (String) Identifier of the project the service belongs to.
+- `project_id` (String) Identifier of the project the service belongs to. ~> **Warning:** Changing this forces resource destruction and recreation.
 
 ### Optional
 
@@ -76,8 +66,6 @@ Optional:
 <a id="nestedatt--volume"></a>
 ### Nested Schema for `volume`
 
-~> **Note:** Removing the `volume` block from a service queues the volume for deletion with a 48-hour retention period. Railway sends an email notification with a restore link during this window. The volume remains visible in the API during retention, so subsequent plans may show drift until the volume is permanently deleted.
-
 Required:
 
 - `mount_path` (String) Mount path of the volume.
@@ -93,5 +81,6 @@ Read-Only:
 Import is supported using the following syntax:
 
 ```shell
-tofu import railway_service.example 89fa0236-2b1b-4a8c-b12d-ae3634b30d97
+# Import by service ID
+tofu import railway_service.api your-service-id
 ```

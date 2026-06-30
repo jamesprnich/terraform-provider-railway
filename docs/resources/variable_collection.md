@@ -13,19 +13,19 @@ Railway variable collection. Group of variables managed as a whole. Any changes 
 ## Example Usage
 
 ```terraform
-resource "railway_variable_collection" "example" {
+resource "railway_variable_collection" "app_config" {
   environment_id = railway_project.example.default_environment.id
-  service_id     = railway_service.example.id
+  service_id     = railway_service.api.id
 
   variables = [
     {
-      name  = "SENTRY_KEY"
-      value = "KEY"
+      name  = "DATABASE_URL"
+      value = "postgres://user:pass@host:5432/db"
     },
     {
-      name  = "SENTRY_SECRET"
-      value = "SECRET"
-    }
+      name  = "REDIS_URL"
+      value = "redis://host:6379"
+    },
   ]
 }
 ```
@@ -57,5 +57,6 @@ Required:
 Import is supported using the following syntax:
 
 ```shell
-tofu import railway_variable_collection.sentry 89fa0236-2b1b-4a8c-b12d-ae3634b30d97:staging:SENTRY_KEY:SENTRY_SECRET
+# Import by service_id:environment_name:var_name1:var_name2:...
+tofu import railway_variable_collection.app_config your-service-id:production:DATABASE_URL:REDIS_URL
 ```

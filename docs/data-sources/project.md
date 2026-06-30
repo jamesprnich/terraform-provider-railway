@@ -8,23 +8,19 @@ description: |-
 
 # railway_project (Data Source)
 
-Look up an existing Railway project by ID or name. Exactly one of `id` or `name` must be specified.
+Look up an existing Railway project by ID or name.
 
 ## Example Usage
 
-### By Name
-
 ```terraform
-data "railway_project" "example" {
+# Look up by name
+data "railway_project" "by_name" {
   name = "my-project"
 }
-```
 
-### By ID
-
-```terraform
-data "railway_project" "example" {
-  id = "0bb01547-570d-4109-a5e8-138691f6a2d1"
+# Or look up by ID
+data "railway_project" "by_id" {
+  id = "your-project-id"
 }
 ```
 
@@ -33,9 +29,11 @@ data "railway_project" "example" {
 
 ### Optional
 
-- `id` (String) Identifier of the project. Exactly one of `id` or `name` must be specified.
-- `name` (String) Name of the project. Exactly one of `id` or `name` must be specified.
+- `id` (String) Identifier of the project. Exactly one of `id` or `name` must be provided.
+- `name` (String) Name of the project. Exactly one of `id` or `name` must be provided.
 
 ### Read-Only
 
 - `description` (String) Description of the project.
+
+

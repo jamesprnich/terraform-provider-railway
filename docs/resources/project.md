@@ -14,7 +14,15 @@ Railway project.
 
 ```terraform
 resource "railway_project" "example" {
-  name = "something"
+  name = "my-project"
+
+  # Optional
+  # description    = "My Railway project"
+  # private        = true
+  # has_pr_deploys = false
+  # default_environment = {
+  #   name = "production"
+  # }
 }
 ```
 
@@ -31,7 +39,7 @@ resource "railway_project" "example" {
 - `description` (String) Description of the project.
 - `has_pr_deploys` (Boolean) Whether the project has PR deploys enabled. **Default** `false`.
 - `private` (Boolean) Privacy of the project. **Default** `true`.
-- `workspace_id` (String) Identifier of the workspace the project belongs to. Required if the railway token has access to multiple workspaces.
+- `workspace_id` (String) Identifier of the workspace the project belongs to. Required if the railway token has access to multiple workspaces. ~> **Warning:** Changing this forces resource destruction and recreation.
 
 ### Read-Only
 
@@ -53,5 +61,6 @@ Read-Only:
 Import is supported using the following syntax:
 
 ```shell
-tofu import railway_project.example 0bb01547-570d-4109-a5e8-138691f6a2d1
+# Import by project ID
+tofu import railway_project.example your-project-id
 ```

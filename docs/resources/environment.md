@@ -13,7 +13,7 @@ Railway environment.
 ## Example Usage
 
 ```terraform
-resource "railway_environment" "example" {
+resource "railway_environment" "staging" {
   name       = "staging"
   project_id = railway_project.example.id
 }
@@ -36,5 +36,6 @@ resource "railway_environment" "example" {
 Import is supported using the following syntax:
 
 ```shell
-tofu import railway_environment.example 0bb01547-570d-4109-a5e8-138691f6a2d1:staging
+# Import by project_id:environment_name
+tofu import railway_environment.staging your-project-id:staging
 ```

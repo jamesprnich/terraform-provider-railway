@@ -8,28 +8,20 @@ description: |-
 
 # railway_private_network_endpoint (Resource)
 
-Railway private network endpoint. Connects a service to a private network, enabling internal service-to-service communication via DNS names (e.g., `postgres.railway.internal`).
+Railway private network endpoint. Connects a service to a private network, enabling internal service-to-service communication.
 
 ## Example Usage
 
 ```terraform
-resource "railway_private_network_endpoint" "postgres" {
+resource "railway_private_network_endpoint" "api" {
   private_network_id = railway_private_network.internal.id
-  service_id         = railway_service.postgres.id
+  service_id         = railway_service.api.id
   environment_id     = railway_project.example.default_environment.id
-  service_name       = railway_service.postgres.name
-}
-```
+  service_name       = railway_service.api.name
 
-### With Custom DNS Name
-
-```terraform
-resource "railway_private_network_endpoint" "postgres" {
-  private_network_id = railway_private_network.internal.id
-  service_id         = railway_service.postgres.id
-  environment_id     = railway_project.example.default_environment.id
-  service_name       = railway_service.postgres.name
-  dns_name           = "db"
+  # Optional
+  # dns_name = "api-internal"
+  # tags     = ["backend"]
 }
 ```
 
@@ -47,16 +39,26 @@ resource "railway_private_network_endpoint" "postgres" {
 - `dns_name` (String) DNS name of the endpoint within the private network. Can be changed via rename.
 - `service_name` (String) Name of the service. Required for creation (used in the create API input), but not needed for import since it is not returned by the API.
 - `tags` (List of String) Tags associated with the private network endpoint.
+- `timeouts` (Attributes) (see [below for nested schema](#nestedatt--timeouts))
 
 ### Read-Only
 
 - `id` (String) Identifier of the private network endpoint (publicId).
 - `private_ips` (List of String) List of private IP addresses assigned to the endpoint.
 
+<a id="nestedatt--timeouts"></a>
+### Nested Schema for `timeouts`
+
+Optional:
+
+- `create` (String) A string that can be [parsed as a duration](https://pkg.go.dev/time#ParseDuration) consisting of numbers and unit suffixes, such as "30s" or "2h45m". Valid time units are "s" (seconds), "m" (minutes), "h" (hours).
+- `read` (String) A string that can be [parsed as a duration](https://pkg.go.dev/time#ParseDuration) consisting of numbers and unit suffixes, such as "30s" or "2h45m". Valid time units are "s" (seconds), "m" (minutes), "h" (hours). Read operations occur during any refresh or planning operation when refresh is enabled.
+
 ## Import
 
 Import is supported using the following syntax:
 
 ```shell
-tofu import railway_private_network_endpoint.postgres <environment_id>:<private_network_id>:<service_id>
+# Import by environment_id:private_network_id:service_id
+tofu import railway_private_network_endpoint.api your-environment-id:your-private-network-id:your-service-id
 ```

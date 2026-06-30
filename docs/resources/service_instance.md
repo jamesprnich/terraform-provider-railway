@@ -10,54 +10,41 @@ description: |-
 
 Railway service instance. Configures a service in a specific environment, including source, build, deploy settings, and resource limits.
 
-In Railway's data model, a **Service** is a project-level resource that exists across all environments. The actual configuration — source, build, deploy settings, and resource limits — lives on the **Service Instance**, which is the per-environment representation of that service.
-
-The existing `railway_service` resource only configures the default environment's service instance. This resource allows configuring any environment's service instance independently.
-
-For multi-environment setups, create services without sources via `railway_service` and use this resource to set the source, build, deploy settings, and resource limits per environment.
-
 ## Example Usage
 
-### GitHub repo-based service
-
 ```terraform
-resource "railway_service_instance" "backend_dev" {
-  service_id     = railway_service.backend.id
-  environment_id = railway_environment.dev.id
+resource "railway_service_instance" "api_staging" {
+  service_id     = railway_service.api.id
+  environment_id = railway_environment.staging.id
 
-  source_repo    = "myorg/myapp"
-  root_directory = "/backend"
-  config_path    = "backend/railway.toml"
+  # Optional: override source for this environment (public image)
+  # source_image = "myorg/myapp:staging"
 
-  build_command  = "pip install -r requirements.txt"
-  start_command  = "gunicorn myapp.wsgi"
+  # Optional: private registry credentials (required when source_image is a private image)
+  # registry_credentials = {
+  #   username = "myuser"
+  #   password = var.registry_token   # mark as sensitive in your vars
+  # }
 
-  vcpus     = 2
-  memory_gb = 0.5
+  # Optional: build and deploy settings
+  # build_command    = "npm run build"
+  # start_command    = "npm start"
+  # healthcheck_path = "/health"
+  # num_replicas     = 1
+  # region           = "us-west1"
+  # vcpus            = 2
+  # memory_gb        = 0.5
 
-  healthcheck_path    = "/health/"
-  healthcheck_timeout = 300
-  num_replicas        = 1
-
-  restart_policy_type        = "ON_FAILURE"
-  restart_policy_max_retries = 3
-
-  overlap_seconds  = 5
-  draining_seconds = 10
-}
-```
-
-### Docker image-based service (e.g. Postgres)
-
-```terraform
-resource "railway_service_instance" "postgres_dev" {
-  service_id     = railway_service.postgres.id
-  environment_id = railway_environment.dev.id
-
-  source_image = "postgres:17.5-alpine"
-
-  vcpus     = 1
-  memory_gb = 0.5
+  # Optional: deploy behavior
+  # sleep_application          = true
+  # overlap_seconds            = 5
+  # draining_seconds           = 10
+  # healthcheck_timeout        = 300
+  # restart_policy_type        = "ON_FAILURE"
+  # restart_policy_max_retries = 3
+  # builder                    = "RAILPACK"
+  # watch_patterns             = ["backend/**"]
+  # pre_deploy_command         = ["python manage.py migrate"]
 }
 ```
 
@@ -66,8 +53,8 @@ resource "railway_service_instance" "postgres_dev" {
 
 ### Required
 
-- `environment_id` (String) Identifier of the environment.
-- `service_id` (String) Identifier of the service.
+- `environment_id` (String) Identifier of the environment. ~> **Warning:** Changing this forces resource destruction and recreation.
+- `service_id` (String) Identifier of the service. ~> **Warning:** Changing this forces resource destruction and recreation.
 
 ### Optional
 
@@ -83,6 +70,7 @@ resource "railway_service_instance" "postgres_dev" {
 - `overlap_seconds` (Number) Number of seconds to keep the old deployment running alongside the new one during a rollout.
 - `pre_deploy_command` (List of String) Pre-deploy command(s) to run before starting the service.
 - `region` (String) Region to deploy the service instance in.
+- `registry_credentials` (Attributes) Credentials for a private Docker registry. Required when `source_image` references a private image. Only available on Railway Pro plan. The `password` is write-only — it is sent to Railway on create/update but is never returned on read; plan output will not show diffs on the password after the initial apply. (see [below for nested schema](#nestedatt--registry_credentials))
 - `restart_policy_max_retries` (Number) Maximum number of restart retries when `restart_policy_type` is `ON_FAILURE`.
 - `restart_policy_type` (String) Restart policy type. Valid values: `ALWAYS`, `ON_FAILURE`, `NEVER`.
 - `root_directory` (String) Root directory for the service within the repository.
@@ -97,10 +85,19 @@ resource "railway_service_instance" "postgres_dev" {
 
 - `id` (String) Identifier of the service instance (service_id:environment_id).
 
+<a id="nestedatt--registry_credentials"></a>
+### Nested Schema for `registry_credentials`
+
+Required:
+
+- `password` (String, Sensitive) Registry password or access token.
+- `username` (String) Registry username.
+
 ## Import
 
 Import is supported using the following syntax:
 
 ```shell
-tofu import railway_service_instance.backend_dev <service_id>:<environment_id>
+# Import by service_id:environment_id
+tofu import railway_service_instance.api_staging your-service-id:your-environment-id
 ```

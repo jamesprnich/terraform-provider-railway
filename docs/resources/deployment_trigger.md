@@ -14,27 +14,16 @@ Railway deployment trigger. Connects a source code repository to a service so th
 
 ```terraform
 resource "railway_deployment_trigger" "api" {
-  service_id      = railway_service.api.id
-  environment_id  = railway_project.example.default_environment.id
   project_id      = railway_project.example.id
-  repository      = "myorg/api"
+  environment_id  = railway_project.example.default_environment.id
+  service_id      = railway_service.api.id
+  repository      = "myorg/myapp"
   branch          = "main"
   source_provider = "github"
-}
-```
 
-### With Check Suites and Monorepo Support
-
-```terraform
-resource "railway_deployment_trigger" "api" {
-  service_id      = railway_service.api.id
-  environment_id  = railway_project.example.default_environment.id
-  project_id      = railway_project.example.id
-  repository      = "myorg/monorepo"
-  branch          = "main"
-  source_provider = "github"
-  check_suites    = true
-  root_directory  = "packages/api"
+  # Optional
+  # check_suites   = true
+  # root_directory = "/backend"
 }
 ```
 
@@ -64,5 +53,6 @@ resource "railway_deployment_trigger" "api" {
 Import is supported using the following syntax:
 
 ```shell
-tofu import railway_deployment_trigger.api <project_id>:<environment_id>:<service_id>:<trigger_id>
+# Import by project_id:environment_id:service_id:trigger_id
+tofu import railway_deployment_trigger.api your-project-id:your-environment-id:your-service-id:your-trigger-id
 ```

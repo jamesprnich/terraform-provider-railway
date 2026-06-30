@@ -13,9 +13,9 @@ Railway shared variable.
 ## Example Usage
 
 ```terraform
-resource "railway_shared_variable" "example" {
-  name           = "SENTRY_KEY"
-  value          = "1234567890"
+resource "railway_shared_variable" "sentry_dsn" {
+  name           = "SENTRY_DSN"
+  value          = "https://key@sentry.io/123"
   project_id     = railway_project.example.id
   environment_id = railway_project.example.default_environment.id
 }
@@ -40,5 +40,6 @@ resource "railway_shared_variable" "example" {
 Import is supported using the following syntax:
 
 ```shell
-tofu import railway_shared_variable.sentry 0bb01547-570d-4109-a5e8-138691f6a2d1:staging:SENTRY_KEY
+# Import by project_id:environment_name:variable_name
+tofu import railway_shared_variable.sentry_dsn your-project-id:production:SENTRY_DSN
 ```
