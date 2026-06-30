@@ -1,3 +1,8 @@
+## 0.10.0
+
+### Enhancements
+* Add `registry_credentials` block to `railway_service_instance` — enables deploying private Docker images (e.g. GHCR) by supplying `username` and `password` credentials. The `password` attribute is `Sensitive` and write-only (sent to Railway on create/update; never returned on read). Only available on Railway Pro plan.
+
 ## 0.9.0
 
 ### BREAKING
