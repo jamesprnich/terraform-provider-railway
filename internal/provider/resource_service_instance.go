@@ -10,6 +10,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
+	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -18,12 +19,23 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
 
 var _ resource.Resource = &ServiceInstanceResource{}
 var _ resource.ResourceWithImportState = &ServiceInstanceResource{}
 var _ resource.ResourceWithValidateConfig = &ServiceInstanceResource{}
+
+type RegistryCredentialsModel struct {
+	Username types.String `tfsdk:"username"`
+	Password types.String `tfsdk:"password"`
+}
+
+var registryCredentialsAttrTypes = map[string]attr.Type{
+	"username": types.StringType,
+	"password": types.StringType,
+}
 
 func NewServiceInstanceResource() resource.Resource {
 	return &ServiceInstanceResource{}
@@ -58,6 +70,7 @@ type ServiceInstanceResourceModel struct {
 	PreDeployCommand       types.List    `tfsdk:"pre_deploy_command"`
 	WatchPatterns          types.List    `tfsdk:"watch_patterns"`
 	Builder                types.String  `tfsdk:"builder"`
+	RegistryCredentials    types.Object  `tfsdk:"registry_credentials"`
 }
 
 func (r *ServiceInstanceResource) Metadata(ctx context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
@@ -237,6 +250,30 @@ func (r *ServiceInstanceResource) Schema(ctx context.Context, req resource.Schem
 					stringvalidator.OneOf("HEROKU", "NIXPACKS", "PAKETO", "RAILPACK"),
 				},
 			},
+			"registry_credentials": schema.SingleNestedAttribute{
+				MarkdownDescription: "Credentials for a private Docker registry. Required when `source_image` references a private image. Only available on Railway Pro plan. The `password` is write-only — it is sent to Railway on create/update but is never returned on read; plan output will not show diffs on the password after the initial apply.",
+				Description:         "Credentials for a private Docker registry. Required when source_image references a private image. Only available on Railway Pro plan.",
+				Optional:            true,
+				Attributes: map[string]schema.Attribute{
+					"username": schema.StringAttribute{
+						MarkdownDescription: "Registry username.",
+						Description:         "Registry username.",
+						Required:            true,
+						Validators: []validator.String{
+							stringvalidator.UTF8LengthAtLeast(1),
+						},
+					},
+					"password": schema.StringAttribute{
+						MarkdownDescription: "Registry password or access token.",
+						Description:         "Registry password or access token.",
+						Required:            true,
+						Sensitive:           true,
+						Validators: []validator.String{
+							stringvalidator.UTF8LengthAtLeast(1),
+						},
+					},
+				},
+			},
 		},
 	}
 }
@@ -288,6 +325,15 @@ func (r *ServiceInstanceResource) ValidateConfig(ctx context.Context, req resour
 			path.Root("cron_schedule"),
 			"Invalid Configuration",
 			"`cron_schedule` can only be set when `num_replicas` is 1. Cron jobs must run on a single instance.",
+		)
+	}
+
+	// registry_credentials requires source_image — credentials only apply to Docker image sources.
+	if !data.RegistryCredentials.IsNull() && !data.RegistryCredentials.IsUnknown() && !hasSourceImage {
+		resp.Diagnostics.AddAttributeError(
+			path.Root("registry_credentials"),
+			"Invalid Configuration",
+			"`registry_credentials` can only be set when `source_image` is specified. Registry credentials are only valid for Docker image sources.",
 		)
 	}
 }
@@ -632,6 +678,18 @@ func buildServiceInstanceUpdateInput(data *ServiceInstanceResourceModel) Service
 	} else if !data.SourceRepo.IsNull() {
 		input.Source = &ServiceSourceInput{
 			Repo: data.SourceRepo.ValueStringPointer(),
+		}
+	}
+
+	// Registry credentials for private Docker images.
+	// The password is write-only — sent to the API on create/update but never returned on read.
+	// On Read, we preserve whatever is already in state (same pattern as vcpus/memory_gb).
+	if !data.RegistryCredentials.IsNull() && !data.RegistryCredentials.IsUnknown() {
+		var creds RegistryCredentialsModel
+		data.RegistryCredentials.As(context.Background(), &creds, basetypes.ObjectAsOptions{})
+		input.RegistryCredentials = &RegistryCredentialsInput{
+			Username: creds.Username.ValueString(),
+			Password: creds.Password.ValueString(),
 		}
 	}
 

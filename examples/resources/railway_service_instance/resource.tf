@@ -2,8 +2,14 @@ resource "railway_service_instance" "api_staging" {
   service_id     = railway_service.api.id
   environment_id = railway_environment.staging.id
 
-  # Optional: override source for this environment
+  # Optional: override source for this environment (public image)
   # source_image = "myorg/myapp:staging"
+
+  # Optional: private registry credentials (required when source_image is a private image)
+  # registry_credentials = {
+  #   username = "myuser"
+  #   password = var.registry_token   # mark as sensitive in your vars
+  # }
 
   # Optional: build and deploy settings
   # build_command    = "npm run build"

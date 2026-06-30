@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"regexp"
 	"sync"
 	"testing"
 
@@ -53,6 +54,7 @@ func TestAccServiceInstanceResourceDefault(t *testing.T) {
 					"pre_deploy_command",
 					"watch_patterns",
 					"builder",
+					"registry_credentials",
 				},
 			},
 			// Update
@@ -464,6 +466,119 @@ resource "railway_service_instance" "test" {
 					resource.TestCheckResourceAttr("railway_service_instance.test", "watch_patterns.#", "1"),
 					resource.TestCheckResourceAttr("railway_service_instance.test", "watch_patterns.0", "server/**"),
 				),
+			},
+		},
+	})
+}
+
+func TestServiceInstanceResource_registryCredentials(t *testing.T) {
+	serviceId := "11111111-2222-3333-4444-555555555555"
+	envId := "22222222-3333-4444-5555-666666666666"
+
+	// API response does not include registryCredentials — it is write-only.
+	instanceResp := `{"data":{"serviceInstance":{"id":"si-priv","serviceId":"` + serviceId + `","environmentId":"` + envId + `","startCommand":"","buildCommand":"","rootDirectory":"","healthcheckPath":"","numReplicas":1,"region":null,"railwayConfigFile":"","cronSchedule":"","sleepApplication":false,"overlapSeconds":null,"drainingSeconds":null,"healthcheckTimeout":null,"restartPolicyType":"ALWAYS","restartPolicyMaxRetries":0,"builder":"RAILPACK","preDeployCommand":null,"watchPatterns":[],"source":{"image":"ghcr.io/owner/app@sha256:abc123","repo":null},"latestDeployment":{"meta":{"serviceManifest":{"deploy":{"multiRegionConfig":{"us-west1":{"numReplicas":1}}}}}}}}}` //nolint
+
+	var mu sync.Mutex
+	var capturedInput map[string]interface{}
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var req mockGraphqlRequest
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			t.Errorf("mock server: failed to decode request body: %s", err)
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+
+		switch req.OperationName {
+		case "getServiceInstanceDetailed":
+			fmt.Fprint(w, instanceResp)
+		case "updateServiceInstanceInEnvironment":
+			mu.Lock()
+			var variables map[string]interface{}
+			if err := json.Unmarshal(req.Variables, &variables); err == nil {
+				if input, ok := variables["input"].(map[string]interface{}); ok {
+					capturedInput = input
+				}
+			}
+			mu.Unlock()
+			fmt.Fprint(w, `{"data":{"serviceInstanceUpdate":true}}`)
+		case "deployServiceInstance":
+			fmt.Fprint(w, `{"data":{"serviceInstanceDeploy":true}}`)
+		default:
+			t.Errorf("mock server: unexpected operation %q", req.OperationName)
+			w.WriteHeader(http.StatusInternalServerError)
+		}
+	}))
+	defer server.Close()
+
+	resource.UnitTest(t, resource.TestCase{
+		ProtoV6ProviderFactories: testUnitProtoV6ProviderFactories(),
+		Steps: []resource.TestStep{
+			{
+				Config: testUnitProviderConfig(server.URL) + `
+resource "railway_service_instance" "test" {
+  service_id     = "` + serviceId + `"
+  environment_id = "` + envId + `"
+  source_image   = "ghcr.io/owner/app@sha256:abc123"
+  registry_credentials = {
+    username = "myuser"
+    password = "ghp_secret-token"
+  }
+}
+`,
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("railway_service_instance.test", "source_image", "ghcr.io/owner/app@sha256:abc123"),
+					resource.TestCheckResourceAttr("railway_service_instance.test", "registry_credentials.username", "myuser"),
+					resource.TestCheckResourceAttr("railway_service_instance.test", "registry_credentials.password", "ghp_secret-token"),
+					func(s *terraform.State) error {
+						mu.Lock()
+						defer mu.Unlock()
+						if capturedInput == nil {
+							return fmt.Errorf("expected update input to be captured")
+						}
+						creds, ok := capturedInput["registryCredentials"].(map[string]interface{})
+						if !ok {
+							return fmt.Errorf("expected registryCredentials in update input, got: %v", capturedInput)
+						}
+						if creds["username"] != "myuser" {
+							return fmt.Errorf("expected username=myuser, got: %v", creds["username"])
+						}
+						if creds["password"] != "ghp_secret-token" {
+							return fmt.Errorf("expected password=ghp_secret-token, got: %v", creds["password"])
+						}
+						return nil
+					},
+				),
+			},
+		},
+	})
+}
+
+func TestServiceInstanceResource_registryCredentials_requiresSourceImage(t *testing.T) {
+	t.Parallel()
+	serviceId := "11111111-2222-3333-4444-555555555555"
+	envId := "22222222-3333-4444-5555-666666666666"
+
+	server := newMockGraphQLServer(t, mockFixtures{})
+	defer server.Close()
+
+	resource.UnitTest(t, resource.TestCase{
+		ProtoV6ProviderFactories: testUnitProtoV6ProviderFactories(),
+		Steps: []resource.TestStep{
+			{
+				Config: testUnitProviderConfig(server.URL) + `
+resource "railway_service_instance" "test" {
+  service_id           = "` + serviceId + `"
+  environment_id       = "` + envId + `"
+  registry_credentials = {
+    username = "myuser"
+    password = "ghp_secret-token"
+  }
+}
+`,
+				ExpectError: regexp.MustCompile(`registry_credentials.*can only be set when.*source_image`),
 			},
 		},
 	})

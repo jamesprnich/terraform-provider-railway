@@ -178,6 +178,35 @@ Notes:
 - `region` uses Railway's `multiRegionConfig` internally. The `ServiceInstance.region` API field returns null — the provider reads region from `latestDeployment.meta`.
 - `source_image` and `source_repo` are mutually exclusive. Use `source_image` for Docker images (e.g., `postgres:17`).
 
+### Private Docker Registries (GHCR, Docker Hub private, ECR, etc.)
+
+When `source_image` references a private image, supply `registry_credentials`. Requires a Railway **Pro** plan.
+
+```terraform
+resource "railway_service_instance" "backend" {
+  service_id     = railway_service.backend.id
+  environment_id = local.environment_id
+
+  source_image = "ghcr.io/myorg/backend@sha256:abc123..."
+
+  registry_credentials = {
+    username = "myuser"               # GitHub username or token user
+    password = var.ghcr_pull_token    # PAT with read:packages scope
+  }
+}
+
+variable "ghcr_pull_token" {
+  type      = string
+  sensitive = true
+}
+```
+
+Notes:
+- `registry_credentials` requires `source_image` — it is a validation error without it.
+- `password` is `Sensitive` (masked in plan output and state diffs) and write-only — Railway never returns it on read. The provider preserves it from state; no perpetual diff after apply.
+- `registry_credentials` cannot be recovered on `tofu import` (same as `vcpus`/`memory_gb`). Re-set it in config after import.
+- Public images (`source_image` without credentials) are unaffected — no change to existing behaviour.
+
 ### Private Networking
 
 For inter-service communication (e.g., app → Postgres), use private networking instead of public URLs:
