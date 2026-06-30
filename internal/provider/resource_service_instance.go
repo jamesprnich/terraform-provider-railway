@@ -11,6 +11,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -251,7 +252,7 @@ func (r *ServiceInstanceResource) Schema(ctx context.Context, req resource.Schem
 				},
 			},
 			"registry_credentials": schema.SingleNestedAttribute{
-				MarkdownDescription: "Credentials for a private Docker registry. Required when `source_image` references a private image. Only available on Railway Pro plan. The `password` is write-only — it is sent to Railway on create/update but is never returned on read; plan output will not show diffs on the password after the initial apply.",
+				MarkdownDescription: "Credentials for a private Docker registry. Required when `source_image` references a private image. Only available on Railway Pro plan. The `password` is write-only — it is sent to Railway on create/update but is never returned on read; plan output will not show diffs on the password after the initial apply. **Important:** always source `password` from a `sensitive` Terraform variable or a secrets data source (e.g. Vault). Ensure your Terraform state backend uses encryption at rest — the credential is stored in state for the lifetime of the resource.",
 				Description:         "Credentials for a private Docker registry. Required when source_image references a private image. Only available on Railway Pro plan.",
 				Optional:            true,
 				Attributes: map[string]schema.Attribute{
@@ -368,7 +369,11 @@ func (r *ServiceInstanceResource) Create(ctx context.Context, req resource.Creat
 
 	data.Id = types.StringValue(fmt.Sprintf("%s:%s", data.ServiceId.ValueString(), data.EnvironmentId.ValueString()))
 
-	input := buildServiceInstanceUpdateInput(data)
+	input, inputDiags := buildServiceInstanceUpdateInput(ctx, data)
+	resp.Diagnostics.Append(inputDiags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
 
 	_, err := updateServiceInstanceInEnvironment(ctx, *r.client, data.EnvironmentId.ValueString(), data.ServiceId.ValueString(), input)
 
@@ -470,7 +475,11 @@ func (r *ServiceInstanceResource) Update(ctx context.Context, req resource.Updat
 
 	data.Id = state.Id
 
-	input := buildServiceInstanceUpdateInput(data)
+	input, inputDiags := buildServiceInstanceUpdateInput(ctx, data)
+	resp.Diagnostics.Append(inputDiags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
 
 	_, err := updateServiceInstanceInEnvironment(ctx, *r.client, data.EnvironmentId.ValueString(), data.ServiceId.ValueString(), input)
 
@@ -578,7 +587,7 @@ func (r *ServiceInstanceResource) updateLimits(ctx context.Context, data *Servic
 }
 
 // buildServiceInstanceUpdateInput converts the Terraform model to a ServiceInstanceUpdateInput.
-func buildServiceInstanceUpdateInput(data *ServiceInstanceResourceModel) ServiceInstanceUpdateInput {
+func buildServiceInstanceUpdateInput(ctx context.Context, data *ServiceInstanceResourceModel) (ServiceInstanceUpdateInput, diag.Diagnostics) {
 	var input ServiceInstanceUpdateInput
 
 	if !data.RootDirectory.IsNull() {
@@ -684,16 +693,19 @@ func buildServiceInstanceUpdateInput(data *ServiceInstanceResourceModel) Service
 	// Registry credentials for private Docker images.
 	// The password is write-only — sent to the API on create/update but never returned on read.
 	// On Read, we preserve whatever is already in state (same pattern as vcpus/memory_gb).
+	var diags diag.Diagnostics
 	if !data.RegistryCredentials.IsNull() && !data.RegistryCredentials.IsUnknown() {
 		var creds RegistryCredentialsModel
-		data.RegistryCredentials.As(context.Background(), &creds, basetypes.ObjectAsOptions{})
-		input.RegistryCredentials = &RegistryCredentialsInput{
-			Username: creds.Username.ValueString(),
-			Password: creds.Password.ValueString(),
+		diags.Append(data.RegistryCredentials.As(ctx, &creds, basetypes.ObjectAsOptions{})...)
+		if !diags.HasError() {
+			input.RegistryCredentials = &RegistryCredentialsInput{
+				Username: creds.Username.ValueString(),
+				Password: creds.Password.ValueString(),
+			}
 		}
 	}
 
-	return input
+	return input, diags
 }
 
 // readServiceInstanceState queries the service instance and populates the model.
