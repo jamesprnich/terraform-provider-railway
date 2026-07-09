@@ -18,3 +18,13 @@ rascl-results/
 # Claude Code
 CLAUDE.md
 .vscode-screenshots/
+
+# Local env / secrets
+.env
+.env.*
+!.env.example
+credentials.json
+
+# Editor / local tooling
+.vscode/
+rascl.yaml

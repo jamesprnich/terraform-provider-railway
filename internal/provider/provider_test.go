@@ -26,7 +26,7 @@ var testAccProtoV6ProviderFactories = map[string]func() (tfprotov6.ProviderServe
 
 // Shared fixture IDs — populated by TestMain for acceptance tests.
 var (
-	testAccWorkspaceId     = envOrDefault("RAILWAY_TEST_WORKSPACE_ID", "1ea62ece-49ff-4106-808a-cd652d6c87b1")
+	testAccWorkspaceId     = os.Getenv("RAILWAY_TEST_WORKSPACE_ID")
 	testAccProjectId       string
 	testAccServiceId       string
 	testAccEnvironmentId   string
@@ -35,13 +35,6 @@ var (
 	testAccProjectName     string
 	testAccServiceName     = "acc-test-service"
 )
-
-func envOrDefault(key, fallback string) string {
-	if v := os.Getenv(key); v != "" {
-		return v
-	}
-	return fallback
-}
 
 func testAccPreCheck(t *testing.T) {
 	if v := os.Getenv("RAILWAY_TOKEN"); v == "" {
@@ -101,6 +94,10 @@ func TestMain(m *testing.M) {
 	// For unit tests (no TF_ACC), skip fixture setup entirely.
 	if os.Getenv("TF_ACC") == "" {
 		os.Exit(m.Run())
+	}
+
+	if testAccWorkspaceId == "" {
+		log.Fatal("RAILWAY_TEST_WORKSPACE_ID must be set for acceptance tests")
 	}
 
 	ctx := context.Background()

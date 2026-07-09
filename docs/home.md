@@ -18,7 +18,7 @@ terraform {
   required_providers {
     railway = {
       source  = "jamesprnich/railway"
-      version = "~> 0.8.0"
+      version = "~> 0.10.0"
     }
   }
 }

@@ -1,9 +1,11 @@
 {
-  "shortName": "TF Railway",
-  "tagline": "Terraform/OpenTofu provider for Railway cloud infrastructure",
-  "icon": "🛤️",
-  "colors": {
-    "primary": "#7C3AED",
-    "background": "#1E1B4B"
-  }
+  "$schema": "https://raw.githubusercontent.com/jamesprnich/product-json-spec/main/schema.json",
+  "name": "Railway OpenTofu Provider",
+  "shortName": "Railway",
+  "description": "OpenTofu/Terraform provider for managing Railway infrastructure as code",
+  "icon": "🚂",
+  "nameColor": "#ffffff",
+  "tagline": "OpenTofu provider for Railway",
+  "taglineColor": "#aaaaaa",
+  "backgroundColor": "#1a1a2e"
 }
