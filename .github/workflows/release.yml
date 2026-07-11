@@ -6,7 +6,49 @@ on:
 permissions:
   contents: write
 jobs:
+  # Run the full CI pipeline against the tagged commit before publishing.
+  # This closes the gap where a merge-squash to main could introduce a
+  # regression that CI-on-main hadn't finished checking by the time a tag
+  # is pushed. Belt-and-braces: if this job fails, goreleaser is skipped
+  # via the `needs:` dependency and no release ever ships.
+  check:
+    name: Pre-release Checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Install Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: 'go.mod'
+          cache: true
+      - name: Install OpenTofu
+        uses: opentofu/setup-opentofu@v1
+        with:
+          tofu_version: 1.11.8
+          tofu_wrapper: false
+      - name: Install deps
+        run: go mod download
+      - name: Build
+        run: go build -v .
+      - name: Vet
+        run: go vet ./...
+      - name: Lint
+        uses: golangci/golangci-lint-action@v7
+        with:
+          version: v2.4.0
+          args: --timeout=5m
+      - name: Unit tests
+        env:
+          TF_ACC_PROVIDER_NAMESPACE: jamesprnich
+          TF_ACC_PROVIDER_HOST: registry.opentofu.org
+        run: |
+          TF_ACC_TERRAFORM_PATH="$(which tofu)" go test -v -timeout 5m ./internal/provider/
+
   goreleaser:
+    name: goreleaser
+    needs: check
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
