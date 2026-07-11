@@ -1,0 +1,6 @@
+provider_installation {
+  dev_overrides {
+    "jamesprnich/railway" = "@@PROVIDER_BINARY_DIR@@"
+  }
+  direct {}
+}
