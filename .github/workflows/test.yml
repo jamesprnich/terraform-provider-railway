@@ -1,4 +1,4 @@
-name: Tests
+name: CI
 on:
   pull_request:
     paths-ignore:
@@ -20,7 +20,7 @@ on:
       - 'mkdocs.yml'
       - 'docker-compose.yml'
 concurrency:
-  group: test-${{ github.ref }}
+  group: ci-${{ github.ref }}
   cancel-in-progress: true
 permissions:
   contents: read
