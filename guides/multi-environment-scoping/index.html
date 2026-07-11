@@ -1,0 +1,1849 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="OpenTofu provider for managing Railway infrastructure as code">
+      
+      
+      
+        <link rel="canonical" href="https://jamesprnich.github.io/terraform-provider-railway/guides/multi-environment-scoping/">
+      
+      
+        <link rel="prev" href="../..">
+      
+      
+        <link rel="next" href="../authentication/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.1">
+    
+    
+      
+        <title>Multi-Environment Scoping - Railway OpenTofu Provider</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Inter:300,300i,400,400i,700,700i%7CJetBrains+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Inter";--md-code-font:"JetBrains Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+<!-- Analytics, custom CSS, etc -->
+
+  </head>
+  
+  
+    
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="slate" data-md-color-primary="blue" data-md-color-accent="blue">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#multi-environment-scoping" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="Railway OpenTofu Provider" class="md-header__button md-logo" aria-label="Railway OpenTofu Provider" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Railway OpenTofu Provider
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Multi-Environment Scoping
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+    
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/jamesprnich/terraform-provider-railway" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    terraform-provider-railway
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="Railway OpenTofu Provider" class="md-nav__button md-logo" aria-label="Railway OpenTofu Provider" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    Railway OpenTofu Provider
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/jamesprnich/terraform-provider-railway" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    terraform-provider-railway
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../home/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Provider Configuration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Guides
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Guides
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Multi-Environment Scoping
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Multi-Environment Scoping
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#the-problem-in-one-sentence" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The problem in one sentence
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-design" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The design
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#a-worked-example" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        A worked example
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-four-railway-side-footguns-v0110-documents" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The four Railway-side footguns v0.11.0 documents
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="The four Railway-side footguns v0.11.0 documents">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-sourceenvironmentid-copies-everything-from-the-source" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. sourceEnvironmentId copies everything from the source
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-environmentid-is-silently-ignored-when-the-target-is-a-non-fork" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. environmentId is silently ignored when the target is a non-fork
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-service-names-are-unique-per-project-not-per-environment" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Service names are unique per project, not per environment
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-railway_service-cannot-infer-its-environment-dependency" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. railway_service cannot infer its environment dependency
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-escape-hatch" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The escape hatch
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#migrating-from-v0100" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Migrating from v0.10.0
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#reference-quick-lookup" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reference — quick lookup
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../authentication/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Authentication
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Resources
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Resources
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../resources/project/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    project
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../resources/environment/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    environment
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../resources/service/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    service
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../resources/service_instance/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    service_instance
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../resources/variable/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    variable
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../resources/variable_collection/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    variable_collection
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../resources/shared_variable/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    shared_variable
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../resources/volume/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    volume
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../resources/volume_backup_schedule/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    volume_backup_schedule
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../resources/service_domain/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    service_domain
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../resources/custom_domain/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    custom_domain
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../resources/tcp_proxy/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    tcp_proxy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../resources/deployment_trigger/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    deployment_trigger
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../resources/egress_gateway/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    egress_gateway
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../resources/private_network/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    private_network
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../resources/private_network_endpoint/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    private_network_endpoint
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../resources/project_token/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    project_token
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../resources/trusted_domain/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    trusted_domain
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../resources/notification_rule/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    notification_rule
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../resources/bucket/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    bucket
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../resources/ssh_public_key/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ssh_public_key
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../resources/project_member/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    project_member
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Data Sources
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Data Sources
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../data-sources/project/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    project
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../data-sources/environment/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    environment
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../data-sources/service/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    service
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#the-problem-in-one-sentence" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The problem in one sentence
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-design" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The design
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#a-worked-example" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        A worked example
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-four-railway-side-footguns-v0110-documents" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The four Railway-side footguns v0.11.0 documents
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="The four Railway-side footguns v0.11.0 documents">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-sourceenvironmentid-copies-everything-from-the-source" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. sourceEnvironmentId copies everything from the source
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-environmentid-is-silently-ignored-when-the-target-is-a-non-fork" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. environmentId is silently ignored when the target is a non-fork
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-service-names-are-unique-per-project-not-per-environment" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Service names are unique per project, not per environment
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-railway_service-cannot-infer-its-environment-dependency" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. railway_service cannot infer its environment dependency
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-escape-hatch" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The escape hatch
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#migrating-from-v0100" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Migrating from v0.10.0
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#reference-quick-lookup" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reference — quick lookup
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="multi-environment-scoping">Multi-Environment Scoping<a class="headerlink" href="#multi-environment-scoping" title="Permanent link">&para;</a></h1>
+<p>Railway's default behaviour is that a service created without an environment id
+lands in <strong>every environment that isn't a fork</strong> — an intentional API property
+so that the dashboard "add service to project" gesture propagates to every
+environment. In Terraform, that default silently multiplies your intent: a
+single <code>railway_service</code> resource can materialise as one service in <code>dev</code>, one
+in <code>tst</code>, one in <code>qa</code>, one in <code>prd</code>, all sharing state that nobody asked to
+share. When two teams then deploy to different envs the same day, the effects
+race — and the losing team spends an afternoon trying to work out why their
+production Postgres crashed.</p>
+<p>The v0.11.0 provider introduces <strong>strict environment scoping</strong> as the default,
+along with a two-attribute mechanism that makes the correct pattern the
+easiest one to express. This guide explains what changed, why the design has
+the shape it has, and how to consume it — including the few footguns Railway
+retains at the API level that the provider surfaces in schema descriptions.</p>
+<h2 id="the-problem-in-one-sentence">The problem in one sentence<a class="headerlink" href="#the-problem-in-one-sentence" title="Permanent link">&para;</a></h2>
+<p>Prior to v0.11.0, an unscoped <code>railway_service</code> created a <code>Service</code> record
+that Railway propagated to every non-fork environment in the project, and
+subsequent <code>serviceConnect</code> / <code>updateServiceInstance</code> mutations happened
+without an environment context, so their effects propagated the same way.</p>
+<h2 id="the-design">The design<a class="headerlink" href="#the-design" title="Permanent link">&para;</a></h2>
+<p>The mechanism relies on a distinction Railway itself makes: an environment is
+either a <strong>fork</strong> of another environment (its <code>sourceEnvironment</code> is non-null)
+or a <strong>non-fork</strong> (its <code>sourceEnvironment</code> is null). Railway's own field
+description for <code>ServiceCreateInput.environmentId</code> says the quiet part out
+loud:</p>
+<blockquote>
+<p>Environment ID. If the specified environment is a fork, the service will
+only be created in it. Otherwise it will [be] created in all environments
+that are not forks of other environments.</p>
+</blockquote>
+<p>The provider organises resources so that the "otherwise" branch is never
+what the user wanted:</p>
+<ol>
+<li>The project's default environment (its <code>defaultEnvironmentName</code>, honoured
+   only at create time — set it to <code>core</code>) is the project's only non-fork
+   environment. It is <strong>kept empty forever</strong>. No services, no volumes, no
+   variables. It exists purely so the fork mechanism has an anchor.</li>
+<li>Every other environment (<code>dev</code>, <code>tst</code>, <code>qa</code>, <code>prd</code> — whatever your
+   deployment topology names them) is created as a <strong>fork</strong> of <code>core</code> via
+   <code>source_environment_id</code>.</li>
+<li>Every service, volume, and variable specifies the fork it belongs to via
+   <code>environment_id</code> (or <code>environmentId</code> on the child resource — service
+   instances, volumes, variables all already do this).</li>
+</ol>
+<p>Under this arrangement, <code>core</code> is the project's only non-fork environment.
+Any <code>serviceCreate</code> that forgets to scope itself lands inertly in <code>core</code>,
+which has no configuration to inherit and no traffic to disrupt. Every other
+mutation is fork-scoped by construction. <strong>The safe outcome becomes the
+default outcome, rather than a convention someone must remember.</strong></p>
+<p>The two attributes that carry the design:</p>
+<ul>
+<li><code>railway_environment.source_environment_id</code> — required under strict
+  env-scoping. Set it to <code>railway_project.&lt;name&gt;.default_environment.id</code> and
+  the resource becomes a fork of your empty <code>core</code>.</li>
+<li><code>railway_service.environment_id</code> — required under strict env-scoping. Set
+  it to a fork environment's id.</li>
+</ul>
+<p>Under <code>strict_env_scoping = true</code> (the provider default), omitting either
+attribute is a plan-time error. The rejection happens before any live
+mutation — you see the diagnostic on <code>tofu plan</code>, not on apply.</p>
+<h2 id="a-worked-example">A worked example<a class="headerlink" href="#a-worked-example" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kr">provider</span><span class="w"> </span><span class="nv">&quot;railway&quot;</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="c1">  # strict_env_scoping defaults to true; leave it that way.</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="p">}</span>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="c1"># Empty non-fork default environment named `core`.</span>
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="kr">resource</span><span class="w"> </span><span class="nc">&quot;railway_project&quot;</span><span class="w"> </span><span class="nv">&quot;app&quot;</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="w">  </span><span class="na">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;my-app&quot;</span>
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>
+<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="w">  </span><span class="nb">default_environment</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="w">    </span><span class="na">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;core&quot;</span>
+<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="w">  </span><span class="p">}</span>
+<a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a><span class="p">}</span>
+<a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>
+<a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a><span class="c1"># dev — a fork of the empty `core`. Everything created here stays here.</span>
+<a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a><span class="kr">resource</span><span class="w"> </span><span class="nc">&quot;railway_environment&quot;</span><span class="w"> </span><span class="nv">&quot;dev&quot;</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a><span class="w">  </span><span class="na">name</span><span class="w">                  </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;dev&quot;</span>
+<a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a><span class="w">  </span><span class="na">project_id</span><span class="w">            </span><span class="o">=</span><span class="w"> </span><span class="nv">railway_project.app.id</span>
+<a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a><span class="w">  </span><span class="na">source_environment_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nv">railway_project.app.default_environment.id</span>
+<a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a><span class="p">}</span>
+<a id="__codelineno-0-20" name="__codelineno-0-20" href="#__codelineno-0-20"></a>
+<a id="__codelineno-0-21" name="__codelineno-0-21" href="#__codelineno-0-21"></a><span class="c1"># The service — an empty shell scoped to dev. Note the depends_on: railway_service</span>
+<a id="__codelineno-0-22" name="__codelineno-0-22" href="#__codelineno-0-22"></a><span class="c1"># references only project_id, so Terraform cannot infer the dependency on</span>
+<a id="__codelineno-0-23" name="__codelineno-0-23" href="#__codelineno-0-23"></a><span class="c1"># railway_environment.dev, and without depends_on the environment may not</span>
+<a id="__codelineno-0-24" name="__codelineno-0-24" href="#__codelineno-0-24"></a><span class="c1"># exist when serviceCreate runs.</span>
+<a id="__codelineno-0-25" name="__codelineno-0-25" href="#__codelineno-0-25"></a><span class="kr">resource</span><span class="w"> </span><span class="nc">&quot;railway_service&quot;</span><span class="w"> </span><span class="nv">&quot;backend&quot;</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-0-26" name="__codelineno-0-26" href="#__codelineno-0-26"></a><span class="w">  </span><span class="na">name</span><span class="w">           </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;dev-backend&quot;</span>
+<a id="__codelineno-0-27" name="__codelineno-0-27" href="#__codelineno-0-27"></a><span class="w">  </span><span class="na">project_id</span><span class="w">     </span><span class="o">=</span><span class="w"> </span><span class="nv">railway_project.app.id</span>
+<a id="__codelineno-0-28" name="__codelineno-0-28" href="#__codelineno-0-28"></a><span class="w">  </span><span class="na">environment_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nv">railway_environment.dev.id</span>
+<a id="__codelineno-0-29" name="__codelineno-0-29" href="#__codelineno-0-29"></a><span class="w">  </span><span class="na">depends_on</span><span class="w">     </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="nv">railway_environment.dev</span><span class="p">]</span>
+<a id="__codelineno-0-30" name="__codelineno-0-30" href="#__codelineno-0-30"></a><span class="p">}</span>
+<a id="__codelineno-0-31" name="__codelineno-0-31" href="#__codelineno-0-31"></a>
+<a id="__codelineno-0-32" name="__codelineno-0-32" href="#__codelineno-0-32"></a><span class="c1"># Source, build, deploy configuration — env-scoped, on the instance.</span>
+<a id="__codelineno-0-33" name="__codelineno-0-33" href="#__codelineno-0-33"></a><span class="kr">resource</span><span class="w"> </span><span class="nc">&quot;railway_service_instance&quot;</span><span class="w"> </span><span class="nv">&quot;backend&quot;</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-0-34" name="__codelineno-0-34" href="#__codelineno-0-34"></a><span class="w">  </span><span class="na">service_id</span><span class="w">     </span><span class="o">=</span><span class="w"> </span><span class="nv">railway_service.backend.id</span>
+<a id="__codelineno-0-35" name="__codelineno-0-35" href="#__codelineno-0-35"></a><span class="w">  </span><span class="na">environment_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nv">railway_environment.dev.id</span>
+<a id="__codelineno-0-36" name="__codelineno-0-36" href="#__codelineno-0-36"></a><span class="w">  </span><span class="na">source_image</span><span class="w">   </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;myorg/backend:1.2.3&quot;</span>
+<a id="__codelineno-0-37" name="__codelineno-0-37" href="#__codelineno-0-37"></a><span class="w">  </span><span class="na">vcpus</span><span class="w">          </span><span class="o">=</span><span class="w"> </span><span class="nv">0.5</span>
+<a id="__codelineno-0-38" name="__codelineno-0-38" href="#__codelineno-0-38"></a><span class="w">  </span><span class="na">memory_gb</span><span class="w">      </span><span class="o">=</span><span class="w"> </span><span class="nv">0.5</span>
+<a id="__codelineno-0-39" name="__codelineno-0-39" href="#__codelineno-0-39"></a><span class="p">}</span>
+</code></pre></div>
+<p>To grow this to <code>dev + tst + qa + prd</code>, duplicate the <code>railway_environment</code>
++ <code>railway_service</code> + <code>railway_service_instance</code> block per environment (or
+use a <code>for_each</code>). Every service name gets prefixed with its environment
+(<code>dev-backend</code>, <code>tst-backend</code>, …) because service names are unique per
+project, not per environment.</p>
+<h2 id="the-four-railway-side-footguns-v0110-documents">The four Railway-side footguns v0.11.0 documents<a class="headerlink" href="#the-four-railway-side-footguns-v0110-documents" title="Permanent link">&para;</a></h2>
+<p>None of these are provider bugs. All of them are properties of the Railway
+API that catch people out; the provider documents them on the affected
+schema attribute and, where useful, enforces them at plan time.</p>
+<h3 id="1-sourceenvironmentid-copies-everything-from-the-source">1. <code>sourceEnvironmentId</code> copies everything from the source<a class="headerlink" href="#1-sourceenvironmentid-copies-everything-from-the-source" title="Permanent link">&para;</a></h3>
+<p>Railway's fork mutation copies every service, volume, variable, and
+configuration from the source environment. This is the intended semantic
+when you want to duplicate a working environment into a new one, but it
+turns <code>railway_environment.prd { source_environment_id = railway_environment.dev.id }</code>
+into a landmine: you've just duplicated dev into prd, with all its
+credentials, without the config asking to.</p>
+<p><strong>Always fork the empty <code>core</code> environment.</strong> The provider warns about this
+in the schema description on <code>source_environment_id</code>.</p>
+<h3 id="2-environmentid-is-silently-ignored-when-the-target-is-a-non-fork">2. <code>environmentId</code> is silently ignored when the target is a non-fork<a class="headerlink" href="#2-environmentid-is-silently-ignored-when-the-target-is-a-non-fork" title="Permanent link">&para;</a></h3>
+<p>Setting <code>railway_service.environment_id</code> to a non-fork environment does not
+scope the service to that environment. Railway falls back to its default
+"create across every non-fork environment" behaviour, ignoring the id
+entirely.</p>
+<p>The provider catches this under strict mode: <code>Create</code> looks up the target
+environment and rejects the service if the target has no
+<code>source_environment_id</code>. Under permissive mode, no check is performed — you
+opted in to Railway's raw semantics.</p>
+<h3 id="3-service-names-are-unique-per-project-not-per-environment">3. Service names are unique per project, not per environment<a class="headerlink" href="#3-service-names-are-unique-per-project-not-per-environment" title="Permanent link">&para;</a></h3>
+<p><code>serviceCreate</code> rejects a name that already exists in the project regardless
+of which environment the new service is scoped to. Two services named
+<code>backend</code>, one in <code>dev</code> and one in <code>prd</code>, cannot coexist. The convention
+(also the provider's recommendation) is to prefix every service name with
+its environment: <code>dev-backend</code>, <code>prd-backend</code>. This also matches how
+Railway's private DNS works — the DNS name is just the service name.</p>
+<p><strong>The same uniqueness rule applies to <code>railway_volume.name</code></strong> — volume names
+are also unique per project. Use the same env-prefix convention:
+<code>dev-postgres-data</code>, <code>prd-postgres-data</code>. The <code>examples/workflows/main.tf</code>
+reference example demonstrates this end-to-end.</p>
+<p><strong>Environments themselves do not need a prefix</strong> — the environment name IS
+the prefix source. Use short, canonical names: <code>dev</code>, <code>tst</code>, <code>qa</code>, <code>prd</code>.</p>
+<h3 id="4-railway_service-cannot-infer-its-environment-dependency">4. <code>railway_service</code> cannot infer its environment dependency<a class="headerlink" href="#4-railway_service-cannot-infer-its-environment-dependency" title="Permanent link">&para;</a></h3>
+<p>The <code>railway_service</code> resource references only <code>project_id</code>. Terraform's
+implicit dependency tracking cannot see the reference to <code>environment_id</code>
+as a dependency on the corresponding <code>railway_environment</code> resource — the
+service's provider schema doesn't declare <code>environment_id</code> as pointing at
+<code>railway_environment</code>, it's just a string. Without an explicit
+<code>depends_on = [railway_environment.&lt;name&gt;]</code>, the service can be scheduled
+before the environment exists, and the create fails.</p>
+<p>Every service should carry the <code>depends_on</code> — the schema description on
+<code>environment_id</code> says so.</p>
+<h2 id="the-escape-hatch">The escape hatch<a class="headerlink" href="#the-escape-hatch" title="Permanent link">&para;</a></h2>
+<p>If you have a use case that genuinely wants Railway's default project-wide
+behaviour, or you're intentionally testing what happens without scoping,
+set the flag on the provider block:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="kr">provider</span><span class="w"> </span><span class="nv">&quot;railway&quot;</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="w">  </span><span class="na">strict_env_scoping</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="no">false</span>
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="p">}</span>
+</code></pre></div>
+<p>Under permissive mode:</p>
+<ul>
+<li><code>environment_id</code> and <code>source_environment_id</code> behave as plain Optional
+  attributes; omitting them is legal.</li>
+<li>The non-fork target check is skipped.</li>
+<li>Services created without <code>environment_id</code> land project-wide (Railway's
+  "all non-fork environments" semantic).</li>
+<li>Environments created without <code>source_environment_id</code> are non-fork.</li>
+</ul>
+<p>The flag can also be set via the <code>RAILWAY_STRICT_ENV_SCOPING</code> environment
+variable — useful in CI where the same provider config is reused across
+runs.</p>
+<h2 id="migrating-from-v0100">Migrating from v0.10.0<a class="headerlink" href="#migrating-from-v0100" title="Permanent link">&para;</a></h2>
+<p>v0.11.0 is a breaking release. The <code>railway_service</code> resource was reduced
+to a shell — every configuration field was moved to <code>railway_service_instance</code>,
+which is the resource Railway's API canonically models per environment. If
+you're upgrading:</p>
+<ol>
+<li><strong>Add <code>environment_id</code></strong> to every <code>railway_service</code> resource. Reference
+   the environment the service was previously implicitly bound to.</li>
+<li><strong>Add <code>depends_on</code></strong> on the same block, pointing at the environment
+   resource.</li>
+<li><strong>Move <code>source_image</code>, <code>source_repo</code>, <code>source_repo_branch</code>, <code>root_directory</code>,
+   <code>config_path</code>, <code>cron_schedule</code>, and any registry credentials off</strong>
+   <code>railway_service</code> and onto the corresponding <code>railway_service_instance</code>.
+   If a <code>railway_service_instance</code> doesn't already exist for that
+   <code>(service, environment)</code> pair, add one.</li>
+<li><strong>Add <code>source_environment_id</code></strong> to every additional <code>railway_environment</code>.
+   For an existing project, point at the current default environment.</li>
+<li><strong>Rename the default environment to <code>core</code></strong> — but note that this is
+   honoured <strong>only at project creation time</strong>. On an existing project the
+   name is fixed; you can adopt the pattern on new projects and use whatever
+   the existing name is on the current one.</li>
+</ol>
+<p>There is no state upgrader. If you were on v0.10.0, you'll need to
+<code>terraform state rm</code> the affected resources and re-import them (or, if
+you're starting from a fresh apply, just apply the new config).</p>
+<h2 id="reference-quick-lookup">Reference — quick lookup<a class="headerlink" href="#reference-quick-lookup" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Concern</th>
+<th>Attribute</th>
+<th>Enforcement</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Force fork on additional envs</td>
+<td><code>railway_environment.source_environment_id</code></td>
+<td>Plan-time under strict; permitted null under permissive</td>
+</tr>
+<tr>
+<td>Force scope on services</td>
+<td><code>railway_service.environment_id</code></td>
+<td>Plan-time under strict; permitted null under permissive</td>
+</tr>
+<tr>
+<td>Reject non-fork target</td>
+<td>(checked in <code>railway_service.Create</code>)</td>
+<td>API preflight under strict; skipped under permissive</td>
+</tr>
+<tr>
+<td>Opt out of all four checks</td>
+<td><code>strict_env_scoping = false</code> on the provider block, or <code>RAILWAY_STRICT_ENV_SCOPING=false</code> in the env</td>
+<td>Applies to every resource in the config</td>
+</tr>
+<tr>
+<td>Volume post-create retry</td>
+<td><code>railway_volume</code> (always on)</td>
+<td>Unconditional — this fixes a bug and has no opt-out</td>
+</tr>
+</tbody>
+</table>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.top", "content.code.copy", "content.code.annotate", "search.suggest", "search.highlight", "toc.follow"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+    
+  </body>
+</html>

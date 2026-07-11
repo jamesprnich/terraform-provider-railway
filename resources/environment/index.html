@@ -6,7 +6,7 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
-        <meta name="description" content="Railway environment.">
+        <meta name="description" content="Additional Railway environment created as a fork of another environment (typically the project's empty default environment). Under strict_env_scoping = true (provider default), source_environment_id is required — a non-fork environment breaks per-environment resource scoping and is rejected at plan time.">
       
       
       
@@ -337,6 +337,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../../guides/multi-environment-scoping/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Multi-Environment Scoping
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../guides/authentication/" class="md-nav__link">
         
   
@@ -536,6 +564,17 @@
     <span class="md-ellipsis">
       
         Required
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#optional" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Optional
       
     </span>
   </a>
@@ -1344,6 +1383,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#optional" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Optional
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#read-only" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1391,12 +1441,22 @@
 
 
 <h1 id="railway_environment-resource">railway_environment (Resource)<a class="headerlink" href="#railway_environment-resource" title="Permanent link">&para;</a></h1>
-<p>Railway environment.</p>
+<p>Additional Railway environment created as a fork of another environment (typically the project's empty default environment). Under <code>strict_env_scoping = true</code> (provider default), <code>source_environment_id</code> is required — a non-fork environment breaks per-environment resource scoping and is rejected at plan time.</p>
 <h2 id="example-usage">Example Usage<a class="headerlink" href="#example-usage" title="Permanent link">&para;</a></h2>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kr">resource</span><span class="w"> </span><span class="nc">&quot;railway_environment&quot;</span><span class="w"> </span><span class="nv">&quot;staging&quot;</span><span class="w"> </span><span class="p">{</span>
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="w">  </span><span class="na">name</span><span class="w">       </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;staging&quot;</span>
-<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="w">  </span><span class="na">project_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nv">railway_project.example.id</span>
-<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="p">}</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="c1"># railway_environment creates an additional environment as a *fork* of an</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="c1"># existing one. The default env (created by `railway_project`) stays as the</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="c1"># empty non-fork; every additional env should be a fork of it.</span>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="c1">#</span>
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="c1"># Under strict_env_scoping (provider default) `source_environment_id` is</span>
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="c1"># required. Passing a non-fork environment causes `serviceCreate` to leak</span>
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="c1"># across every non-fork environment in the project — this is the class of</span>
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="c1"># bug strict env-scoping prevents.</span>
+<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>
+<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="kr">resource</span><span class="w"> </span><span class="nc">&quot;railway_environment&quot;</span><span class="w"> </span><span class="nv">&quot;dev&quot;</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="w">  </span><span class="na">name</span><span class="w">                  </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;dev&quot;</span>
+<a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a><span class="w">  </span><span class="na">project_id</span><span class="w">            </span><span class="o">=</span><span class="w"> </span><span class="nv">railway_project.example.id</span>
+<a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a><span class="w">  </span><span class="na">source_environment_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nv">railway_project.example.default_environment.id</span>
+<a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a><span class="p">}</span>
 </code></pre></div>
 <!-- schema generated by tfplugindocs -->
 <h2 id="schema">Schema<a class="headerlink" href="#schema" title="Permanent link">&para;</a></h2>
@@ -1405,6 +1465,11 @@
 <li><code>name</code> (String) Name of the environment.</li>
 <li><code>project_id</code> (String) Identifier of the project the environment belongs to.</li>
 </ul>
+<h3 id="optional">Optional<a class="headerlink" href="#optional" title="Permanent link">&para;</a></h3>
+<ul>
+<li><code>source_environment_id</code> (String) Identifier of the environment this environment is forked from. Required under strict env-scoping (provider default). Forking is the mechanism Railway uses to make <code>serviceCreate</code> and <code>serviceDelete</code> scope to a single environment — a non-fork environment causes services to be created across every non-fork environment in the project. Setting this to the project's empty default environment (<code>railway_project.default_environment.id</code>) is the safe pattern. Cannot be changed after creation.</li>
+</ul>
+<p>~&gt; <strong>Never fork a real environment.</strong> Railway's fork semantic copies every service, volume, variable, and configuration from the source environment into the new one. Always fork the project's empty default environment (<code>core</code> in the recommended layout). Forking <code>dev</code> to create <code>prd</code> will silently duplicate <code>dev</code>'s state into <code>prd</code>.</p>
 <h3 id="read-only">Read-Only<a class="headerlink" href="#read-only" title="Permanent link">&para;</a></h3>
 <ul>
 <li><code>id</code> (String) Identifier of the environment.</li>

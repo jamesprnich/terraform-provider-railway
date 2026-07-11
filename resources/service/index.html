@@ -6,8 +6,8 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
-        <meta name="description" content="Railway service.
-⚠️ NOTE: All the other settings not specified here are recommended to be specified in the Railway config file.">
+        <meta name="description" content="Railway service — an empty per-environment shell. Under strict_env_scoping = true (provider default), environment_id is required and the service is created only in that environment. Attach source, build, and deploy configuration via railway_service_instance (per-environment). Optional inline volume block creates a persistent volume scoped to the same environment.
+Setting source or build configuration on railway_service is intentionally not supported — the underlying Railway mutation (serviceConnect) is env-less and would create source connections across every non-fork environment in the project. Use railway_service_instance instead.">
       
       
       
@@ -338,6 +338,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../../guides/multi-environment-scoping/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Multi-Environment Scoping
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../guides/authentication/" class="md-nav__link">
         
   
@@ -587,17 +615,6 @@
     <span class="md-ellipsis">
       
         Read-Only
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#nested-schema-for-regions" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Nested Schema for regions
       
     </span>
   </a>
@@ -1400,17 +1417,6 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#nested-schema-for-regions" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Nested Schema for regions
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
   <a href="#nested-schema-for-volume" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1458,53 +1464,50 @@
 
 
 <h1 id="railway_service-resource">railway_service (Resource)<a class="headerlink" href="#railway_service-resource" title="Permanent link">&para;</a></h1>
-<p>Railway service.</p>
+<p>Railway service — an empty per-environment shell. Under <code>strict_env_scoping = true</code> (provider default), <code>environment_id</code> is required and the service is created only in that environment. Attach source, build, and deploy configuration via <code>railway_service_instance</code> (per-environment). Optional inline <code>volume</code> block creates a persistent volume scoped to the same environment.</p>
 <blockquote>
-<p>⚠️ <strong>NOTE:</strong> All the other settings not specified here are recommended to be specified in the Railway config file.</p>
+<p>Setting source or build configuration on <code>railway_service</code> is intentionally not supported — the underlying Railway mutation (<code>serviceConnect</code>) is env-less and would create source connections across every non-fork environment in the project. Use <code>railway_service_instance</code> instead.</p>
 </blockquote>
 <h2 id="example-usage">Example Usage<a class="headerlink" href="#example-usage" title="Permanent link">&para;</a></h2>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kr">resource</span><span class="w"> </span><span class="nc">&quot;railway_service&quot;</span><span class="w"> </span><span class="nv">&quot;api&quot;</span><span class="w"> </span><span class="p">{</span>
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="w">  </span><span class="na">name</span><span class="w">       </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;api&quot;</span>
-<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="w">  </span><span class="na">project_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nv">railway_project.example.id</span>
-<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>
-<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="c1">  # Optional: deploy from a Docker image</span>
-<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="c1">  # source_image = &quot;nginx:1.27-alpine&quot;</span>
-<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>
-<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="c1">  # Optional: deploy from a GitHub repo (requires both)</span>
-<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="c1">  # source_repo        = &quot;myorg/myapp&quot;</span>
-<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="c1">  # source_repo_branch = &quot;main&quot;</span>
-<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="p">}</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="c1"># railway_service is an empty per-environment shell. Source, build, deploy,</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="c1"># and resource-limit configuration lives on `railway_service_instance` (which</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="c1"># Railway itself scopes per environment).</span>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="c1">#</span>
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="c1"># Under strict_env_scoping (provider default) `environment_id` is required.</span>
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="kr">resource</span><span class="w"> </span><span class="nc">&quot;railway_service&quot;</span><span class="w"> </span><span class="nv">&quot;api&quot;</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="w">  </span><span class="na">name</span><span class="w">           </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;api&quot;</span>
+<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="w">  </span><span class="na">project_id</span><span class="w">     </span><span class="o">=</span><span class="w"> </span><span class="nv">railway_project.example.id</span>
+<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="w">  </span><span class="na">environment_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nv">railway_environment.dev.id</span>
+<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>
+<a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a><span class="c1">  # Optional: cosmetic icon shown in the Railway dashboard.</span>
+<a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a><span class="c1">  # icon = &quot;🐹&quot;</span>
+<a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>
+<a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a><span class="c1">  # Optional: attach a persistent volume in the same environment as the service.</span>
+<a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a><span class="c1">  # volume = {</span>
+<a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a><span class="c1">  #   name       = &quot;data&quot;</span>
+<a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a><span class="c1">  #   mount_path = &quot;/data&quot;</span>
+<a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a><span class="c1">  # }</span>
+<a id="__codelineno-0-20" name="__codelineno-0-20" href="#__codelineno-0-20"></a><span class="p">}</span>
 </code></pre></div>
 <!-- schema generated by tfplugindocs -->
 <h2 id="schema">Schema<a class="headerlink" href="#schema" title="Permanent link">&para;</a></h2>
 <h3 id="required">Required<a class="headerlink" href="#required" title="Permanent link">&para;</a></h3>
 <ul>
-<li><code>name</code> (String) Name of the service.</li>
-<li><code>project_id</code> (String) Identifier of the project the service belongs to. ~&gt; <strong>Warning:</strong> Changing this forces resource destruction and recreation.</li>
+<li><code>name</code> (String) Name of the service. Also becomes the service's private DNS name (<code>&lt;name&gt;.railway.internal</code>).</li>
 </ul>
+<p>~&gt; <strong>Service names are unique per project, not per environment.</strong> Railway rejects <code>serviceCreate</code> for a name that already exists in the project regardless of which environment the new service is scoped to. To run the same role (e.g., <code>backend</code>) in multiple environments, prefix the name with the environment: <code>dev-backend</code>, <code>tst-backend</code>, <code>prd-backend</code>. This convention also matches how Railway's private DNS works — the DNS name is just the service name.
+- <code>project_id</code> (String) Identifier of the project the service belongs to. ~&gt; <strong>Warning:</strong> Changing this forces resource destruction and recreation.</p>
 <h3 id="optional">Optional<a class="headerlink" href="#optional" title="Permanent link">&para;</a></h3>
 <ul>
-<li><code>config_path</code> (String) Path to the Railway config file. Conflicts with <code>source_image</code>.</li>
-<li><code>cron_schedule</code> (String) Cron schedule of the service. Only allowed when total number of replicas across all regions is <code>1</code>.</li>
-<li><code>regions</code> (Attributes List) Regions with replicas to deploy service in. (see <a href="#nestedatt--regions">below for nested schema</a>)</li>
-<li><code>root_directory</code> (String) Directory to use for the service. Conflicts with <code>source_image</code>.</li>
-<li><code>source_image</code> (String) Source image of the service. Conflicts with <code>source_repo</code>, <code>source_repo_branch</code>, <code>root_directory</code> and <code>config_path</code>.</li>
-<li><code>source_image_registry_password</code> (String, Sensitive) Private Docker registry credentials.</li>
-<li><code>source_image_registry_username</code> (String) Private Docker registry credentials.</li>
-<li><code>source_repo</code> (String) Source repository of the service. Conflicts with <code>source_image</code>.</li>
-<li><code>source_repo_branch</code> (String) Source repository branch to be used with <code>source_repo</code>. Must be specified if <code>source_repo</code> is specified.</li>
-<li><code>volume</code> (Attributes) Volume connected to the service. (see <a href="#nestedatt--volume">below for nested schema</a>)</li>
+<li><code>environment_id</code> (String) Identifier of the environment the service is scoped to. Required under strict env-scoping (provider default). Must reference a <strong>fork environment</strong> (an environment created with <code>source_environment_id</code>). This is a Railway API property, not a provider limitation: Railway's <code>serviceCreate</code> silently ignores <code>environmentId</code> when it points at a non-fork environment and creates the service across every non-fork environment in the project. Cannot be changed after creation.</li>
 </ul>
+<p>~&gt; <strong>Dependency note:</strong> <code>railway_service</code> references only <code>project_id</code>, so Terraform cannot infer the environment dependency from the reference in <code>environment_id</code>. Add <code>depends_on = [railway_environment.&lt;name&gt;]</code> on the service resource, or the environment may not exist when <code>serviceCreate</code> runs.
+- <code>icon</code> (String) Icon displayed for the service in the Railway dashboard. Cosmetic, applies project-wide (not per-environment). See <a href="https://docs.railway.com/reference/services">Railway's icon docs</a>.
+- <code>volume</code> (Attributes) Volume connected to the service. Created in the same environment as the service (<code>environment_id</code>). Prefer this over a standalone <code>railway_volume</code> when the volume is dedicated to one service. (see <a href="#nestedatt--volume">below for nested schema</a>)</p>
 <h3 id="read-only">Read-Only<a class="headerlink" href="#read-only" title="Permanent link">&para;</a></h3>
 <ul>
 <li><code>id</code> (String) Identifier of the service.</li>
-</ul>
-<p><a id="nestedatt--regions"></a></p>
-<h3 id="nested-schema-for-regions">Nested Schema for <code>regions</code><a class="headerlink" href="#nested-schema-for-regions" title="Permanent link">&para;</a></h3>
-<p>Optional:</p>
-<ul>
-<li><code>num_replicas</code> (Number) Number of replicas to deploy. <strong>Default</strong> <code>1</code>.</li>
-<li><code>region</code> (String) Region to deploy in.</li>
 </ul>
 <p><a id="nestedatt--volume"></a></p>
 <h3 id="nested-schema-for-volume">Nested Schema for <code>volume</code><a class="headerlink" href="#nested-schema-for-volume" title="Permanent link">&para;</a></h3>
