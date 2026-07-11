@@ -1504,7 +1504,7 @@ Setting source or build configuration on railway_service is intentionally not su
 </ul>
 <p>~&gt; <strong>Dependency note:</strong> <code>railway_service</code> references only <code>project_id</code>, so Terraform cannot infer the environment dependency from the reference in <code>environment_id</code>. Add <code>depends_on = [railway_environment.&lt;name&gt;]</code> on the service resource, or the environment may not exist when <code>serviceCreate</code> runs.
 - <code>icon</code> (String) Icon displayed for the service in the Railway dashboard. Cosmetic, applies project-wide (not per-environment). See <a href="https://docs.railway.com/reference/services">Railway's icon docs</a>.
-- <code>volume</code> (Attributes) Volume connected to the service. Created in the same environment as the service (<code>environment_id</code>). Prefer this over a standalone <code>railway_volume</code> when the volume is dedicated to one service. (see <a href="#nestedatt--volume">below for nested schema</a>)</p>
+- <code>volume</code> (Attributes) Volume connected to the service. Created in the same environment as the service (<code>environment_id</code>). Prefer the standalone <code>railway_volume</code> resource when the volume needs its own lifecycle, backup schedule, or references from other resources. (see <a href="#nestedatt--volume">below for nested schema</a>)</p>
 <h3 id="read-only">Read-Only<a class="headerlink" href="#read-only" title="Permanent link">&para;</a></h3>
 <ul>
 <li><code>id</code> (String) Identifier of the service.</li>
