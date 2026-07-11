@@ -2,526 +2,111 @@ package provider
 
 import (
 	"fmt"
-	"regexp"
 	"testing"
 
+	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
-func TestAccServiceResourceDefault(t *testing.T) {
+// =============================================================================
+// railway_service acceptance tests (v0.11.0 shape)
+//
+// Runs against a live Railway API when TF_ACC=1 and RAILWAY_TOKEN are set.
+// The shell shape is name + project_id + environment_id + optional volume +
+// optional icon — every configuration field (source, cron, build, replicas,
+// registry creds, etc.) belongs on railway_service_instance now.
+//
+// Full pre-v0.11.0 test coverage was removed with the fields; the CHANGELOG
+// documents the migration.
+// =============================================================================
+
+func TestAccServiceResource_basic(t *testing.T) {
+	name := "tf-acc-svc-" + acctest.RandString(6)
+
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
 		CheckDestroy:             testAccCheckServiceDestroy,
 		Steps: []resource.TestStep{
-			// Create and Read testing
 			{
-				Config: testAccServiceResourceConfigDefault("todo-app"),
+				Config: testAccServiceResourceConfig_basic(name),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestMatchResourceAttr("railway_service.test", "id", uuidRegex()),
-					resource.TestCheckResourceAttr("railway_service.test", "name", "todo-app"),
-					resource.TestCheckResourceAttr("railway_service.test", "project_id", testAccProjectId),
-					resource.TestCheckNoResourceAttr("railway_service.test", "cron_schedule"),
-					resource.TestCheckNoResourceAttr("railway_service.test", "source_image"),
+					resource.TestCheckResourceAttr("railway_service.test", "name", name),
+					resource.TestCheckResourceAttrSet("railway_service.test", "id"),
+					resource.TestCheckResourceAttrSet("railway_service.test", "project_id"),
+					resource.TestCheckResourceAttrSet("railway_service.test", "environment_id"),
+					// Shell shape — no source_* / cron / regions / registry
 					resource.TestCheckNoResourceAttr("railway_service.test", "source_repo"),
-					resource.TestCheckNoResourceAttr("railway_service.test", "source_repo_branch"),
-					resource.TestCheckNoResourceAttr("railway_service.test", "root_directory"),
-					resource.TestCheckNoResourceAttr("railway_service.test", "config_path"),
-					resource.TestCheckNoResourceAttr("railway_service.test", "volume"),
+					resource.TestCheckNoResourceAttr("railway_service.test", "source_image"),
+					resource.TestCheckNoResourceAttr("railway_service.test", "cron_schedule"),
 					resource.TestCheckNoResourceAttr("railway_service.test", "regions"),
 				),
 			},
-			// ImportState testing
 			{
 				ResourceName:      "railway_service.test",
 				ImportState:       true,
 				ImportStateVerify: true,
 			},
-			// Update with default values
-			{
-				Config: testAccServiceResourceConfigDefault("todo-app"),
-				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestMatchResourceAttr("railway_service.test", "id", uuidRegex()),
-					resource.TestCheckResourceAttr("railway_service.test", "name", "todo-app"),
-					resource.TestCheckResourceAttr("railway_service.test", "project_id", testAccProjectId),
-					resource.TestCheckNoResourceAttr("railway_service.test", "cron_schedule"),
-					resource.TestCheckNoResourceAttr("railway_service.test", "source_image"),
-					resource.TestCheckNoResourceAttr("railway_service.test", "source_repo"),
-					resource.TestCheckNoResourceAttr("railway_service.test", "source_repo_branch"),
-					resource.TestCheckNoResourceAttr("railway_service.test", "root_directory"),
-					resource.TestCheckNoResourceAttr("railway_service.test", "config_path"),
-					resource.TestCheckNoResourceAttr("railway_service.test", "volume"),
-					resource.TestCheckNoResourceAttr("railway_service.test", "regions"),
-				),
-			},
-			// Update and Read testing regions
-			{
-				Config: testAccServiceResourceConfigNonDefaultRegions("nue-todo-app"),
-				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestMatchResourceAttr("railway_service.test", "id", uuidRegex()),
-					resource.TestCheckResourceAttr("railway_service.test", "name", "nue-todo-app"),
-					resource.TestCheckResourceAttr("railway_service.test", "project_id", testAccProjectId),
-					resource.TestCheckNoResourceAttr("railway_service.test", "cron_schedule"),
-					resource.TestCheckNoResourceAttr("railway_service.test", "source_image"),
-					resource.TestCheckNoResourceAttr("railway_service.test", "source_repo"),
-					resource.TestCheckNoResourceAttr("railway_service.test", "source_repo_branch"),
-					resource.TestCheckNoResourceAttr("railway_service.test", "root_directory"),
-					resource.TestCheckNoResourceAttr("railway_service.test", "config_path"),
-					resource.TestCheckNoResourceAttr("railway_service.test", "volume"),
-					resource.TestCheckResourceAttr("railway_service.test", "regions.0.region", "europe-west4-drams3a"),
-					resource.TestCheckResourceAttr("railway_service.test", "regions.0.num_replicas", "3"),
-					resource.TestCheckResourceAttr("railway_service.test", "regions.1.region", "us-east4-eqdc4a"),
-					resource.TestCheckResourceAttr("railway_service.test", "regions.1.num_replicas", "2"),
-				),
-			},
-			// ImportState testing (skipped: import after multi-region update changes ordering)
-			// Update and Read testing image
-			{
-				Config: testAccServiceResourceConfigNonDefaultImage("nue-todo-app"),
-				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestMatchResourceAttr("railway_service.test", "id", uuidRegex()),
-					resource.TestCheckResourceAttr("railway_service.test", "name", "nue-todo-app"),
-					resource.TestCheckResourceAttr("railway_service.test", "project_id", testAccProjectId),
-					resource.TestCheckNoResourceAttr("railway_service.test", "cron_schedule"),
-					resource.TestCheckResourceAttr("railway_service.test", "source_image", "hello-world"),
-					resource.TestCheckNoResourceAttr("railway_service.test", "source_repo"),
-					resource.TestCheckNoResourceAttr("railway_service.test", "source_repo_branch"),
-					resource.TestCheckNoResourceAttr("railway_service.test", "root_directory"),
-					resource.TestCheckNoResourceAttr("railway_service.test", "config_path"),
-					resource.TestCheckNoResourceAttr("railway_service.test", "volume"),
-					resource.TestCheckResourceAttr("railway_service.test", "regions.0.region", testAccDefaultRegion),
-					resource.TestCheckResourceAttr("railway_service.test", "regions.0.num_replicas", "1"),
-				),
-			},
-			// ImportState testing
-			{
-				ResourceName:      "railway_service.test",
-				ImportState:       true,
-				ImportStateVerify: true,
-			},
-			// Update and Read testing repo (skipped: requires GitHub app repo access)
-			// ImportState testing
-			{
-				ResourceName:      "railway_service.test",
-				ImportState:       true,
-				ImportStateVerify: true,
-			},
-			// Update and Read testing volume
-			{
-				Config: testAccServiceResourceConfigNonDefaultVolume("nue-todo-app", "acc-default-vol", "/mnt"),
-				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestMatchResourceAttr("railway_service.test", "id", uuidRegex()),
-					resource.TestCheckResourceAttr("railway_service.test", "name", "nue-todo-app"),
-					resource.TestCheckResourceAttr("railway_service.test", "project_id", testAccProjectId),
-					resource.TestCheckResourceAttr("railway_service.test", "cron_schedule", "0 0 * * *"),
-					resource.TestCheckNoResourceAttr("railway_service.test", "source_image"),
-					resource.TestCheckNoResourceAttr("railway_service.test", "source_repo"),
-					resource.TestCheckNoResourceAttr("railway_service.test", "source_repo_branch"),
-					resource.TestCheckNoResourceAttr("railway_service.test", "root_directory"),
-					resource.TestCheckNoResourceAttr("railway_service.test", "config_path"),
-					resource.TestMatchResourceAttr("railway_service.test", "volume.id", uuidRegex()),
-					resource.TestCheckResourceAttr("railway_service.test", "volume.name", "acc-default-vol"),
-					resource.TestCheckResourceAttr("railway_service.test", "volume.mount_path", "/mnt"),
-					resource.TestCheckResourceAttr("railway_service.test", "volume.size", "50000"),
-					resource.TestCheckResourceAttr("railway_service.test", "regions.0.region", testAccDefaultRegion),
-					resource.TestCheckResourceAttr("railway_service.test", "regions.0.num_replicas", "1"),
-				),
-			},
-			// ImportState testing
-			{
-				ResourceName:      "railway_service.test",
-				ImportState:       true,
-				ImportStateVerify: true,
-			},
-			// Delete testing automatically occurs in TestCase
 		},
 	})
 }
 
-func TestAccServiceResourceNonDefaultImage(t *testing.T) {
+func TestAccServiceResource_renameAndIcon(t *testing.T) {
+	name := "tf-acc-svc-" + acctest.RandString(6)
+	renamed := name + "-r"
+
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
 		CheckDestroy:             testAccCheckServiceDestroy,
 		Steps: []resource.TestStep{
-			// Create and Read testing
 			{
-				Config: testAccServiceResourceConfigNonDefaultImage("todo-app"),
+				Config: testAccServiceResourceConfig_basic(name),
+				Check:  resource.TestCheckResourceAttr("railway_service.test", "name", name),
+			},
+			{
+				Config: testAccServiceResourceConfig_withIcon(renamed, "🐹"),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestMatchResourceAttr("railway_service.test", "id", uuidRegex()),
-					resource.TestCheckResourceAttr("railway_service.test", "name", "todo-app"),
-					resource.TestCheckResourceAttr("railway_service.test", "project_id", testAccProjectId),
-					resource.TestCheckNoResourceAttr("railway_service.test", "cron_schedule"),
-					resource.TestCheckResourceAttr("railway_service.test", "source_image", "hello-world"),
-					resource.TestCheckNoResourceAttr("railway_service.test", "source_repo"),
-					resource.TestCheckNoResourceAttr("railway_service.test", "source_repo_branch"),
-					resource.TestCheckNoResourceAttr("railway_service.test", "root_directory"),
-					resource.TestCheckNoResourceAttr("railway_service.test", "config_path"),
-					resource.TestCheckNoResourceAttr("railway_service.test", "volume"),
-					resource.TestCheckResourceAttr("railway_service.test", "regions.0.region", testAccDefaultRegion),
-					resource.TestCheckResourceAttr("railway_service.test", "regions.0.num_replicas", "1"),
+					resource.TestCheckResourceAttr("railway_service.test", "name", renamed),
+					resource.TestCheckResourceAttr("railway_service.test", "icon", "🐹"),
 				),
 			},
-			// ImportState testing
-			{
-				ResourceName:      "railway_service.test",
-				ImportState:       true,
-				ImportStateVerify: true,
-			},
-			// Update with same values
-			{
-				Config: testAccServiceResourceConfigNonDefaultImage("todo-app"),
-				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestMatchResourceAttr("railway_service.test", "id", uuidRegex()),
-					resource.TestCheckResourceAttr("railway_service.test", "name", "todo-app"),
-					resource.TestCheckResourceAttr("railway_service.test", "project_id", testAccProjectId),
-					resource.TestCheckNoResourceAttr("railway_service.test", "cron_schedule"),
-					resource.TestCheckResourceAttr("railway_service.test", "source_image", "hello-world"),
-					resource.TestCheckNoResourceAttr("railway_service.test", "source_repo"),
-					resource.TestCheckNoResourceAttr("railway_service.test", "source_repo_branch"),
-					resource.TestCheckNoResourceAttr("railway_service.test", "root_directory"),
-					resource.TestCheckNoResourceAttr("railway_service.test", "config_path"),
-					resource.TestCheckNoResourceAttr("railway_service.test", "volume"),
-					resource.TestCheckResourceAttr("railway_service.test", "regions.0.region", testAccDefaultRegion),
-					resource.TestCheckResourceAttr("railway_service.test", "regions.0.num_replicas", "1"),
-				),
-			},
-			// Update with null values
-			{
-				Config: testAccServiceResourceConfigDefault("nue-todo-app"),
-				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestMatchResourceAttr("railway_service.test", "id", uuidRegex()),
-					resource.TestCheckResourceAttr("railway_service.test", "name", "nue-todo-app"),
-					resource.TestCheckResourceAttr("railway_service.test", "project_id", testAccProjectId),
-					resource.TestCheckNoResourceAttr("railway_service.test", "cron_schedule"),
-					resource.TestCheckNoResourceAttr("railway_service.test", "source_image"),
-					resource.TestCheckNoResourceAttr("railway_service.test", "source_repo"),
-					resource.TestCheckNoResourceAttr("railway_service.test", "source_repo_branch"),
-					resource.TestCheckNoResourceAttr("railway_service.test", "root_directory"),
-					resource.TestCheckNoResourceAttr("railway_service.test", "config_path"),
-					resource.TestCheckNoResourceAttr("railway_service.test", "volume"),
-					resource.TestCheckResourceAttr("railway_service.test", "regions.0.region", testAccDefaultRegion),
-					resource.TestCheckResourceAttr("railway_service.test", "regions.0.num_replicas", "1"),
-				),
-			},
-			// ImportState testing
-			{
-				ResourceName:      "railway_service.test",
-				ImportState:       true,
-				ImportStateVerify: true,
-			},
-			// Delete testing automatically occurs in TestCase
 		},
 	})
 }
 
-func TestAccServiceResourceNonDefaultRepo(t *testing.T) {
-	t.Skip("Skipped: requires GitHub app repo access in workspace Settings > Connections. See memory: project_deployment_trigger_github.md")
+func TestAccServiceResource_withInlineVolume(t *testing.T) {
+	name := "tf-acc-svc-" + acctest.RandString(6)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
 		CheckDestroy:             testAccCheckServiceDestroy,
 		Steps: []resource.TestStep{
-			// Create and Read testing
 			{
-				Config: testAccServiceResourceConfigNonDefaultRepo("todo-app"),
+				Config: testAccServiceResourceConfig_withVolume(name),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestMatchResourceAttr("railway_service.test", "id", uuidRegex()),
-					resource.TestCheckResourceAttr("railway_service.test", "name", "todo-app"),
-					resource.TestCheckResourceAttr("railway_service.test", "project_id", testAccProjectId),
-					resource.TestCheckNoResourceAttr("railway_service.test", "cron_schedule"),
-					resource.TestCheckNoResourceAttr("railway_service.test", "source_image"),
-					resource.TestCheckResourceAttr("railway_service.test", "source_repo", "railwayapp/blog"),
-					resource.TestCheckResourceAttr("railway_service.test", "source_repo_branch", "main"),
-					resource.TestCheckResourceAttr("railway_service.test", "root_directory", "blog"),
-					resource.TestCheckResourceAttr("railway_service.test", "config_path", "blog/railway.yaml"),
-					resource.TestCheckNoResourceAttr("railway_service.test", "volume"),
-					resource.TestCheckNoResourceAttr("railway_service.test", "regions"),
-				),
-			},
-			// ImportState testing
-			{
-				ResourceName:      "railway_service.test",
-				ImportState:       true,
-				ImportStateVerify: true,
-			},
-			// Update with same values
-			{
-				Config: testAccServiceResourceConfigNonDefaultRepo("todo-app"),
-				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestMatchResourceAttr("railway_service.test", "id", uuidRegex()),
-					resource.TestCheckResourceAttr("railway_service.test", "name", "todo-app"),
-					resource.TestCheckResourceAttr("railway_service.test", "project_id", testAccProjectId),
-					resource.TestCheckNoResourceAttr("railway_service.test", "cron_schedule"),
-					resource.TestCheckNoResourceAttr("railway_service.test", "source_image"),
-					resource.TestCheckResourceAttr("railway_service.test", "source_repo", "railwayapp/blog"),
-					resource.TestCheckResourceAttr("railway_service.test", "source_repo_branch", "main"),
-					resource.TestCheckResourceAttr("railway_service.test", "root_directory", "blog"),
-					resource.TestCheckResourceAttr("railway_service.test", "config_path", "blog/railway.yaml"),
-					resource.TestCheckNoResourceAttr("railway_service.test", "volume"),
-					resource.TestCheckNoResourceAttr("railway_service.test", "regions"),
-				),
-			},
-			// Update with null values
-			{
-				Config: testAccServiceResourceConfigDefault("nue-todo-app"),
-				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestMatchResourceAttr("railway_service.test", "id", uuidRegex()),
-					resource.TestCheckResourceAttr("railway_service.test", "name", "nue-todo-app"),
-					resource.TestCheckResourceAttr("railway_service.test", "project_id", testAccProjectId),
-					resource.TestCheckNoResourceAttr("railway_service.test", "cron_schedule"),
-					resource.TestCheckNoResourceAttr("railway_service.test", "source_image"),
-					resource.TestCheckNoResourceAttr("railway_service.test", "source_repo"),
-					resource.TestCheckNoResourceAttr("railway_service.test", "source_repo_branch"),
-					resource.TestCheckNoResourceAttr("railway_service.test", "volume"),
-					resource.TestCheckNoResourceAttr("railway_service.test", "regions"),
-				),
-			},
-			// ImportState testing
-			{
-				ResourceName:      "railway_service.test",
-				ImportState:       true,
-				ImportStateVerify: true,
-			},
-			// Delete testing automatically occurs in TestCase
-		},
-	})
-}
-
-func TestAccServiceResourceNonDefaultRegionsImage(t *testing.T) {
-	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { testAccPreCheck(t) },
-		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
-		CheckDestroy:             testAccCheckServiceDestroy,
-		Steps: []resource.TestStep{
-			// Create and Read testing
-			{
-				Config: testAccServiceResourceConfigNonDefaultRegionsImage("todo-app"),
-				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestMatchResourceAttr("railway_service.test", "id", uuidRegex()),
-					resource.TestCheckResourceAttr("railway_service.test", "name", "todo-app"),
-					resource.TestCheckResourceAttr("railway_service.test", "project_id", testAccProjectId),
-					resource.TestCheckNoResourceAttr("railway_service.test", "cron_schedule"),
-					resource.TestCheckResourceAttr("railway_service.test", "source_image", "hello-world"),
-					resource.TestCheckNoResourceAttr("railway_service.test", "source_repo"),
-					resource.TestCheckNoResourceAttr("railway_service.test", "source_repo_branch"),
-					resource.TestCheckNoResourceAttr("railway_service.test", "root_directory"),
-					resource.TestCheckNoResourceAttr("railway_service.test", "config_path"),
-					resource.TestCheckNoResourceAttr("railway_service.test", "volume"),
-					resource.TestCheckResourceAttr("railway_service.test", "regions.0.region", "europe-west4-drams3a"),
-					resource.TestCheckResourceAttr("railway_service.test", "regions.0.num_replicas", "3"),
-					resource.TestCheckResourceAttr("railway_service.test", "regions.1.region", "us-east4-eqdc4a"),
-					resource.TestCheckResourceAttr("railway_service.test", "regions.1.num_replicas", "2"),
-				),
-			},
-			// ImportState testing
-			{
-				ResourceName:      "railway_service.test",
-				ImportState:       true,
-				ImportStateVerify: true,
-			},
-			// Update with same values
-			{
-				Config: testAccServiceResourceConfigNonDefaultRegionsImage("todo-app"),
-				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestMatchResourceAttr("railway_service.test", "id", uuidRegex()),
-					resource.TestCheckResourceAttr("railway_service.test", "name", "todo-app"),
-					resource.TestCheckResourceAttr("railway_service.test", "project_id", testAccProjectId),
-					resource.TestCheckNoResourceAttr("railway_service.test", "cron_schedule"),
-					resource.TestCheckResourceAttr("railway_service.test", "source_image", "hello-world"),
-					resource.TestCheckNoResourceAttr("railway_service.test", "source_repo"),
-					resource.TestCheckNoResourceAttr("railway_service.test", "source_repo_branch"),
-					resource.TestCheckNoResourceAttr("railway_service.test", "root_directory"),
-					resource.TestCheckNoResourceAttr("railway_service.test", "config_path"),
-					resource.TestCheckNoResourceAttr("railway_service.test", "volume"),
-					resource.TestCheckResourceAttr("railway_service.test", "regions.0.region", "europe-west4-drams3a"),
-					resource.TestCheckResourceAttr("railway_service.test", "regions.0.num_replicas", "3"),
-					resource.TestCheckResourceAttr("railway_service.test", "regions.1.region", "us-east4-eqdc4a"),
-					resource.TestCheckResourceAttr("railway_service.test", "regions.1.num_replicas", "2"),
-				),
-			},
-			// ImportState testing
-			{
-				ResourceName:      "railway_service.test",
-				ImportState:       true,
-				ImportStateVerify: true,
-			},
-			// Update with null values
-			{
-				Config: testAccServiceResourceConfigDefault("nue-todo-app"),
-				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestMatchResourceAttr("railway_service.test", "id", uuidRegex()),
-					resource.TestCheckResourceAttr("railway_service.test", "name", "nue-todo-app"),
-					resource.TestCheckResourceAttr("railway_service.test", "project_id", testAccProjectId),
-					resource.TestCheckNoResourceAttr("railway_service.test", "cron_schedule"),
-					resource.TestCheckNoResourceAttr("railway_service.test", "source_image"),
-					resource.TestCheckNoResourceAttr("railway_service.test", "source_repo"),
-					resource.TestCheckNoResourceAttr("railway_service.test", "source_repo_branch"),
-					resource.TestCheckNoResourceAttr("railway_service.test", "root_directory"),
-					resource.TestCheckNoResourceAttr("railway_service.test", "config_path"),
-					resource.TestCheckNoResourceAttr("railway_service.test", "volume"),
-					resource.TestCheckResourceAttr("railway_service.test", "regions.0.region", testAccDefaultRegion),
-					resource.TestCheckResourceAttr("railway_service.test", "regions.0.num_replicas", "1"),
-				),
-			},
-			// ImportState testing
-			{
-				ResourceName:      "railway_service.test",
-				ImportState:       true,
-				ImportStateVerify: true,
-			},
-			// Delete testing automatically occurs in TestCase
-		},
-	})
-}
-
-func TestAccServiceResourceNonDefaultVolume(t *testing.T) {
-	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { testAccPreCheck(t) },
-		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
-		CheckDestroy:             testAccCheckServiceDestroy,
-		Steps: []resource.TestStep{
-			// Create and Read testing
-			{
-				Config: testAccServiceResourceConfigNonDefaultVolume("todo-app", "acc-svc-inline-vol", "/mnt"),
-				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestMatchResourceAttr("railway_service.test", "id", uuidRegex()),
-					resource.TestCheckResourceAttr("railway_service.test", "name", "todo-app"),
-					resource.TestCheckResourceAttr("railway_service.test", "project_id", testAccProjectId),
-					resource.TestCheckResourceAttr("railway_service.test", "cron_schedule", "0 0 * * *"),
-					resource.TestCheckNoResourceAttr("railway_service.test", "source_image"),
-					resource.TestCheckNoResourceAttr("railway_service.test", "source_repo"),
-					resource.TestCheckNoResourceAttr("railway_service.test", "source_repo_branch"),
-					resource.TestCheckNoResourceAttr("railway_service.test", "root_directory"),
-					resource.TestCheckNoResourceAttr("railway_service.test", "config_path"),
-					resource.TestMatchResourceAttr("railway_service.test", "volume.id", uuidRegex()),
-					resource.TestCheckResourceAttr("railway_service.test", "volume.name", "acc-svc-inline-vol"),
-					resource.TestCheckResourceAttr("railway_service.test", "volume.mount_path", "/mnt"),
-					resource.TestCheckResourceAttr("railway_service.test", "volume.size", "50000"),
-					resource.TestCheckNoResourceAttr("railway_service.test", "regions"),
-				),
-			},
-			// ImportState testing
-			{
-				ResourceName:      "railway_service.test",
-				ImportState:       true,
-				ImportStateVerify: true,
-			},
-			// Update with same values
-			{
-				Config: testAccServiceResourceConfigNonDefaultVolume("todo-app", "acc-svc-inline-vol", "/mnt"),
-				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestMatchResourceAttr("railway_service.test", "id", uuidRegex()),
-					resource.TestCheckResourceAttr("railway_service.test", "name", "todo-app"),
-					resource.TestCheckResourceAttr("railway_service.test", "project_id", testAccProjectId),
-					resource.TestCheckResourceAttr("railway_service.test", "cron_schedule", "0 0 * * *"),
-					resource.TestCheckNoResourceAttr("railway_service.test", "source_image"),
-					resource.TestCheckNoResourceAttr("railway_service.test", "source_repo"),
-					resource.TestCheckNoResourceAttr("railway_service.test", "source_repo_branch"),
-					resource.TestCheckNoResourceAttr("railway_service.test", "root_directory"),
-					resource.TestCheckNoResourceAttr("railway_service.test", "config_path"),
-					resource.TestMatchResourceAttr("railway_service.test", "volume.id", uuidRegex()),
-					resource.TestCheckResourceAttr("railway_service.test", "volume.name", "acc-svc-inline-vol"),
-					resource.TestCheckResourceAttr("railway_service.test", "volume.mount_path", "/mnt"),
-					resource.TestCheckResourceAttr("railway_service.test", "volume.size", "50000"),
-					resource.TestCheckNoResourceAttr("railway_service.test", "regions"),
-				),
-			},
-			// ImportState testing
-			{
-				ResourceName:      "railway_service.test",
-				ImportState:       true,
-				ImportStateVerify: true,
-			},
-			// Update with different values
-			{
-				Config: testAccServiceResourceConfigNonDefaultVolume("todo-app", "acc-svc-data-vol", "/data"),
-				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestMatchResourceAttr("railway_service.test", "id", uuidRegex()),
-					resource.TestCheckResourceAttr("railway_service.test", "name", "todo-app"),
-					resource.TestCheckResourceAttr("railway_service.test", "project_id", testAccProjectId),
-					resource.TestCheckResourceAttr("railway_service.test", "cron_schedule", "0 0 * * *"),
-					resource.TestCheckNoResourceAttr("railway_service.test", "source_image"),
-					resource.TestCheckNoResourceAttr("railway_service.test", "source_repo"),
-					resource.TestCheckNoResourceAttr("railway_service.test", "source_repo_branch"),
-					resource.TestCheckNoResourceAttr("railway_service.test", "root_directory"),
-					resource.TestCheckNoResourceAttr("railway_service.test", "config_path"),
-					resource.TestMatchResourceAttr("railway_service.test", "volume.id", uuidRegex()),
-					resource.TestCheckResourceAttr("railway_service.test", "volume.name", "acc-svc-data-vol"),
+					resource.TestCheckResourceAttr("railway_service.test", "name", name),
+					resource.TestCheckResourceAttrSet("railway_service.test", "volume.id"),
+					resource.TestCheckResourceAttr("railway_service.test", "volume.name", "data"),
 					resource.TestCheckResourceAttr("railway_service.test", "volume.mount_path", "/data"),
-					resource.TestCheckResourceAttr("railway_service.test", "volume.size", "50000"),
-					resource.TestCheckNoResourceAttr("railway_service.test", "regions"),
 				),
-			},
-			// ImportState testing
-			{
-				ResourceName:      "railway_service.test",
-				ImportState:       true,
-				ImportStateVerify: true,
-			},
-			// Update with null values — volume removal.
-			// Railway's volumeDelete API retains volumes for data protection, so
-			// a refresh after apply will find the volume still present, creating
-			// a non-empty plan (drift). This is expected platform behaviour.
-			{
-				Config: testAccServiceResourceConfigDefault("nue-todo-app"),
-				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestMatchResourceAttr("railway_service.test", "id", uuidRegex()),
-					resource.TestCheckResourceAttr("railway_service.test", "name", "nue-todo-app"),
-					resource.TestCheckResourceAttr("railway_service.test", "project_id", testAccProjectId),
-					resource.TestCheckNoResourceAttr("railway_service.test", "cron_schedule"),
-					resource.TestCheckNoResourceAttr("railway_service.test", "source_image"),
-					resource.TestCheckNoResourceAttr("railway_service.test", "source_repo"),
-					resource.TestCheckNoResourceAttr("railway_service.test", "source_repo_branch"),
-					resource.TestCheckNoResourceAttr("railway_service.test", "root_directory"),
-					resource.TestCheckNoResourceAttr("railway_service.test", "config_path"),
-				),
-				ExpectNonEmptyPlan: true,
-			},
-			// Delete testing automatically occurs in TestCase
-		},
-	})
-}
-
-func TestAccServiceResourceCronScheduleMultipleReplicas(t *testing.T) {
-	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { testAccPreCheck(t) },
-		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
-		CheckDestroy:             testAccCheckServiceDestroy,
-		Steps: []resource.TestStep{
-			{
-				Config:      testAccServiceResourceConfigCronScheduleMultipleReplicas("todo-app"),
-				ExpectError: regexp.MustCompile("(?s)`cron_schedule` can only be set when total number of replicas.*Found 2 replicas"),
-			},
-		},
-	})
-}
-
-func TestAccServiceResourceCronScheduleMultipleRegions(t *testing.T) {
-	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { testAccPreCheck(t) },
-		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
-		CheckDestroy:             testAccCheckServiceDestroy,
-		Steps: []resource.TestStep{
-			{
-				Config:      testAccServiceResourceConfigCronScheduleMultipleRegions("todo-app"),
-				ExpectError: regexp.MustCompile("(?s)`cron_schedule` can only be set when total number of replicas.*Found 2 replicas"),
 			},
 		},
 	})
 }
 
 func TestAccServiceResource_disappears(t *testing.T) {
+	name := "tf-acc-svc-" + acctest.RandString(6)
+
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
 		CheckDestroy:             testAccCheckServiceDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccServiceResourceConfigDefault("disappears-test"),
+				Config: testAccServiceResourceConfig_basic(name),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestMatchResourceAttr("railway_service.test", "id", uuidRegex()),
 					testAccCheckServiceDisappears("railway_service.test"),
 				),
 				ExpectNonEmptyPlan: true,
@@ -530,132 +115,61 @@ func TestAccServiceResource_disappears(t *testing.T) {
 	})
 }
 
-func testAccServiceResourceConfigDefault(name string) string {
+// -----------------------------------------------------------------------------
+// HCL config builders — each creates a fork env off the fixture env, then
+// a service scoped to that fork. This is the v0.11.0 strict-mode pattern.
+// -----------------------------------------------------------------------------
+
+func testAccServiceResourceConfig_basic(name string) string {
 	return fmt.Sprintf(`
-resource "railway_service" "test" {
-  name = "%s"
-  project_id = "%s"
-}
-`, name, testAccProjectId)
+resource "railway_environment" "test" {
+  name                  = "%s-env"
+  project_id            = "%s"
+  source_environment_id = "%s"
 }
 
-func testAccServiceResourceConfigNonDefaultRegions(name string) string {
+resource "railway_service" "test" {
+  name           = "%s"
+  project_id     = "%s"
+  environment_id = railway_environment.test.id
+}
+`, name, testAccProjectId, testAccEnvironmentId, name, testAccProjectId)
+}
+
+func testAccServiceResourceConfig_withIcon(name, icon string) string {
 	return fmt.Sprintf(`
+resource "railway_environment" "test" {
+  name                  = "%s-env"
+  project_id            = "%s"
+  source_environment_id = "%s"
+}
+
 resource "railway_service" "test" {
-  name = "%s"
-  project_id = "%s"
-
-  regions = [
-    {
-      region = "europe-west4-drams3a"
-      num_replicas = 3
-    },
-    {
-      region = "us-east4-eqdc4a"
-      num_replicas = 2
-    }
-  ]
+  name           = "%s"
+  project_id     = "%s"
+  environment_id = railway_environment.test.id
+  icon           = "%s"
 }
-`, name, testAccProjectId)
+`, name, testAccProjectId, testAccEnvironmentId, name, testAccProjectId, icon)
 }
 
-func testAccServiceResourceConfigNonDefaultRegionsImage(name string) string {
+func testAccServiceResourceConfig_withVolume(name string) string {
 	return fmt.Sprintf(`
+resource "railway_environment" "test" {
+  name                  = "%s-env"
+  project_id            = "%s"
+  source_environment_id = "%s"
+}
+
 resource "railway_service" "test" {
-  name = "%s"
-  project_id = "%s"
-
-  source_image = "hello-world"
-
-  regions = [
-    {
-      region = "europe-west4-drams3a"
-      num_replicas = 3
-    },
-    {
-      region = "us-east4-eqdc4a"
-      num_replicas = 2
-    }
-  ]
-}
-`, name, testAccProjectId)
-}
-
-func testAccServiceResourceConfigNonDefaultImage(name string) string {
-	return fmt.Sprintf(`
-resource "railway_service" "test" {
-  name = "%s"
-  project_id = "%s"
-
-  source_image = "hello-world"
-}
-`, name, testAccProjectId)
-}
-
-func testAccServiceResourceConfigNonDefaultRepo(name string) string {
-	return fmt.Sprintf(`
-resource "railway_service" "test" {
-  name = "%s"
-  project_id = "%s"
-
-  source_repo = "railwayapp/blog"
-  source_repo_branch = "main"
-  root_directory = "blog"
-  config_path = "blog/railway.yaml"
-}
-`, name, testAccProjectId)
-}
-
-func testAccServiceResourceConfigNonDefaultVolume(name string, volumeName string, path string) string {
-	return fmt.Sprintf(`
-resource "railway_service" "test" {
-  name = "%s"
-  project_id = "%s"
-
-  cron_schedule = "0 0 * * *"
+  name           = "%s"
+  project_id     = "%s"
+  environment_id = railway_environment.test.id
 
   volume = {
-    name = "%s"
-    mount_path = "%s"
+    name       = "data"
+    mount_path = "/data"
   }
 }
-`, name, testAccProjectId, volumeName, path)
-}
-
-func testAccServiceResourceConfigCronScheduleMultipleReplicas(name string) string {
-	return fmt.Sprintf(`
-resource "railway_service" "test" {
-  name       = "%s"
-  project_id = "%s"
-
-  cron_schedule = "0 0 * * *"
-
-  regions = [
-    {
-      region       = "europe-west4-drams3a"
-      num_replicas = 2
-    }
-  ]
-}
-`, name, testAccProjectId)
-}
-
-func testAccServiceResourceConfigCronScheduleMultipleRegions(name string) string {
-	return fmt.Sprintf(`
-resource "railway_service" "test" {
-  name       = "%s"
-  project_id = "%s"
-
-  cron_schedule = "0 0 * * *"
-
-  regions = [
-    {
-      region = "europe-west4-drams3a"
-    },
-    {
-      region = "us-east4-eqdc4a"
-    }
-  ]
-}
-`, name, testAccProjectId)
+`, name, testAccProjectId, testAccEnvironmentId, name, testAccProjectId)
 }

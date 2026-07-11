@@ -2,6 +2,10 @@ fragment Environment on Environment {
   id
   name
   projectId
+  isEphemeral
+  sourceEnvironment {
+    id
+  }
 }
 
 query getEnvironment($id: String!) {

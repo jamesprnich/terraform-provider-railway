@@ -6,11 +6,11 @@ import (
 	"strings"
 
 	"github.com/Khan/genqlient/graphql"
+	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
-	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
@@ -142,23 +142,12 @@ func (r *CustomDomainResource) Schema(ctx context.Context, req resource.SchemaRe
 }
 
 func (r *CustomDomainResource) Configure(ctx context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
-	// Prevent panic if the provider has not been configured.
-	if req.ProviderData == nil {
+	data := providerDataFrom(req.ProviderData, &resp.Diagnostics)
+	if data == nil {
 		return
 	}
 
-	client, ok := req.ProviderData.(*graphql.Client)
-
-	if !ok {
-		resp.Diagnostics.AddError(
-			"Unexpected Resource Configure Type",
-			fmt.Sprintf("Expected *graphql.Client, got: %T. Please report this issue to the provider developers.", req.ProviderData),
-		)
-
-		return
-	}
-
-	r.client = client
+	r.client = data.Client
 }
 
 func (r *CustomDomainResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
@@ -266,7 +255,7 @@ func (r *CustomDomainResource) Read(ctx context.Context, req resource.ReadReques
 	}
 
 	for _, customDomain := range response.Domains.CustomDomains {
-		if customDomain.CustomDomain.Domain == data.Domain.ValueString() {
+		if customDomain.Domain == data.Domain.ValueString() {
 			domain = customDomain.CustomDomain
 			break
 		}
@@ -350,9 +339,9 @@ func (r *CustomDomainResource) Update(ctx context.Context, req resource.UpdateRe
 	}
 
 	for _, customDomain := range response.Domains.CustomDomains {
-		if customDomain.CustomDomain.Domain == plan.Domain.ValueString() {
-			if customDomain.CustomDomain.TargetPort != 0 {
-				plan.TargetPort = types.Int64Value(int64(customDomain.CustomDomain.TargetPort))
+		if customDomain.Domain == plan.Domain.ValueString() {
+			if customDomain.TargetPort != 0 {
+				plan.TargetPort = types.Int64Value(int64(customDomain.TargetPort))
 			} else {
 				plan.TargetPort = types.Int64Null()
 			}

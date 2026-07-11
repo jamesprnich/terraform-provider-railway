@@ -1,11 +1,20 @@
+# railway_service is an empty per-environment shell. Source, build, deploy,
+# and resource-limit configuration lives on `railway_service_instance` (which
+# Railway itself scopes per environment).
+#
+# Under strict_env_scoping (provider default) `environment_id` is required.
+
 resource "railway_service" "api" {
-  name       = "api"
-  project_id = railway_project.example.id
+  name           = "api"
+  project_id     = railway_project.example.id
+  environment_id = railway_environment.dev.id
 
-  # Optional: deploy from a Docker image
-  # source_image = "nginx:1.27-alpine"
+  # Optional: cosmetic icon shown in the Railway dashboard.
+  # icon = "🐹"
 
-  # Optional: deploy from a GitHub repo (requires both)
-  # source_repo        = "myorg/myapp"
-  # source_repo_branch = "main"
+  # Optional: attach a persistent volume in the same environment as the service.
+  # volume = {
+  #   name       = "data"
+  #   mount_path = "/data"
+  # }
 }

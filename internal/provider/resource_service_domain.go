@@ -109,22 +109,12 @@ func (r *ServiceDomainResource) Schema(ctx context.Context, req resource.SchemaR
 }
 
 func (r *ServiceDomainResource) Configure(ctx context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
-	if req.ProviderData == nil {
+	data := providerDataFrom(req.ProviderData, &resp.Diagnostics)
+	if data == nil {
 		return
 	}
 
-	client, ok := req.ProviderData.(*graphql.Client)
-
-	if !ok {
-		resp.Diagnostics.AddError(
-			"Unexpected Resource Configure Type",
-			fmt.Sprintf("Expected *graphql.Client, got: %T. Please report this issue to the provider developers.", req.ProviderData),
-		)
-
-		return
-	}
-
-	r.client = client
+	r.client = data.Client
 }
 
 func (r *ServiceDomainResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
@@ -300,7 +290,7 @@ func findServiceDomainById(ctx context.Context, client graphql.Client, projectId
 	}
 
 	for _, serviceDomain := range response.Domains.ServiceDomains {
-		if serviceDomain.ServiceDomain.Id == domainId {
+		if serviceDomain.Id == domainId {
 			return &serviceDomain.ServiceDomain, nil
 		}
 	}
@@ -317,7 +307,7 @@ func findServiceDomainByName(ctx context.Context, client graphql.Client, project
 	}
 
 	for _, serviceDomain := range response.Domains.ServiceDomains {
-		if serviceDomain.ServiceDomain.Domain == domain {
+		if serviceDomain.Domain == domain {
 			return &serviceDomain.ServiceDomain, nil
 		}
 	}

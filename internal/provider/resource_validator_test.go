@@ -419,26 +419,14 @@ resource "railway_shared_variable" "test" {
 	})
 }
 
-func TestServiceResource_cronScheduleTooShort(t *testing.T) {
-	t.Parallel()
-	server := newMockGraphQLServer(t, mockFixtures{})
-	defer server.Close()
-
-	resource.UnitTest(t, resource.TestCase{
-		ProtoV6ProviderFactories: testUnitProtoV6ProviderFactories(),
-		Steps: []resource.TestStep{
-			{
-				Config: testUnitProviderConfig(server.URL) + `
-resource "railway_service" "test" {
-  name          = "test-svc"
-  project_id    = "00000000-0000-0000-0000-000000000001"
-  cron_schedule = "short"
-}`,
-				ExpectError: regexp.MustCompile(`(?i)must be at least 9`),
-			},
-		},
-	})
-}
+// Note (v0.11.0): cron_schedule, source_*, registry_*, and regions were
+// removed from railway_service — they belong on railway_service_instance,
+// which is the env-scoped shape Railway's API canonically models. The
+// TestServiceResource_cronScheduleTooShort / _sourceRepoWithoutBranch /
+// _sourceImageConflictsWithSourceRepo / _registryUsernameWithoutSourceImage
+// / _registryPasswordWithoutSourceImage / _replicasTooLow tests were
+// removed with the fields. Equivalent validation now lives on
+// railway_service_instance (see TestServiceInstanceResource_* below).
 
 func TestVolumeResource_emptyMountPath(t *testing.T) {
 	t.Parallel()
@@ -621,31 +609,9 @@ resource "railway_custom_domain" "test" {
 	})
 }
 
-func TestServiceResource_replicasTooLow(t *testing.T) {
-	t.Parallel()
-	server := newMockGraphQLServer(t, mockFixtures{})
-	defer server.Close()
-
-	resource.UnitTest(t, resource.TestCase{
-		ProtoV6ProviderFactories: testUnitProtoV6ProviderFactories(),
-		Steps: []resource.TestStep{
-			{
-				Config: testUnitProviderConfig(server.URL) + `
-resource "railway_service" "test" {
-  name       = "test-svc"
-  project_id = "00000000-0000-0000-0000-000000000001"
-  regions = [
-    {
-      region       = "us-west2"
-      num_replicas = 0
-    }
-  ]
-}`,
-				ExpectError: regexp.MustCompile(`must be at least 1`),
-			},
-		},
-	})
-}
+// TestServiceResource_replicasTooLow removed in v0.11.0 along with the
+// `regions` field. num_replicas validation now lives on
+// railway_service_instance.
 
 // =============================================================================
 // OneOf validator tests — volume backup schedule kinds
@@ -720,28 +686,8 @@ resource "railway_variable_collection" "test" {
 // ConflictsWith validator tests — source_image conflicts with source_repo
 // =============================================================================
 
-func TestServiceResource_sourceImageConflictsWithSourceRepo(t *testing.T) {
-	t.Parallel()
-	server := newMockGraphQLServer(t, mockFixtures{})
-	defer server.Close()
-
-	resource.UnitTest(t, resource.TestCase{
-		ProtoV6ProviderFactories: testUnitProtoV6ProviderFactories(),
-		Steps: []resource.TestStep{
-			{
-				Config: testUnitProviderConfig(server.URL) + `
-resource "railway_service" "test" {
-  name               = "test-svc"
-  project_id         = "00000000-0000-0000-0000-000000000001"
-  source_image       = "nginx:latest"
-  source_repo        = "owner/repo"
-  source_repo_branch = "main"
-}`,
-				ExpectError: regexp.MustCompile(`(?i)cannot be specified when`),
-			},
-		},
-	})
-}
+// TestServiceResource_sourceImageConflictsWithSourceRepo removed in v0.11.0
+// — source_* fields are only on railway_service_instance now.
 
 func TestServiceInstanceResource_sourceImageConflictsWithSourceRepo(t *testing.T) {
 	t.Parallel()
@@ -769,95 +715,17 @@ resource "railway_service_instance" "test" {
 // AlsoRequires validator tests — source_repo requires source_repo_branch
 // =============================================================================
 
-func TestServiceResource_sourceRepoWithoutBranch(t *testing.T) {
-	t.Parallel()
-	server := newMockGraphQLServer(t, mockFixtures{})
-	defer server.Close()
-
-	resource.UnitTest(t, resource.TestCase{
-		ProtoV6ProviderFactories: testUnitProtoV6ProviderFactories(),
-		Steps: []resource.TestStep{
-			{
-				Config: testUnitProviderConfig(server.URL) + `
-resource "railway_service" "test" {
-  name        = "test-svc"
-  project_id  = "00000000-0000-0000-0000-000000000001"
-  source_repo = "owner/repo"
-}`,
-				ExpectError: regexp.MustCompile(`source_repo_branch`),
-			},
-		},
-	})
-}
-
-func TestServiceResource_sourceRepoBranchWithoutRepo(t *testing.T) {
-	t.Parallel()
-	server := newMockGraphQLServer(t, mockFixtures{})
-	defer server.Close()
-
-	resource.UnitTest(t, resource.TestCase{
-		ProtoV6ProviderFactories: testUnitProtoV6ProviderFactories(),
-		Steps: []resource.TestStep{
-			{
-				Config: testUnitProviderConfig(server.URL) + `
-resource "railway_service" "test" {
-  name               = "test-svc"
-  project_id         = "00000000-0000-0000-0000-000000000001"
-  source_repo_branch = "main"
-}`,
-				ExpectError: regexp.MustCompile(`source_repo`),
-			},
-		},
-	})
-}
+// TestServiceResource_sourceRepoWithoutBranch and
+// TestServiceResource_sourceRepoBranchWithoutRepo removed in v0.11.0 —
+// source_repo* fields are only on railway_service_instance now.
 
 // =============================================================================
 // ValidateConfig tests — cross-attribute validation
 // =============================================================================
 
-func TestServiceResource_registryUsernameWithoutSourceImage(t *testing.T) {
-	t.Parallel()
-	server := newMockGraphQLServer(t, mockFixtures{})
-	defer server.Close()
-
-	resource.UnitTest(t, resource.TestCase{
-		ProtoV6ProviderFactories: testUnitProtoV6ProviderFactories(),
-		Steps: []resource.TestStep{
-			{
-				Config: testUnitProviderConfig(server.URL) + `
-resource "railway_service" "test" {
-  name                             = "test-svc"
-  project_id                       = "00000000-0000-0000-0000-000000000001"
-  source_image_registry_username   = "user"
-  source_image_registry_password   = "pass"
-}`,
-				ExpectError: regexp.MustCompile(`source_image_registry_username.*requires.*source_image`),
-			},
-		},
-	})
-}
-
-func TestServiceResource_registryPasswordWithoutSourceImage(t *testing.T) {
-	t.Parallel()
-	server := newMockGraphQLServer(t, mockFixtures{})
-	defer server.Close()
-
-	resource.UnitTest(t, resource.TestCase{
-		ProtoV6ProviderFactories: testUnitProtoV6ProviderFactories(),
-		Steps: []resource.TestStep{
-			{
-				Config: testUnitProviderConfig(server.URL) + `
-resource "railway_service" "test" {
-  name                             = "test-svc"
-  project_id                       = "00000000-0000-0000-0000-000000000001"
-  source_image_registry_username   = "user"
-  source_image_registry_password   = "pass"
-}`,
-				ExpectError: regexp.MustCompile(`source_image_registry_password.*requires.*source_image`),
-			},
-		},
-	})
-}
+// TestServiceResource_registryUsernameWithoutSourceImage and
+// TestServiceResource_registryPasswordWithoutSourceImage removed in v0.11.0 —
+// registry_credentials is only on railway_service_instance now.
 
 func TestServiceInstanceResource_buildCommandWithSourceImage(t *testing.T) {
 	t.Parallel()

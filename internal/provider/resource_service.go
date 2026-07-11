@@ -3,16 +3,10 @@ package provider
 import (
 	"context"
 	"fmt"
-	"maps"
-	"slices"
+	"strings"
 	"time"
 
-	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
-	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
-	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64default"
-
 	"github.com/Khan/genqlient/graphql"
-	"github.com/hashicorp/terraform-plugin-framework-validators/resourcevalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -28,15 +22,15 @@ import (
 
 var _ resource.Resource = &ServiceResource{}
 var _ resource.ResourceWithImportState = &ServiceResource{}
-var _ resource.ResourceWithConfigValidators = &ServiceResource{}
-var _ resource.ResourceWithValidateConfig = &ServiceResource{}
+var _ resource.ResourceWithModifyPlan = &ServiceResource{}
 
 func NewServiceResource() resource.Resource {
 	return &ServiceResource{}
 }
 
 type ServiceResource struct {
-	client *graphql.Client
+	client           *graphql.Client
+	strictEnvScoping bool
 }
 
 type ServiceResourceVolumeModel struct {
@@ -53,35 +47,13 @@ var volumeAttrTypes = map[string]attr.Type{
 	"size":       types.Float64Type,
 }
 
-type ServiceResourceRegionModel struct {
-	Region      types.String `tfsdk:"region"`
-	NumReplicas types.Int64  `tfsdk:"num_replicas"`
-}
-
-var regionAttrTypes = map[string]attr.Type{
-	"region":       types.StringType,
-	"num_replicas": types.Int64Type,
-}
-
-// For JSON transformation
-type numReplicas struct {
-	NumReplicas int64 `json:"numReplicas"`
-}
-
 type ServiceResourceModel struct {
-	Id                                 types.String `tfsdk:"id"`
-	Name                               types.String `tfsdk:"name"`
-	ProjectId                          types.String `tfsdk:"project_id"`
-	CronSchedule                       types.String `tfsdk:"cron_schedule"`
-	SourceImage                        types.String `tfsdk:"source_image"`
-	SourceImagePrivateRegistryUsername types.String `tfsdk:"source_image_registry_username"`
-	SourceImagePrivateRegistryPassword types.String `tfsdk:"source_image_registry_password"`
-	SourceRepo                         types.String `tfsdk:"source_repo"`
-	SourceRepoBranch                   types.String `tfsdk:"source_repo_branch"`
-	RootDirectory                      types.String `tfsdk:"root_directory"`
-	ConfigPath                         types.String `tfsdk:"config_path"`
-	Volume                             types.Object `tfsdk:"volume"`
-	Regions                            types.List   `tfsdk:"regions"`
+	Id            types.String `tfsdk:"id"`
+	Name          types.String `tfsdk:"name"`
+	ProjectId     types.String `tfsdk:"project_id"`
+	EnvironmentId types.String `tfsdk:"environment_id"`
+	Icon          types.String `tfsdk:"icon"`
+	Volume        types.Object `tfsdk:"volume"`
 }
 
 func (r *ServiceResource) Metadata(ctx context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
@@ -90,9 +62,16 @@ func (r *ServiceResource) Metadata(ctx context.Context, req resource.MetadataReq
 
 func (r *ServiceResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		Version:             1,
-		MarkdownDescription: "Railway service.\n\n> ⚠️ **NOTE:** All the other settings not specified here are recommended to be specified in the Railway config file.",
-		Description:         "Railway service. NOTE: All the other settings not specified here are recommended to be specified in the Railway config file.",
+		Version: 2,
+		MarkdownDescription: "Railway service — an empty per-environment shell. Under `strict_env_scoping = true` " +
+			"(provider default), `environment_id` is required and the service is created only in that environment. " +
+			"Attach source, build, and deploy configuration via `railway_service_instance` (per-environment). " +
+			"Optional inline `volume` block creates a persistent volume scoped to the same environment.\n\n" +
+			"> Setting source or build configuration on `railway_service` is intentionally not supported — the " +
+			"underlying Railway mutation (`serviceConnect`) is env-less and would create source connections " +
+			"across every non-fork environment in the project. Use `railway_service_instance` instead.",
+		Description: "Railway service — an empty per-environment shell. Attach source and deploy configuration " +
+			"via railway_service_instance (per-environment). Optional inline volume creates a persistent volume.",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				MarkdownDescription: "Identifier of the service.",
@@ -103,9 +82,16 @@ func (r *ServiceResource) Schema(ctx context.Context, req resource.SchemaRequest
 				},
 			},
 			"name": schema.StringAttribute{
-				MarkdownDescription: "Name of the service.",
-				Description:         "Name of the service.",
-				Required:            true,
+				MarkdownDescription: "Name of the service. Also becomes the service's private DNS name " +
+					"(`<name>.railway.internal`).\n\n" +
+					"~> **Service names are unique per project, not per environment.** Railway rejects " +
+					"`serviceCreate` for a name that already exists in the project regardless of which " +
+					"environment the new service is scoped to. To run the same role (e.g., `backend`) in " +
+					"multiple environments, prefix the name with the environment: `dev-backend`, `tst-backend`, " +
+					"`prd-backend`. This convention also matches how Railway's private DNS works — the DNS " +
+					"name is just the service name.",
+				Description: "Name of the service. Unique per project, not per environment.",
+				Required:    true,
 				Validators: []validator.String{
 					stringvalidator.UTF8LengthAtLeast(1),
 				},
@@ -121,91 +107,49 @@ func (r *ServiceResource) Schema(ctx context.Context, req resource.SchemaRequest
 					stringvalidator.RegexMatches(uuidRegex(), "must be an id"),
 				},
 			},
-			"cron_schedule": schema.StringAttribute{
-				MarkdownDescription: "Cron schedule of the service. Only allowed when total number of replicas across all regions is `1`.",
-				Description:         "Cron schedule of the service. Only allowed when total number of replicas across all regions is 1.",
-				Optional:            true,
+			"environment_id": schema.StringAttribute{
+				MarkdownDescription: "Identifier of the environment the service is scoped to. Required under " +
+					"strict env-scoping (provider default). Must reference a **fork environment** (an environment " +
+					"created with `source_environment_id`). This is a Railway API property, not a provider " +
+					"limitation: Railway's `serviceCreate` silently ignores `environmentId` when it points at a " +
+					"non-fork environment and creates the service across every non-fork environment in the project. " +
+					"Cannot be changed after creation.\n\n" +
+					"~> **Dependency note:** `railway_service` references only `project_id`, so Terraform cannot " +
+					"infer the environment dependency from the reference in `environment_id`. Add " +
+					"`depends_on = [railway_environment.<name>]` on the service resource, or the environment may " +
+					"not exist when `serviceCreate` runs.",
+				Description: "Identifier of the environment the service is scoped to. Required under strict env-scoping.",
+				Optional:    true,
+				Computed:    true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplace(),
+					stringplanmodifier.UseStateForUnknown(),
+				},
 				Validators: []validator.String{
-					stringvalidator.UTF8LengthAtLeast(9),
+					stringvalidator.RegexMatches(uuidRegex(), "must be an id"),
 				},
 			},
-			"source_image": schema.StringAttribute{
-				MarkdownDescription: "Source image of the service. Conflicts with `source_repo`, `source_repo_branch`, `root_directory` and `config_path`.",
-				Description:         "Source image of the service. Conflicts with source_repo, source_repo_branch, root_directory and config_path.",
-				Optional:            true,
-				Validators: []validator.String{
-					stringvalidator.UTF8LengthAtLeast(1),
-					stringvalidator.ConflictsWith(path.MatchRoot("source_repo")),
-					stringvalidator.ConflictsWith(path.MatchRoot("source_repo_branch")),
-					stringvalidator.ConflictsWith(path.MatchRoot("root_directory")),
-					stringvalidator.ConflictsWith(path.MatchRoot("config_path")),
-				},
-			},
-			"source_image_registry_username": schema.StringAttribute{
-				MarkdownDescription: "Private Docker registry credentials.",
-				Description:         "Private Docker registry credentials.",
-				Optional:            true,
-				Validators: []validator.String{
-					stringvalidator.UTF8LengthAtLeast(1),
-					stringvalidator.ConflictsWith(path.MatchRoot("source_repo")),
-					stringvalidator.ConflictsWith(path.MatchRoot("source_repo_branch")),
-					stringvalidator.ConflictsWith(path.MatchRoot("root_directory")),
-					stringvalidator.ConflictsWith(path.MatchRoot("config_path")),
-					stringvalidator.AlsoRequires(path.MatchRoot("source_image_registry_password")),
-				},
-			},
-			"source_image_registry_password": schema.StringAttribute{
-				MarkdownDescription: "Private Docker registry credentials.",
-				Description:         "Private Docker registry credentials.",
-				Optional:            true,
-				Sensitive:           true,
-				Validators: []validator.String{
-					stringvalidator.UTF8LengthAtLeast(1),
-					stringvalidator.ConflictsWith(path.MatchRoot("source_repo")),
-					stringvalidator.ConflictsWith(path.MatchRoot("source_repo_branch")),
-					stringvalidator.ConflictsWith(path.MatchRoot("root_directory")),
-					stringvalidator.ConflictsWith(path.MatchRoot("config_path")),
-					stringvalidator.AlsoRequires(path.MatchRoot("source_image_registry_username")),
-				},
-			},
-			"source_repo": schema.StringAttribute{
-				MarkdownDescription: "Source repository of the service. Conflicts with `source_image`.",
-				Description:         "Source repository of the service. Conflicts with source_image.",
-				Optional:            true,
-				Validators: []validator.String{
-					stringvalidator.UTF8LengthAtLeast(3),
-					stringvalidator.AlsoRequires(path.MatchRoot("source_repo_branch")),
-				},
-			},
-			"source_repo_branch": schema.StringAttribute{
-				MarkdownDescription: "Source repository branch to be used with `source_repo`. Must be specified if `source_repo` is specified.",
-				Description:         "Source repository branch to be used with source_repo. Must be specified if source_repo is specified.",
-				Optional:            true,
-				Validators: []validator.String{
-					stringvalidator.UTF8LengthAtLeast(1),
-					stringvalidator.AlsoRequires(path.MatchRoot("source_repo")),
-				},
-			},
-			"root_directory": schema.StringAttribute{
-				MarkdownDescription: "Directory to use for the service. Conflicts with `source_image`.",
-				Description:         "Directory to use for the service. Conflicts with source_image.",
-				Optional:            true,
-				Validators: []validator.String{
-					stringvalidator.UTF8LengthAtLeast(1),
-				},
-			},
-			"config_path": schema.StringAttribute{
-				MarkdownDescription: "Path to the Railway config file. Conflicts with `source_image`.",
-				Description:         "Path to the Railway config file. Conflicts with source_image.",
-				Optional:            true,
+			"icon": schema.StringAttribute{
+				MarkdownDescription: "Icon displayed for the service in the Railway dashboard. Cosmetic, " +
+					"applies project-wide (not per-environment). See [Railway's icon docs](https://docs.railway.com/reference/services).",
+				Description: "Icon displayed for the service in the Railway dashboard. Cosmetic, applies project-wide.",
+				Optional:    true,
 				Validators: []validator.String{
 					stringvalidator.UTF8LengthAtLeast(1),
 				},
 			},
 			"volume": schema.SingleNestedAttribute{
-				MarkdownDescription: "Volume connected to the service.",
-				Description:         "Volume connected to the service.",
-				Optional:            true,
+				MarkdownDescription: "Volume connected to the service. Created in the same environment as the " +
+					"service (`environment_id`).\n\n" +
+					"~> **Known limitation.** If the volume's `mount_path` causes Railway to auto-assign the " +
+					"same name you specify in `name` (e.g. `/var/lib/postgresql/data` → `pgdata`), the create " +
+					"will fail with `A volume named X already exists in this project` because Railway's " +
+					"idempotent-rename check rejects updates that don't change the name. As a workaround, use " +
+					"the standalone `railway_volume` resource — which is also the more flexible option for " +
+					"volumes that need their own lifecycle, backup schedule, or cross-service references. This " +
+					"limitation will be lifted in a future release.",
+				Description: "Volume connected to the service. Created in the same environment as the service.",
+				Optional:    true,
 				Attributes: map[string]schema.Attribute{
 					"id": schema.StringAttribute{
 						MarkdownDescription: "Identifier of the volume.",
@@ -241,155 +185,120 @@ func (r *ServiceResource) Schema(ctx context.Context, req resource.SchemaRequest
 					},
 				},
 			},
-			"regions": schema.ListNestedAttribute{
-				MarkdownDescription: "Regions with replicas to deploy service in.",
-				Description:         "Regions with replicas to deploy service in.",
-				Optional:            true,
-				Computed:            true,
-				Validators: []validator.List{
-					listvalidator.SizeAtLeast(1),
-				},
-				NestedObject: schema.NestedAttributeObject{
-					Attributes: map[string]schema.Attribute{
-						"region": schema.StringAttribute{
-							MarkdownDescription: "Region to deploy in.",
-							Description:         "Region to deploy in.",
-							Optional:            true,
-							Computed:            true,
-						},
-						"num_replicas": schema.Int64Attribute{
-							MarkdownDescription: "Number of replicas to deploy. **Default** `1`.",
-							Description:         "Number of replicas to deploy. Default 1.",
-							Optional:            true,
-							Computed:            true,
-							Default:             int64default.StaticInt64(1),
-							Validators: []validator.Int64{
-								int64validator.AtLeast(1),
-							},
-						},
-					},
-				},
-			},
 		},
 	}
 }
 
-func (r *ServiceResource) ConfigValidators(ctx context.Context) []resource.ConfigValidator {
-	return []resource.ConfigValidator{
-		resourcevalidator.Conflicting(
-			path.MatchRoot("source_image"),
-			path.MatchRoot("source_repo"),
-		),
-		cronScheduleReplicasValidator{},
-	}
-}
-
-type cronScheduleReplicasValidator struct{}
-
-func (v cronScheduleReplicasValidator) Description(ctx context.Context) string {
-	return "`cron_schedule` can only be set when total number of replicas across all regions is 1"
-}
-
-func (v cronScheduleReplicasValidator) MarkdownDescription(ctx context.Context) string {
-	return v.Description(ctx)
-}
-
-func (v cronScheduleReplicasValidator) ValidateResource(ctx context.Context, req resource.ValidateConfigRequest, resp *resource.ValidateConfigResponse) {
-	var data ServiceResourceModel
-	var regionsData []ServiceResourceRegionModel
-
-	resp.Diagnostics.Append(req.Config.Get(ctx, &data)...)
-	resp.Diagnostics.Append(data.Regions.ElementsAs(ctx, &regionsData, false)...)
-
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	if data.CronSchedule.IsNull() || data.CronSchedule.IsUnknown() || data.Regions.IsNull() || data.Regions.IsUnknown() {
-		return
-	}
-
-	// Sum up replicas, treating unknown or null as default of 1 each
-	var sum int64
-
-	for _, region := range regionsData {
-		if region.NumReplicas.IsUnknown() || region.NumReplicas.IsNull() {
-			sum += 1
-		} else {
-			sum += region.NumReplicas.ValueInt64()
-		}
-	}
-
-	if sum != 1 {
-		resp.Diagnostics.AddAttributeError(
-			path.Root("cron_schedule"),
-			"Invalid `cron_schedule` with multiple replicas",
-			fmt.Sprintf(
-				"`cron_schedule` can only be set when total number of replicas across all regions is 1. Found %d replicas.",
-				sum,
-			),
-		)
-	}
-}
-
-func (r *ServiceResource) ValidateConfig(ctx context.Context, req resource.ValidateConfigRequest, resp *resource.ValidateConfigResponse) {
-	var data ServiceResourceModel
-
-	resp.Diagnostics.Append(req.Config.Get(ctx, &data)...)
-
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	// source_image_registry_username and source_image_registry_password require source_image.
-	// The AlsoRequires validator on these attributes ensures they are paired together,
-	// but they also require source_image to be set (they are only valid for Docker image sources).
-	if !data.SourceImagePrivateRegistryUsername.IsNull() && !data.SourceImagePrivateRegistryUsername.IsUnknown() && (data.SourceImage.IsNull() || data.SourceImage.IsUnknown()) {
-		resp.Diagnostics.AddAttributeError(
-			path.Root("source_image_registry_username"),
-			"Missing Required Attribute",
-			"`source_image_registry_username` requires `source_image` to be set. Registry credentials are only valid for Docker image sources.",
-		)
-	}
-
-	if !data.SourceImagePrivateRegistryPassword.IsNull() && !data.SourceImagePrivateRegistryPassword.IsUnknown() && (data.SourceImage.IsNull() || data.SourceImage.IsUnknown()) {
-		resp.Diagnostics.AddAttributeError(
-			path.Root("source_image_registry_password"),
-			"Missing Required Attribute",
-			"`source_image_registry_password` requires `source_image` to be set. Registry credentials are only valid for Docker image sources.",
-		)
-	}
-}
-
 func (r *ServiceResource) Configure(ctx context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
-	// Prevent panic if the provider has not been configured.
-	if req.ProviderData == nil {
+	data := providerDataFrom(req.ProviderData, &resp.Diagnostics)
+	if data == nil {
 		return
 	}
 
-	client, ok := req.ProviderData.(*graphql.Client)
+	r.client = data.Client
+	r.strictEnvScoping = data.StrictEnvScoping
+}
 
-	if !ok {
-		resp.Diagnostics.AddError(
-			"Unexpected Resource Configure Type",
-			fmt.Sprintf("Expected *graphql.Client, got: %T. Please report this issue to the provider developers.", req.ProviderData),
+// ModifyPlan runs the strict-env-scoping check at plan time so the user sees
+// the diagnostic on `tofu plan`, not only on `tofu apply`. It intentionally
+// reads the CONFIG (not the plan) so that:
+//
+//   - An unset optional attribute (config = null, plan = unknown because of
+//     the Computed marker) is caught as "missing environment_id".
+//   - An attribute set to a computed reference (config = a traversal, plan =
+//     unknown) is accepted — the value will resolve at apply time.
+//
+// Delete plans have a null Raw plan; we skip in that case.
+func (r *ServiceResource) ModifyPlan(ctx context.Context, req resource.ModifyPlanRequest, resp *resource.ModifyPlanResponse) {
+	if req.Plan.Raw.IsNull() {
+		return
+	}
+
+	var config ServiceResourceModel
+	resp.Diagnostics.Append(req.Config.Get(ctx, &config)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	if r.strictEnvScoping && config.EnvironmentId.IsNull() {
+		resp.Diagnostics.AddAttributeError(
+			path.Root("environment_id"),
+			"environment_id is required under strict env-scoping",
+			"The Railway provider defaults to strict env-scoping (`strict_env_scoping = true`) to prevent "+
+				"services from being created project-wide. Set `environment_id` to a fork environment "+
+				"(typically `railway_environment.<name>.id`) so the service is scoped to that environment "+
+				"only. To opt out and create services across every non-fork environment (Railway's default), "+
+				"set `strict_env_scoping = false` on the provider block — you own the leak surface.",
 		)
-
-		return
 	}
-
-	r.client = client
 }
 
 func (r *ServiceResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
 	var data *ServiceResourceModel
 	var volumeData *ServiceResourceVolumeModel
-	var regionsData *[]ServiceResourceRegionModel
 
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &data)...)
-	resp.Diagnostics.Append(data.Regions.ElementsAs(ctx, &regionsData, true)...)
 
 	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	// Under strict mode, environment_id must be set in config. Since the
+	// attribute is Optional+Computed, an unset config surfaces here as
+	// Unknown (not Null) — treat both as "the user didn't supply one."
+	// ModifyPlan catches this at plan time; this is the apply-time backstop
+	// for edge cases where the plan value was expected to resolve but did
+	// not (e.g., a broken reference).
+	if r.strictEnvScoping && (data.EnvironmentId.IsNull() || data.EnvironmentId.IsUnknown()) {
+		resp.Diagnostics.AddAttributeError(
+			path.Root("environment_id"),
+			"environment_id is required under strict env-scoping",
+			"The Railway provider defaults to strict env-scoping (`strict_env_scoping = true`) to prevent "+
+				"services from being created project-wide. Set `environment_id` to a fork environment "+
+				"(typically `railway_environment.<name>.id`) so the service is scoped to that environment "+
+				"only. To opt out and create services across every non-fork environment (Railway's default), "+
+				"set `strict_env_scoping = false` on the provider block — you own the leak surface.",
+		)
+		return
+	}
+
+	// Non-fork target check (the B4 footgun): Railway's serviceCreate silently
+	// ignores environmentId when the target is a non-fork environment, and
+	// creates the service across every non-fork env in the project. Under
+	// strict mode we look the target up and reject if it is not a fork. If
+	// the lookup itself errors (network/transient), we fail open — Railway's
+	// own semantics still apply, we just don't get to emit the helpful error.
+	if r.strictEnvScoping && !data.EnvironmentId.IsNull() && !data.EnvironmentId.IsUnknown() {
+		envId := data.EnvironmentId.ValueString()
+		envsResp, envsErr := getEnvironments(ctx, *r.client, data.ProjectId.ValueString())
+		if envsErr == nil {
+			for _, edge := range envsResp.Environments.Edges {
+				if edge.Node.Id == envId {
+					if edge.Node.SourceEnvironment.Id == "" {
+						resp.Diagnostics.AddAttributeError(
+							path.Root("environment_id"),
+							"environment_id must reference a fork environment under strict env-scoping",
+							fmt.Sprintf("The target environment %q (id=%s) is not a fork — it has no "+
+								"source_environment_id. Railway's `serviceCreate` silently ignores "+
+								"`environmentId` when the target is a non-fork environment, and creates the "+
+								"service across every non-fork environment in the project. Either declare "+
+								"the target environment as a fork (set `source_environment_id`), or set "+
+								"`strict_env_scoping = false` on the provider block to accept this behaviour.",
+								edge.Node.Name, envId),
+						)
+						return
+					}
+					break
+				}
+			}
+		}
+	}
+
+	// Determine which environment volumes and post-create reads should target.
+	// Priority: user-supplied environment_id, then the project's default env.
+	envId, err := resolveTargetEnvironment(ctx, *r.client, data)
+	if err != nil {
+		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to determine target environment (project_id=%s), got error: %s", data.ProjectId.ValueString(), err))
 		return
 	}
 
@@ -397,6 +306,17 @@ func (r *ServiceResource) Create(ctx context.Context, req resource.CreateRequest
 	input := ServiceCreateInput{
 		Name:      &name,
 		ProjectId: data.ProjectId.ValueString(),
+	}
+	// Same null-vs-unknown consideration as railway_environment: an unset
+	// Optional+Computed attribute is Unknown, not Null, and sending an empty
+	// environmentId would leak the service across every non-fork environment.
+	if !data.EnvironmentId.IsNull() && !data.EnvironmentId.IsUnknown() {
+		envIdVal := data.EnvironmentId.ValueString()
+		input.EnvironmentId = &envIdVal
+	}
+	if !data.Icon.IsNull() {
+		iconVal := data.Icon.ValueString()
+		input.Icon = &iconVal
 	}
 
 	response, err := createService(ctx, *r.client, input)
@@ -413,6 +333,14 @@ func (r *ServiceResource) Create(ctx context.Context, req resource.CreateRequest
 	data.Id = types.StringValue(service.Id)
 	data.Name = types.StringValue(service.Name)
 	data.ProjectId = types.StringValue(service.ProjectId)
+	data.Icon = readOptionalString(service.Icon)
+	// Only overwrite EnvironmentId in state if the user explicitly set it.
+	// If unset (permissive mode with no env id), we don't fabricate a value —
+	// the service lands in Railway's "all non-forks" pool and there is no
+	// single environment id that represents it.
+	if data.EnvironmentId.IsNull() || data.EnvironmentId.IsUnknown() {
+		data.EnvironmentId = types.StringNull()
+	}
 
 	// Extract volume plan data before nulling it for the early state save.
 	// The volume hasn't been created yet, so we must not store unknown
@@ -428,58 +356,18 @@ func (r *ServiceResource) Create(ctx context.Context, req resource.CreateRequest
 		}
 	}
 
-	// Set computed fields to null before the early state save so OpenTofu
-	// never sees unknown values in state if a subsequent step fails.
-	if data.Regions.IsUnknown() {
-		data.Regions = types.ListNull(types.ObjectType{AttrTypes: regionAttrTypes})
-	}
 	data.Volume = types.ObjectNull(volumeAttrTypes)
 
-	// Save state immediately so Terraform tracks this resource.
-	// If any subsequent step fails, the resource will be tainted
-	// and scheduled for destroy+recreate on the next apply.
+	// Save state immediately so Terraform tracks this resource. If any
+	// subsequent step fails, the resource will be tainted and scheduled
+	// for destroy+recreate on the next apply.
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	instanceInput := buildServiceInstanceInput(data, regionsData)
-
-	_, err = updateServiceInstance(ctx, *r.client, data.Id.ValueString(), instanceInput)
-
-	if err != nil {
-		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to create service settings (id=%s, project_id=%s), got error: %s", data.Id.ValueString(), data.ProjectId.ValueString(), err))
-		return
-	}
-
-	tflog.Debug(ctx, "created service settings")
-
-	// Connect source (image/repo) before volume creation, because the
-	// Railway API may need the service's source context to provision volumes.
-	if !data.SourceRepo.IsNull() || !data.SourceImage.IsNull() {
-		connectInput := buildServiceConnectInput(data)
-
-		_, err := connectService(ctx, *r.client, data.Id.ValueString(), connectInput)
-
-		if err != nil {
-			resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to connect repo or image to service (id=%s, project_id=%s), got error: %s", data.Id.ValueString(), data.ProjectId.ValueString(), err))
-			return
-		}
-	}
-
 	if hasPlannedVolume {
-		// Resolve the default environment ID explicitly. Omitting environmentId
-		// triggers Railway's "deploy to all environments" path which fails for
-		// freshly-created services due to eventual consistency.
-		_, defaultEnv, envErr := defaultEnvironmentForProject(ctx, *r.client, data.ProjectId.ValueString())
-
-		if envErr != nil {
-			resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to determine default environment for volume (service_id=%s, project_id=%s), got error: %s", data.Id.ValueString(), data.ProjectId.ValueString(), envErr))
-			return
-		}
-
-		envId := defaultEnv.Id
 		serviceId := data.Id.ValueString()
 
 		// Retry volume creation — Railway's API may return "Problem processing
@@ -503,32 +391,52 @@ func (r *ServiceResource) Create(ctx context.Context, req resource.CreateRequest
 
 		tflog.Debug(ctx, "created a volume")
 
-		volId := volumeResponse.VolumeCreate.Volume.Id
+		volId := volumeResponse.VolumeCreate.Id
+		desiredName := volumeData.Name.ValueString()
 
+		// Rename the volume to the desired name. Two subtleties:
+		//   1. Railway auto-names newly-created volumes from the mount path
+		//      (e.g. /var/lib/postgresql/data → "pgdata"), so the desired name
+		//      may already match. The createVolume response can return an empty
+		//      Name field before Railway assigns one, so we cannot rely on
+		//      comparing it — we always issue the update and treat the
+		//      "already exists" error as an idempotent success when the volume
+		//      already has the desired name.
+		//   2. Any other error is a genuine failure; clean up the orphaned
+		//      volume so it doesn't leak.
 		_, err = updateVolume(ctx, *r.client, volId, VolumeUpdateInput{
-			Name: volumeData.Name.ValueString(),
+			Name: desiredName,
 		})
 
 		if err != nil {
-			// Clean up the orphaned volume we just created so it doesn't leak.
-			if _, delErr := deleteVolume(ctx, *r.client, volId); delErr != nil {
-				tflog.Warn(ctx, fmt.Sprintf("failed to clean up orphaned volume %s: %s", volId, delErr))
+			if isVolumeNameAlreadyExists(err) && volumeHasName(ctx, *r.client, data.ProjectId.ValueString(), volId, desiredName) {
+				tflog.Debug(ctx, "volume was already named as desired — treating rename as idempotent success")
+			} else {
+				if _, delErr := deleteVolume(ctx, *r.client, volId); delErr != nil {
+					tflog.Warn(ctx, fmt.Sprintf("failed to clean up orphaned volume %s: %s", volId, delErr))
+				}
+				resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to rename volume (service_id=%s, project_id=%s), got error: %s", data.Id.ValueString(), data.ProjectId.ValueString(), err))
+				return
 			}
-			resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to rename volume (service_id=%s, project_id=%s), got error: %s", data.Id.ValueString(), data.ProjectId.ValueString(), err))
-			return
+		} else {
+			tflog.Debug(ctx, "renamed a volume")
 		}
-
-		tflog.Debug(ctx, "updated a volume")
 	}
 
-	err = getAndBuildServiceInstance(ctx, *r.client, data.ProjectId.ValueString(), data.Id.ValueString(), data)
-
-	if err != nil {
-		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to read service settings (id=%s, project_id=%s), got error: %s", data.Id.ValueString(), data.ProjectId.ValueString(), err))
-		return
-	}
-
-	err = getAndBuildVolumeInstance(ctx, *r.client, data.ProjectId.ValueString(), data.Id.ValueString(), data)
+	// Retry the volume readback across Railway's post-create eventual-
+	// consistency window. Without this, a service that was just given an
+	// inline volume can have data.Volume stay null in state (the volume
+	// instance hasn't appeared in getVolumeInstances yet), and Terraform
+	// rejects the create with "inconsistent result after apply".
+	err = retryReadAfterCreateContext(ctx, 30*time.Second, func() error {
+		if buildErr := getAndBuildVolumeInstance(ctx, *r.client, data.ProjectId.ValueString(), data.Id.ValueString(), envId, data); buildErr != nil {
+			return buildErr
+		}
+		if hasPlannedVolume && data.Volume.IsNull() {
+			return fmt.Errorf("inline volume not yet visible for service %s in environment %s", data.Id.ValueString(), envId)
+		}
+		return nil
+	})
 
 	if err != nil {
 		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to read volume settings (service_id=%s, project_id=%s), got error: %s", data.Id.ValueString(), data.ProjectId.ValueString(), err))
@@ -563,19 +471,25 @@ func (r *ServiceResource) Read(ctx context.Context, req resource.ReadRequest, re
 	data.Id = types.StringValue(service.Id)
 	data.Name = types.StringValue(service.Name)
 	data.ProjectId = types.StringValue(service.ProjectId)
+	data.Icon = readOptionalString(service.Icon)
 
-	err = getAndBuildServiceInstance(ctx, *r.client, data.ProjectId.ValueString(), data.Id.ValueString(), data)
+	// Only refresh the inline volume from the API if state already claims
+	// one. Otherwise a standalone `railway_volume` targeting the same
+	// service+env would be misread as an inline volume and Terraform would
+	// plan to remove it on every subsequent apply.
+	if !data.Volume.IsNull() {
+		envId, err := resolveTargetEnvironment(ctx, *r.client, data)
+		if err != nil {
+			resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to determine target environment for readback (service_id=%s, project_id=%s), got error: %s", data.Id.ValueString(), data.ProjectId.ValueString(), err))
+			return
+		}
 
-	if err != nil {
-		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to read service settings (id=%s, project_id=%s), got error: %s", data.Id.ValueString(), data.ProjectId.ValueString(), err))
-		return
-	}
+		err = getAndBuildVolumeInstance(ctx, *r.client, data.ProjectId.ValueString(), data.Id.ValueString(), envId, data)
 
-	err = getAndBuildVolumeInstance(ctx, *r.client, data.ProjectId.ValueString(), data.Id.ValueString(), data)
-
-	if err != nil {
-		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to read volume settings (service_id=%s, project_id=%s), got error: %s", data.Id.ValueString(), data.ProjectId.ValueString(), err))
-		return
+		if err != nil {
+			resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to read volume settings (service_id=%s, project_id=%s), got error: %s", data.Id.ValueString(), data.ProjectId.ValueString(), err))
+			return
+		}
 	}
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
@@ -584,13 +498,11 @@ func (r *ServiceResource) Read(ctx context.Context, req resource.ReadRequest, re
 func (r *ServiceResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
 	var data *ServiceResourceModel
 	var volumeData *ServiceResourceVolumeModel
-	var regionsData *[]ServiceResourceRegionModel
 
 	var state *ServiceResourceModel
 	var volumeState *ServiceResourceVolumeModel
 
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &data)...)
-	resp.Diagnostics.Append(data.Regions.ElementsAs(ctx, &regionsData, true)...)
 
 	if resp.Diagnostics.HasError() {
 		return
@@ -602,9 +514,10 @@ func (r *ServiceResource) Update(ctx context.Context, req resource.UpdateRequest
 		return
 	}
 
-	if data.Name.ValueString() != state.Name.ValueString() {
+	if data.Name.ValueString() != state.Name.ValueString() || !data.Icon.Equal(state.Icon) {
 		input := ServiceUpdateInput{
 			Name: data.Name.ValueString(),
+			Icon: data.Icon.ValueString(),
 		}
 
 		response, err := updateService(ctx, *r.client, data.Id.ValueString(), input)
@@ -621,20 +534,19 @@ func (r *ServiceResource) Update(ctx context.Context, req resource.UpdateRequest
 		data.Id = types.StringValue(service.Id)
 		data.Name = types.StringValue(service.Name)
 		data.ProjectId = types.StringValue(service.ProjectId)
+		data.Icon = readOptionalString(service.Icon)
 	}
 
-	instanceInput := buildServiceInstanceInput(data, regionsData)
-
-	_, err := updateServiceInstance(ctx, *r.client, data.Id.ValueString(), instanceInput)
-
+	envId, err := resolveTargetEnvironment(ctx, *r.client, data)
 	if err != nil {
-		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to update service settings, got error: %s", err))
+		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to determine target environment (service_id=%s, project_id=%s), got error: %s", data.Id.ValueString(), data.ProjectId.ValueString(), err))
 		return
 	}
 
-	tflog.Debug(ctx, "updated service settings")
+	// Volume lifecycle within Update — delete, create, mutate — all use the
+	// same env id resolved above.
 
-	// Delete volume if it was removed
+	// Delete volume if it was removed from the plan.
 	volumeDeleted := false
 	if data.Volume.IsNull() && !state.Volume.IsNull() {
 		resp.Diagnostics.Append(state.Volume.As(ctx, &volumeState, basetypes.ObjectAsOptions{})...)
@@ -662,14 +574,6 @@ func (r *ServiceResource) Update(ctx context.Context, req resource.UpdateRequest
 			return
 		}
 
-		_, defaultEnv, envErr := defaultEnvironmentForProject(ctx, *r.client, data.ProjectId.ValueString())
-
-		if envErr != nil {
-			resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to determine default environment for volume, got error: %s", envErr))
-			return
-		}
-
-		envId := defaultEnv.Id
 		serviceId := data.Id.ValueString()
 
 		// Retry volume creation — Railway's API may return "Problem processing
@@ -693,22 +597,27 @@ func (r *ServiceResource) Update(ctx context.Context, req resource.UpdateRequest
 
 		tflog.Debug(ctx, "created a volume")
 
-		volId := volumeResponse.VolumeCreate.Volume.Id
+		volId := volumeResponse.VolumeCreate.Id
+		desiredName := volumeData.Name.ValueString()
 
+		// See Create() for the reasoning.
 		_, err = updateVolume(ctx, *r.client, volId, VolumeUpdateInput{
-			Name: volumeData.Name.ValueString(),
+			Name: desiredName,
 		})
 
 		if err != nil {
-			// Clean up the orphaned volume we just created so it doesn't leak.
-			if _, delErr := deleteVolume(ctx, *r.client, volId); delErr != nil {
-				tflog.Warn(ctx, fmt.Sprintf("failed to clean up orphaned volume %s: %s", volId, delErr))
+			if isVolumeNameAlreadyExists(err) && volumeHasName(ctx, *r.client, data.ProjectId.ValueString(), volId, desiredName) {
+				tflog.Debug(ctx, "volume was already named as desired — treating rename as idempotent success")
+			} else {
+				if _, delErr := deleteVolume(ctx, *r.client, volId); delErr != nil {
+					tflog.Warn(ctx, fmt.Sprintf("failed to clean up orphaned volume %s: %s", volId, delErr))
+				}
+				resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to rename volume, got error: %s", err))
+				return
 			}
-			resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to rename volume, got error: %s", err))
-			return
+		} else {
+			tflog.Debug(ctx, "renamed a volume")
 		}
-
-		tflog.Debug(ctx, "updated a volume")
 	}
 
 	// Update volume if it was changed
@@ -753,45 +662,18 @@ func (r *ServiceResource) Update(ctx context.Context, req resource.UpdateRequest
 		}
 	}
 
-	// Handling service connection with source repo or docker image
-	sourceChanged := !state.SourceRepo.Equal(data.SourceRepo) || !state.SourceRepoBranch.Equal(data.SourceRepoBranch) || !state.SourceImage.Equal(data.SourceImage)
-
-	err = updateServiceConnection(ctx, *r.client, data.Id.ValueString(), data, state)
-
-	if err != nil {
-		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to update service repo or image connection, got error: %s", err))
-		return
-	}
-
-	// Only redeploy when the source connection changed (source_image, source_repo,
-	// or source_repo_branch). Name-only changes and service instance setting changes
-	// do not require a redeploy — Railway handles those automatically.
-	if sourceChanged {
-		err = redeployAllInstances(ctx, *r.client, data.Id.ValueString())
-
-		if err != nil {
-			resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to redeploy services after update, got error: %s", err))
-			return
-		}
-	}
-
-	err = getAndBuildServiceInstance(ctx, *r.client, data.ProjectId.ValueString(), data.Id.ValueString(), data)
-
-	if err != nil {
-		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to read service settings, got error: %s", err))
-		return
-	}
-
 	// Skip volume readback if we just deleted it. Railway's volumeDelete API
 	// retains volumes for data protection, so the readback would find the volume
 	// still present and set data.Volume to non-null, contradicting the plan.
 	if !volumeDeleted {
-		err = getAndBuildVolumeInstance(ctx, *r.client, data.ProjectId.ValueString(), data.Id.ValueString(), data)
+		err = getAndBuildVolumeInstance(ctx, *r.client, data.ProjectId.ValueString(), data.Id.ValueString(), envId, data)
 
 		if err != nil {
 			resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to read volume settings, got error: %s", err))
 			return
 		}
+	} else {
+		data.Volume = types.ObjectNull(volumeAttrTypes)
 	}
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
@@ -807,7 +689,18 @@ func (r *ServiceResource) Delete(ctx context.Context, req resource.DeleteRequest
 		return
 	}
 
-	_, err := deleteService(ctx, *r.client, data.Id.ValueString())
+	// Pass environmentId to serviceDelete so a fork-scoped service is removed
+	// only from that fork. Without it, Railway's env-less delete path removes
+	// the service from every non-fork environment — undesirable when a
+	// permissive-mode consumer has services in multiple non-fork envs, and
+	// meaningless when we scoped the service to a fork on Create.
+	var envIdPtr *string
+	if !data.EnvironmentId.IsNull() && !data.EnvironmentId.IsUnknown() {
+		envIdVal := data.EnvironmentId.ValueString()
+		envIdPtr = &envIdVal
+	}
+
+	_, err := deleteService(ctx, *r.client, data.Id.ValueString(), envIdPtr)
 
 	if err != nil && !isNotFoundOrGone(err) {
 		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to delete service, got error: %s", err))
@@ -838,174 +731,53 @@ func (r *ServiceResource) ImportState(ctx context.Context, req resource.ImportSt
 	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
 }
 
-func buildServiceInstanceInput(data *ServiceResourceModel, regionsData *[]ServiceResourceRegionModel) ServiceInstanceUpdateInput {
-	var instanceInput ServiceInstanceUpdateInput
-
-	if !data.CronSchedule.IsNull() {
-		instanceInput.CronSchedule = data.CronSchedule.ValueStringPointer()
+// resolveTargetEnvironment returns the environment id the service is scoped to.
+// Priority: the service's own environment_id (if set), then the project's
+// default environment. Used by the inline-volume path (createVolume needs an
+// environmentId) and by the volume readback in Read/Update.
+func resolveTargetEnvironment(ctx context.Context, client graphql.Client, data *ServiceResourceModel) (string, error) {
+	if !data.EnvironmentId.IsNull() && !data.EnvironmentId.IsUnknown() {
+		return data.EnvironmentId.ValueString(), nil
 	}
 
-	if !data.RootDirectory.IsNull() {
-		instanceInput.RootDirectory = data.RootDirectory.ValueStringPointer()
-	}
-
-	if !data.ConfigPath.IsNull() {
-		instanceInput.RailwayConfigFile = data.ConfigPath.ValueStringPointer()
-	}
-
-	if regionsData != nil {
-		multiRegionConfig := make(map[string]interface{})
-
-		for _, region := range *regionsData {
-			multiRegionConfig[region.Region.ValueString()] = numReplicas{
-				NumReplicas: region.NumReplicas.ValueInt64(),
-			}
-		}
-
-		instanceInput.MultiRegionConfig = &multiRegionConfig
-	}
-
-	if !data.SourceImagePrivateRegistryUsername.IsNull() {
-		if instanceInput.RegistryCredentials == nil {
-			instanceInput.RegistryCredentials = new(RegistryCredentialsInput)
-		}
-		instanceInput.RegistryCredentials.Username = data.SourceImagePrivateRegistryUsername.ValueString()
-	}
-
-	if !data.SourceImagePrivateRegistryPassword.IsNull() {
-		if instanceInput.RegistryCredentials == nil {
-			instanceInput.RegistryCredentials = new(RegistryCredentialsInput)
-		}
-		instanceInput.RegistryCredentials.Password = data.SourceImagePrivateRegistryPassword.ValueString()
-	}
-
-	return instanceInput
-}
-
-func getAndBuildServiceInstance(ctx context.Context, client graphql.Client, projectId string, serviceId string, data *ServiceResourceModel) error {
-	// Read the service again to get the updated source attributes
-	_, environment, err := defaultEnvironmentForProject(ctx, client, projectId)
-
+	_, defaultEnv, err := defaultEnvironmentForProject(ctx, client, data.ProjectId.ValueString())
 	if err != nil {
-		return err
+		return "", err
 	}
+	return defaultEnv.Id, nil
+}
 
-	response, err := getServiceInstance(ctx, client, environment.Id, serviceId)
+// isVolumeNameAlreadyExists reports whether an updateVolume error is the
+// specific "A volume named X already exists in this project" case. Used to
+// make the rename step idempotent — Railway rejects updates that don't
+// change the name, but createVolume can return an empty Name field before
+// Railway has assigned one, so we cannot skip the update pre-emptively.
+func isVolumeNameAlreadyExists(err error) bool {
+	if err == nil {
+		return false
+	}
+	msg := strings.ToLower(err.Error())
+	return strings.Contains(msg, "already exists in this project") && strings.Contains(msg, "volume")
+}
 
+// volumeHasName returns true if the volume identified by volId in the given
+// project already has the given name. Best-effort — network failures return
+// false (which triggers the caller's error path, which is the safe default).
+func volumeHasName(ctx context.Context, client graphql.Client, projectId, volId, name string) bool {
+	response, err := getVolumeInstances(ctx, client, projectId)
 	if err != nil {
-		return err
+		return false
 	}
-
-	if response.ServiceInstance.CronSchedule != nil {
-		data.CronSchedule = types.StringValue(*response.ServiceInstance.CronSchedule)
-	}
-
-	if response.ServiceInstance.RootDirectory != nil && len(*response.ServiceInstance.RootDirectory) != 0 {
-		data.RootDirectory = types.StringValue(*response.ServiceInstance.RootDirectory)
-	}
-
-	if response.ServiceInstance.RailwayConfigFile != nil && len(*response.ServiceInstance.RailwayConfigFile) != 0 {
-		data.ConfigPath = types.StringValue(*response.ServiceInstance.RailwayConfigFile)
-	}
-
-	if response.ServiceInstance.Source != nil {
-		if response.ServiceInstance.Source.Image != nil {
-			data.SourceImage = types.StringValue(*response.ServiceInstance.Source.Image)
-		}
-
-		if response.ServiceInstance.Source.Repo != nil {
-			data.SourceRepo = types.StringValue(*response.ServiceInstance.Source.Repo)
-
-			triggersResponse, err := listDeploymentTriggers(ctx, client, projectId, environment.Id, serviceId)
-
-			if err != nil {
-				return err
-			}
-
-			// up to 1 deployment trigger is allowed for one (service, environment) pair. So, dealing with [0] only
-			if edges := triggersResponse.DeploymentTriggers.Edges; len(edges) > 0 {
-				data.SourceRepoBranch = types.StringValue(edges[0].Node.Branch)
-			} else if data.SourceRepoBranch.IsNull() || data.SourceRepoBranch.IsUnknown() {
-				// Only set to null if there's no existing value
-				// This preserves the branch value during updates when triggers might not be immediately available
-				data.SourceRepoBranch = types.StringNull()
-			}
-			// Otherwise keep the existing value from state/plan
+	for _, volume := range response.Project.Volumes.Edges {
+		if volume.Node.Id == volId && volume.Node.Name == name {
+			return true
 		}
 	}
-
-	if len(response.ServiceInstance.LatestDeployment.Meta) != 0 {
-		regions, err := getRegionsFromLatestDeployment(response.ServiceInstance.LatestDeployment)
-
-		if err != nil {
-			return err
-		}
-
-		data.Regions = types.ListValueMust(types.ObjectType{AttrTypes: regionAttrTypes}, regions)
-	} else if data.Regions.IsUnknown() {
-		data.Regions = types.ListNull(types.ObjectType{AttrTypes: regionAttrTypes})
-	}
-
-	return nil
+	return false
 }
 
-func getRegionsFromLatestDeployment(latestDeployment getServiceInstanceServiceInstanceLatestDeployment) ([]attr.Value, error) {
-	serviceManifest, ok := latestDeployment.Meta["serviceManifest"].(map[string]interface{})
-
-	if !ok {
-		return nil, fmt.Errorf("serviceManifest is not found")
-	}
-
-	deploy, ok := serviceManifest["deploy"].(map[string]interface{})
-
-	if !ok {
-		return nil, fmt.Errorf("deploy is not found")
-	}
-
-	multiRegionConfig, ok := deploy["multiRegionConfig"].(map[string]interface{})
-
-	if !ok {
-		return nil, fmt.Errorf("multiRegionConfig is not found")
-	}
-
-	regions := make([]attr.Value, 0, len(multiRegionConfig))
-
-	for _, region := range slices.Sorted(maps.Keys(multiRegionConfig)) {
-		numReplicasMap, ok := multiRegionConfig[region].(map[string]interface{})
-
-		if !ok {
-			return nil, fmt.Errorf("numReplicas is not found")
-		}
-
-		numReplicas, exists := numReplicasMap["numReplicas"]
-
-		if !exists {
-			return nil, fmt.Errorf("numReplicas is not found")
-		}
-
-		numReplicasFloat, ok := numReplicas.(float64)
-		if !ok {
-			return nil, fmt.Errorf("numReplicas for region %s is not a number", region)
-		}
-
-		regions = append(regions, types.ObjectValueMust(regionAttrTypes, map[string]attr.Value{
-			"region":       types.StringValue(region),
-			"num_replicas": types.Int64Value(int64(numReplicasFloat)),
-		}))
-	}
-
-	return regions, nil
-}
-
-func getAndBuildVolumeInstance(ctx context.Context, client graphql.Client, projectId string, serviceId string, data *ServiceResourceModel) error {
+func getAndBuildVolumeInstance(ctx context.Context, client graphql.Client, projectId string, serviceId string, envId string, data *ServiceResourceModel) error {
 	data.Volume = types.ObjectNull(volumeAttrTypes)
-
-	// Read the service again to get the updated source attributes
-	_, environment, err := defaultEnvironmentForProject(ctx, client, projectId)
-
-	if err != nil {
-		return err
-	}
 
 	response, err := getVolumeInstances(ctx, client, projectId)
 
@@ -1018,7 +790,7 @@ func getAndBuildVolumeInstance(ctx context.Context, client graphql.Client, proje
 			if volumeInstance.Node.State == VolumeStateDeleted || volumeInstance.Node.State == VolumeStateDeleting {
 				continue
 			}
-			if volumeInstance.Node.ServiceId == serviceId && volumeInstance.Node.EnvironmentId == environment.Id {
+			if volumeInstance.Node.ServiceId == serviceId && volumeInstance.Node.EnvironmentId == envId {
 				data.Volume = types.ObjectValueMust(
 					volumeAttrTypes,
 					map[string]attr.Value{
@@ -1031,63 +803,6 @@ func getAndBuildVolumeInstance(ctx context.Context, client graphql.Client, proje
 			}
 		}
 	}
-
-	return nil
-}
-
-func updateServiceConnection(ctx context.Context, client graphql.Client, serviceId string, data *ServiceResourceModel, state *ServiceResourceModel) error {
-	isSourceChanged := !state.SourceRepo.Equal(data.SourceRepo) || !state.SourceRepoBranch.Equal(data.SourceRepoBranch) || !state.SourceImage.Equal(data.SourceImage)
-	isSourcesChangedToNull := isSourceChanged && data.SourceRepo.IsNull() && data.SourceRepoBranch.IsNull() && data.SourceImage.IsNull()
-
-	// if all sources are eventually nulls, then just disconnecting all the sources
-	if isSourcesChangedToNull {
-		_, err := disconnectService(ctx, client, serviceId)
-		return err
-	}
-
-	// if some sources are really changed we just propagating these values to Railway. Data is pre-validated and Railway knows what to do.
-	if isSourceChanged {
-		connectInput := buildServiceConnectInput(data)
-		_, err := connectService(ctx, client, serviceId, connectInput)
-		return err
-	}
-
-	return nil
-}
-
-// Build proper input which populates only required fields for each case: either Repo + Branch, or SourceImage
-func buildServiceConnectInput(data *ServiceResourceModel) ServiceConnectInput {
-	if !data.SourceRepo.IsNull() {
-		// it is guaranteed by schema that both of them are specified or both empty
-		return ServiceConnectInput{
-			Repo:   data.SourceRepo.ValueStringPointer(),
-			Branch: data.SourceRepoBranch.ValueStringPointer(),
-		}
-	} else if !data.SourceImage.IsNull() {
-		return ServiceConnectInput{
-			Image: data.SourceImage.ValueStringPointer(),
-		}
-	}
-
-	return ServiceConnectInput{}
-}
-
-func redeployAllInstances(ctx context.Context, client graphql.Client, serviceId string) error {
-	instances, err := getServiceInstances(ctx, client, serviceId)
-
-	if err != nil {
-		return err
-	}
-
-	for _, instance := range instances.Service.ServiceInstances.Edges {
-		_, err := redeployServiceInstance(ctx, client, instance.Node.EnvironmentId, serviceId)
-
-		if err != nil {
-			return err
-		}
-	}
-
-	tflog.Debug(ctx, "redeployed all service instances")
 
 	return nil
 }

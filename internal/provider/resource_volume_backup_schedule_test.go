@@ -9,8 +9,8 @@ import (
 
 func TestVolumeBackupScheduleResource_basic(t *testing.T) {
 	srv := newMockGraphQLServer(t, mockFixtures{
-		"updateVolumeInstanceBackupSchedule":  `{"data":{"volumeInstanceBackupScheduleUpdate":true}}`,
-		"getVolumeInstanceBackupSchedules": `{"data":{"volumeInstanceBackupScheduleList":[{"id":"sched-1","kind":"DAILY","cron":"0 0 * * *","name":"Daily Backup","retentionSeconds":86400}]}}`,
+		"updateVolumeInstanceBackupSchedule": `{"data":{"volumeInstanceBackupScheduleUpdate":true}}`,
+		"getVolumeInstanceBackupSchedules":   `{"data":{"volumeInstanceBackupScheduleList":[{"id":"sched-1","kind":"DAILY","cron":"0 0 * * *","name":"Daily Backup","retentionSeconds":86400}]}}`,
 	})
 	defer srv.Close()
 
@@ -37,8 +37,8 @@ resource "railway_volume_backup_schedule" "test" {
 
 func TestVolumeBackupScheduleResource_multipleKinds(t *testing.T) {
 	srv := newMockGraphQLServer(t, mockFixtures{
-		"updateVolumeInstanceBackupSchedule":  `{"data":{"volumeInstanceBackupScheduleUpdate":true}}`,
-		"getVolumeInstanceBackupSchedules": `{"data":{"volumeInstanceBackupScheduleList":[{"id":"sched-1","kind":"DAILY","cron":"0 0 * * *","name":"Daily Backup","retentionSeconds":86400},{"id":"sched-2","kind":"WEEKLY","cron":"0 0 * * 0","name":"Weekly Backup","retentionSeconds":604800}]}}`,
+		"updateVolumeInstanceBackupSchedule": `{"data":{"volumeInstanceBackupScheduleUpdate":true}}`,
+		"getVolumeInstanceBackupSchedules":   `{"data":{"volumeInstanceBackupScheduleList":[{"id":"sched-1","kind":"DAILY","cron":"0 0 * * *","name":"Daily Backup","retentionSeconds":86400},{"id":"sched-2","kind":"WEEKLY","cron":"0 0 * * 0","name":"Weekly Backup","retentionSeconds":604800}]}}`,
 	})
 	defer srv.Close()
 
@@ -96,8 +96,8 @@ resource "railway_volume_backup_schedule" "test" {
 
 func TestVolumeBackupScheduleResource_import(t *testing.T) {
 	srv := newMockGraphQLServer(t, mockFixtures{
-		"updateVolumeInstanceBackupSchedule":  `{"data":{"volumeInstanceBackupScheduleUpdate":true}}`,
-		"getVolumeInstanceBackupSchedules": `{"data":{"volumeInstanceBackupScheduleList":[{"id":"sched-1","kind":"DAILY","cron":"0 0 * * *","name":"Daily Backup","retentionSeconds":86400}]}}`,
+		"updateVolumeInstanceBackupSchedule": `{"data":{"volumeInstanceBackupScheduleUpdate":true}}`,
+		"getVolumeInstanceBackupSchedules":   `{"data":{"volumeInstanceBackupScheduleList":[{"id":"sched-1","kind":"DAILY","cron":"0 0 * * *","name":"Daily Backup","retentionSeconds":86400}]}}`,
 	})
 	defer srv.Close()
 

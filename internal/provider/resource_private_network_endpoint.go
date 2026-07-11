@@ -138,22 +138,12 @@ func (r *PrivateNetworkEndpointResource) Schema(ctx context.Context, req resourc
 }
 
 func (r *PrivateNetworkEndpointResource) Configure(ctx context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
-	if req.ProviderData == nil {
+	data := providerDataFrom(req.ProviderData, &resp.Diagnostics)
+	if data == nil {
 		return
 	}
 
-	client, ok := req.ProviderData.(*graphql.Client)
-
-	if !ok {
-		resp.Diagnostics.AddError(
-			"Unexpected Resource Configure Type",
-			fmt.Sprintf("Expected *graphql.Client, got: %T. Please report this issue to the provider developers.", req.ProviderData),
-		)
-
-		return
-	}
-
-	r.client = client
+	r.client = data.Client
 }
 
 func (r *PrivateNetworkEndpointResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
@@ -197,10 +187,10 @@ func (r *PrivateNetworkEndpointResource) Create(ctx context.Context, req resourc
 
 	endpoint := response.PrivateNetworkEndpointCreateOrGet
 
-	data.Id = types.StringValue(endpoint.PrivateNetworkEndpointFields.PublicId)
-	data.DnsName = types.StringValue(endpoint.PrivateNetworkEndpointFields.DnsName)
+	data.Id = types.StringValue(endpoint.PublicId)
+	data.DnsName = types.StringValue(endpoint.DnsName)
 
-	ipList, diags := types.ListValueFrom(ctx, types.StringType, endpoint.PrivateNetworkEndpointFields.PrivateIps)
+	ipList, diags := types.ListValueFrom(ctx, types.StringType, endpoint.PrivateIps)
 	resp.Diagnostics.Append(diags...)
 
 	if resp.Diagnostics.HasError() {
@@ -209,7 +199,7 @@ func (r *PrivateNetworkEndpointResource) Create(ctx context.Context, req resourc
 
 	data.PrivateIps = ipList
 
-	tagList, diags := types.ListValueFrom(ctx, types.StringType, endpoint.PrivateNetworkEndpointFields.Tags)
+	tagList, diags := types.ListValueFrom(ctx, types.StringType, endpoint.Tags)
 	resp.Diagnostics.Append(diags...)
 
 	if resp.Diagnostics.HasError() {
@@ -229,7 +219,7 @@ func (r *PrivateNetworkEndpointResource) Create(ctx context.Context, req resourc
 
 	// If dns_name was specified in config and differs from the default, rename it
 	if !planDnsName.IsNull() && !planDnsName.IsUnknown() {
-		if planDnsName.ValueString() != endpoint.PrivateNetworkEndpointFields.DnsName {
+		if planDnsName.ValueString() != endpoint.DnsName {
 			_, err := renamePrivateNetworkEndpoint(ctx, *r.client, planDnsName.ValueString(), data.Id.ValueString(), data.PrivateNetworkId.ValueString())
 
 			if err != nil {
@@ -262,7 +252,7 @@ func (r *PrivateNetworkEndpointResource) Create(ctx context.Context, req resourc
 			return retry.RetryableError(fmt.Errorf("GET endpoint returned error: %w", readErr))
 		}
 
-		if readResp.PrivateNetworkEndpoint.PrivateNetworkEndpointFields.PublicId == "" {
+		if readResp.PrivateNetworkEndpoint.PublicId == "" {
 			consecutiveSuccesses = 0
 			return retry.RetryableError(fmt.Errorf("GET endpoint returned empty data, still propagating"))
 		}
@@ -331,7 +321,7 @@ func (r *PrivateNetworkEndpointResource) Read(ctx context.Context, req resource.
 			return
 		}
 
-		if response.PrivateNetworkEndpoint.PrivateNetworkEndpointFields.PublicId == "" {
+		if response.PrivateNetworkEndpoint.PublicId == "" {
 			tflog.Warn(ctx, "private network endpoint query returned empty data (eventual consistency), preserving existing state")
 			return
 		}
@@ -355,7 +345,7 @@ func (r *PrivateNetworkEndpointResource) Read(ctx context.Context, req resource.
 				return retry.RetryableError(readErr)
 			}
 
-			if response.PrivateNetworkEndpoint.PrivateNetworkEndpointFields.PublicId == "" {
+			if response.PrivateNetworkEndpoint.PublicId == "" {
 				return retry.RetryableError(fmt.Errorf("endpoint returned with empty PublicId, still propagating"))
 			}
 
@@ -369,10 +359,10 @@ func (r *PrivateNetworkEndpointResource) Read(ctx context.Context, req resource.
 		}
 	}
 
-	data.Id = types.StringValue(endpoint.PrivateNetworkEndpointFields.PublicId)
-	data.DnsName = types.StringValue(endpoint.PrivateNetworkEndpointFields.DnsName)
+	data.Id = types.StringValue(endpoint.PublicId)
+	data.DnsName = types.StringValue(endpoint.DnsName)
 
-	ipList, diags := types.ListValueFrom(ctx, types.StringType, endpoint.PrivateNetworkEndpointFields.PrivateIps)
+	ipList, diags := types.ListValueFrom(ctx, types.StringType, endpoint.PrivateIps)
 	resp.Diagnostics.Append(diags...)
 
 	if resp.Diagnostics.HasError() {
@@ -381,7 +371,7 @@ func (r *PrivateNetworkEndpointResource) Read(ctx context.Context, req resource.
 
 	data.PrivateIps = ipList
 
-	tagList, diags := types.ListValueFrom(ctx, types.StringType, endpoint.PrivateNetworkEndpointFields.Tags)
+	tagList, diags := types.ListValueFrom(ctx, types.StringType, endpoint.Tags)
 	resp.Diagnostics.Append(diags...)
 
 	if resp.Diagnostics.HasError() {
@@ -433,14 +423,14 @@ func (r *PrivateNetworkEndpointResource) Update(ctx context.Context, req resourc
 
 	endpoint := response.PrivateNetworkEndpoint
 
-	if endpoint.PrivateNetworkEndpointFields.PublicId == "" {
+	if endpoint.PublicId == "" {
 		resp.Diagnostics.AddError("Client Error", "Private network endpoint not found after update")
 		return
 	}
 
-	data.DnsName = types.StringValue(endpoint.PrivateNetworkEndpointFields.DnsName)
+	data.DnsName = types.StringValue(endpoint.DnsName)
 
-	ipList, diags := types.ListValueFrom(ctx, types.StringType, endpoint.PrivateNetworkEndpointFields.PrivateIps)
+	ipList, diags := types.ListValueFrom(ctx, types.StringType, endpoint.PrivateIps)
 	resp.Diagnostics.Append(diags...)
 
 	if resp.Diagnostics.HasError() {
@@ -449,7 +439,7 @@ func (r *PrivateNetworkEndpointResource) Update(ctx context.Context, req resourc
 
 	data.PrivateIps = ipList
 
-	tagList, diags := types.ListValueFrom(ctx, types.StringType, endpoint.PrivateNetworkEndpointFields.Tags)
+	tagList, diags := types.ListValueFrom(ctx, types.StringType, endpoint.Tags)
 	resp.Diagnostics.Append(diags...)
 
 	if resp.Diagnostics.HasError() {

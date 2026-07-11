@@ -145,18 +145,18 @@ func TestVolumeResource_withName(t *testing.T) {
 		switch req.OperationName {
 		case "createVolume":
 			created = true
-			fmt.Fprintf(w, `{"data":{"volumeCreate":{"id":"vol-456","name":"Volume","projectId":"%s"}}}`, projectId)
+			_, _ = fmt.Fprintf(w, `{"data":{"volumeCreate":{"id":"vol-456","name":"Volume","projectId":"%s"}}}`, projectId)
 		case "updateVolume":
-			fmt.Fprint(w, `{"data":{"volumeUpdate":{"id":"vol-456","name":"postgres-data"}}}`)
+			_, _ = fmt.Fprint(w, `{"data":{"volumeUpdate":{"id":"vol-456","name":"postgres-data"}}}`)
 		case "getVolumeInstances":
 			if created {
-				fmt.Fprint(w, volumeInstancesResp)
+				_, _ = fmt.Fprint(w, volumeInstancesResp)
 			} else {
 				w.WriteHeader(http.StatusInternalServerError)
-				fmt.Fprint(w, `{"errors":[{"message":"not found"}]}`)
+				_, _ = fmt.Fprint(w, `{"errors":[{"message":"not found"}]}`)
 			}
 		case "deleteVolume":
-			fmt.Fprint(w, `{"data":{"volumeDelete":true}}`)
+			_, _ = fmt.Fprint(w, `{"data":{"volumeDelete":true}}`)
 		default:
 			t.Errorf("mock server: unexpected operation %q", req.OperationName)
 			w.WriteHeader(http.StatusInternalServerError)

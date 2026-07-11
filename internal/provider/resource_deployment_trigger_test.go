@@ -85,7 +85,7 @@ resource "railway_deployment_trigger" "test" {
 func TestDeploymentTriggerResource_basic(t *testing.T) {
 	srv := newMockGraphQLServer(t, mockFixtures{
 		"createDeploymentTrigger": `{"data":{"deploymentTriggerCreate":{"id":"dt-123","branch":"main","checkSuites":false,"environmentId":"00000000-0000-0000-0000-000000000002","projectId":"00000000-0000-0000-0000-000000000001","provider":"github","repository":"owner/repo","serviceId":"00000000-0000-0000-0000-000000000003"}}}`,
-		"getDeploymentTriggers":  `{"data":{"deploymentTriggers":{"edges":[{"node":{"id":"dt-123","branch":"main","checkSuites":false,"environmentId":"00000000-0000-0000-0000-000000000002","projectId":"00000000-0000-0000-0000-000000000001","provider":"github","repository":"owner/repo","serviceId":"00000000-0000-0000-0000-000000000003"}}]}}}`,
+		"getDeploymentTriggers":   `{"data":{"deploymentTriggers":{"edges":[{"node":{"id":"dt-123","branch":"main","checkSuites":false,"environmentId":"00000000-0000-0000-0000-000000000002","projectId":"00000000-0000-0000-0000-000000000001","provider":"github","repository":"owner/repo","serviceId":"00000000-0000-0000-0000-000000000003"}}]}}}`,
 		"deleteDeploymentTrigger": `{"data":{"deploymentTriggerDelete":true}}`,
 	})
 	defer srv.Close()
@@ -122,7 +122,7 @@ resource "railway_deployment_trigger" "test" {
 func TestDeploymentTriggerResource_withOptionalFields(t *testing.T) {
 	srv := newMockGraphQLServer(t, mockFixtures{
 		"createDeploymentTrigger": `{"data":{"deploymentTriggerCreate":{"id":"dt-456","branch":"develop","checkSuites":true,"environmentId":"00000000-0000-0000-0000-000000000002","projectId":"00000000-0000-0000-0000-000000000001","provider":"github","repository":"owner/monorepo","serviceId":"00000000-0000-0000-0000-000000000003"}}}`,
-		"getDeploymentTriggers":  `{"data":{"deploymentTriggers":{"edges":[{"node":{"id":"dt-456","branch":"develop","checkSuites":true,"environmentId":"00000000-0000-0000-0000-000000000002","projectId":"00000000-0000-0000-0000-000000000001","provider":"github","repository":"owner/monorepo","serviceId":"00000000-0000-0000-0000-000000000003"}}]}}}`,
+		"getDeploymentTriggers":   `{"data":{"deploymentTriggers":{"edges":[{"node":{"id":"dt-456","branch":"develop","checkSuites":true,"environmentId":"00000000-0000-0000-0000-000000000002","projectId":"00000000-0000-0000-0000-000000000001","provider":"github","repository":"owner/monorepo","serviceId":"00000000-0000-0000-0000-000000000003"}}]}}}`,
 		"deleteDeploymentTrigger": `{"data":{"deploymentTriggerDelete":true}}`,
 	})
 	defer srv.Close()
@@ -161,9 +161,9 @@ resource "railway_deployment_trigger" "test" {
 
 func TestDeploymentTriggerResource_disappears(t *testing.T) {
 	srv, disappear := newDisappearsMockServer(t, mockFixtures{
-		"createDeploymentTrigger":  `{"data":{"deploymentTriggerCreate":{"id":"dt-dis","branch":"main","checkSuites":false,"environmentId":"00000000-0000-0000-0000-000000000002","projectId":"00000000-0000-0000-0000-000000000001","provider":"github","repository":"owner/repo","serviceId":"00000000-0000-0000-0000-000000000003"}}}`,
-		"getDeploymentTriggers":    `{"data":{"deploymentTriggers":{"edges":[{"node":{"id":"dt-dis","branch":"main","checkSuites":false,"environmentId":"00000000-0000-0000-0000-000000000002","projectId":"00000000-0000-0000-0000-000000000001","provider":"github","repository":"owner/repo","serviceId":"00000000-0000-0000-0000-000000000003"}}]}}}`,
-		"deleteDeploymentTrigger":  `{"data":{"deploymentTriggerDelete":true}}`,
+		"createDeploymentTrigger": `{"data":{"deploymentTriggerCreate":{"id":"dt-dis","branch":"main","checkSuites":false,"environmentId":"00000000-0000-0000-0000-000000000002","projectId":"00000000-0000-0000-0000-000000000001","provider":"github","repository":"owner/repo","serviceId":"00000000-0000-0000-0000-000000000003"}}}`,
+		"getDeploymentTriggers":   `{"data":{"deploymentTriggers":{"edges":[{"node":{"id":"dt-dis","branch":"main","checkSuites":false,"environmentId":"00000000-0000-0000-0000-000000000002","projectId":"00000000-0000-0000-0000-000000000001","provider":"github","repository":"owner/repo","serviceId":"00000000-0000-0000-0000-000000000003"}}]}}}`,
+		"deleteDeploymentTrigger": `{"data":{"deploymentTriggerDelete":true}}`,
 	}, "getDeploymentTriggers")
 	defer srv.Close()
 
@@ -197,7 +197,7 @@ resource "railway_deployment_trigger" "test" {
 func TestDeploymentTriggerResource_import(t *testing.T) {
 	srv := newMockGraphQLServer(t, mockFixtures{
 		"createDeploymentTrigger": `{"data":{"deploymentTriggerCreate":{"id":"dt-789","branch":"main","checkSuites":false,"environmentId":"00000000-0000-0000-0000-000000000002","projectId":"00000000-0000-0000-0000-000000000001","provider":"github","repository":"owner/repo","serviceId":"00000000-0000-0000-0000-000000000003"}}}`,
-		"getDeploymentTriggers":  `{"data":{"deploymentTriggers":{"edges":[{"node":{"id":"dt-789","branch":"main","checkSuites":false,"environmentId":"00000000-0000-0000-0000-000000000002","projectId":"00000000-0000-0000-0000-000000000001","provider":"github","repository":"owner/repo","serviceId":"00000000-0000-0000-0000-000000000003"}}]}}}`,
+		"getDeploymentTriggers":   `{"data":{"deploymentTriggers":{"edges":[{"node":{"id":"dt-789","branch":"main","checkSuites":false,"environmentId":"00000000-0000-0000-0000-000000000002","projectId":"00000000-0000-0000-0000-000000000001","provider":"github","repository":"owner/repo","serviceId":"00000000-0000-0000-0000-000000000003"}}]}}}`,
 		"deleteDeploymentTrigger": `{"data":{"deploymentTriggerDelete":true}}`,
 	})
 	defer srv.Close()

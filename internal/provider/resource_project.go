@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"sort"
+	"time"
 
 	"github.com/Khan/genqlient/graphql"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
@@ -156,23 +157,12 @@ func (r *ProjectResource) Schema(ctx context.Context, req resource.SchemaRequest
 }
 
 func (r *ProjectResource) Configure(ctx context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
-	// Prevent panic if the provider has not been configured.
-	if req.ProviderData == nil {
+	data := providerDataFrom(req.ProviderData, &resp.Diagnostics)
+	if data == nil {
 		return
 	}
 
-	client, ok := req.ProviderData.(*graphql.Client)
-
-	if !ok {
-		resp.Diagnostics.AddError(
-			"Unexpected Resource Configure Type",
-			fmt.Sprintf("Expected *graphql.Client, got: %T. Please report this issue to the provider developers.", req.ProviderData),
-		)
-
-		return
-	}
-
-	r.client = client
+	r.client = data.Client
 }
 
 func (r *ProjectResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
@@ -204,7 +194,14 @@ func (r *ProjectResource) Create(ctx context.Context, req resource.CreateRequest
 
 	input.DefaultEnvironmentName = defaultEnvironmentData.Name.ValueString()
 
-	response, err := createProject(ctx, *r.client, input)
+	// Railway enforces a per-workspace project-creation cooldown ("1 project
+	// per 30 seconds"). retryOnCooldownContext waits it out transparently.
+	var response *createProjectResponse
+	err := retryOnCooldownContext(ctx, 90*time.Second, func() error {
+		var callErr error
+		response, callErr = createProject(ctx, *r.client, input)
+		return callErr
+	})
 
 	if err != nil {
 		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to create project %q, got error: %s", data.Name.ValueString(), err))
@@ -262,7 +259,7 @@ func (r *ProjectResource) Read(ctx context.Context, req resource.ReadRequest, re
 		return
 	}
 
-	project, enviroment, err := defaultEnvironmentForProject(ctx, *r.client, data.Id.ValueString())
+	project, environment, err := defaultEnvironmentForProject(ctx, *r.client, data.Id.ValueString())
 
 	if err != nil {
 		if isNotFound(err) {
@@ -286,8 +283,8 @@ func (r *ProjectResource) Read(ctx context.Context, req resource.ReadRequest, re
 	data.DefaultEnvironment = types.ObjectValueMust(
 		defaultEnvironmentAttrTypes,
 		map[string]attr.Value{
-			"id":   types.StringValue(enviroment.Id),
-			"name": types.StringValue(enviroment.Name),
+			"id":   types.StringValue(environment.Id),
+			"name": types.StringValue(environment.Name),
 		},
 	)
 

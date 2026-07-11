@@ -156,17 +156,17 @@ func TestServiceInstanceResource_update(t *testing.T) {
 		case "getServiceInstanceDetailed":
 			// After 2nd update (the actual update in step 2), return v2 response
 			if updateCount >= 2 {
-				fmt.Fprint(w, v2Response)
+				_, _ = fmt.Fprint(w, v2Response)
 			} else {
-				fmt.Fprint(w, v1Response)
+				_, _ = fmt.Fprint(w, v1Response)
 			}
 		case "updateServiceInstanceInEnvironment":
 			updateCount++
-			fmt.Fprint(w, `{"data":{"serviceInstanceUpdate":true}}`)
+			_, _ = fmt.Fprint(w, `{"data":{"serviceInstanceUpdate":true}}`)
 		case "deployServiceInstance":
-			fmt.Fprint(w, `{"data":{"serviceInstanceDeploy":true}}`)
+			_, _ = fmt.Fprint(w, `{"data":{"serviceInstanceDeploy":true}}`)
 		case "redeployServiceInstance":
-			fmt.Fprint(w, `{"data":{"serviceInstanceRedeploy":true}}`)
+			_, _ = fmt.Fprint(w, `{"data":{"serviceInstanceRedeploy":true}}`)
 		default:
 			t.Errorf("mock server: unexpected operation %q", req.OperationName)
 			w.WriteHeader(http.StatusInternalServerError)
@@ -333,9 +333,9 @@ func TestServiceInstanceResource_regionChange(t *testing.T) {
 		switch req.OperationName {
 		case "getServiceInstanceDetailed":
 			if updateCount >= 2 {
-				fmt.Fprint(w, v2Response)
+				_, _ = fmt.Fprint(w, v2Response)
 			} else {
-				fmt.Fprint(w, v1Response)
+				_, _ = fmt.Fprint(w, v1Response)
 			}
 		case "updateServiceInstanceInEnvironment":
 			updateCount++
@@ -346,11 +346,11 @@ func TestServiceInstanceResource_regionChange(t *testing.T) {
 					lastUpdateInput = input
 				}
 			}
-			fmt.Fprint(w, `{"data":{"serviceInstanceUpdate":true}}`)
+			_, _ = fmt.Fprint(w, `{"data":{"serviceInstanceUpdate":true}}`)
 		case "deployServiceInstance":
-			fmt.Fprint(w, `{"data":{"serviceInstanceDeploy":true}}`)
+			_, _ = fmt.Fprint(w, `{"data":{"serviceInstanceDeploy":true}}`)
 		case "redeployServiceInstance":
-			fmt.Fprint(w, `{"data":{"serviceInstanceRedeploy":true}}`)
+			_, _ = fmt.Fprint(w, `{"data":{"serviceInstanceRedeploy":true}}`)
 		default:
 			t.Errorf("mock server: unexpected operation %q", req.OperationName)
 			w.WriteHeader(http.StatusInternalServerError)
@@ -493,7 +493,7 @@ func TestServiceInstanceResource_registryCredentials(t *testing.T) {
 
 		switch req.OperationName {
 		case "getServiceInstanceDetailed":
-			fmt.Fprint(w, instanceResp)
+			_, _ = fmt.Fprint(w, instanceResp)
 		case "updateServiceInstanceInEnvironment":
 			mu.Lock()
 			var variables map[string]interface{}
@@ -503,9 +503,9 @@ func TestServiceInstanceResource_registryCredentials(t *testing.T) {
 				}
 			}
 			mu.Unlock()
-			fmt.Fprint(w, `{"data":{"serviceInstanceUpdate":true}}`)
+			_, _ = fmt.Fprint(w, `{"data":{"serviceInstanceUpdate":true}}`)
 		case "deployServiceInstance":
-			fmt.Fprint(w, `{"data":{"serviceInstanceDeploy":true}}`)
+			_, _ = fmt.Fprint(w, `{"data":{"serviceInstanceDeploy":true}}`)
 		default:
 			t.Errorf("mock server: unexpected operation %q", req.OperationName)
 			w.WriteHeader(http.StatusInternalServerError)

@@ -72,8 +72,8 @@ resource "railway_private_network" "test" {
 
 func TestPrivateNetworkResource_basic(t *testing.T) {
 	fixtures := mockFixtures{
-		"createOrGetPrivateNetwork": `{"data":{"privateNetworkCreateOrGet":{"publicId":"pn-abc","projectId":"00000000-0000-0000-0000-000000000001","environmentId":"00000000-0000-0000-0000-000000000002","name":"test-network","dnsName":"test-network.internal","networkId":42,"tags":[]}}}`,
-		"getPrivateNetworks":        `{"data":{"privateNetworks":[{"publicId":"pn-abc","projectId":"00000000-0000-0000-0000-000000000001","environmentId":"00000000-0000-0000-0000-000000000002","name":"test-network","dnsName":"test-network.internal","networkId":42,"tags":[]}]}}`,
+		"createOrGetPrivateNetwork":           `{"data":{"privateNetworkCreateOrGet":{"publicId":"pn-abc","projectId":"00000000-0000-0000-0000-000000000001","environmentId":"00000000-0000-0000-0000-000000000002","name":"test-network","dnsName":"test-network.internal","networkId":42,"tags":[]}}}`,
+		"getPrivateNetworks":                  `{"data":{"privateNetworks":[{"publicId":"pn-abc","projectId":"00000000-0000-0000-0000-000000000001","environmentId":"00000000-0000-0000-0000-000000000002","name":"test-network","dnsName":"test-network.internal","networkId":42,"tags":[]}]}}`,
 		"deletePrivateNetworksForEnvironment": `{"data":{"privateNetworksForEnvironmentDelete":true}}`,
 	}
 
@@ -104,8 +104,8 @@ resource "railway_private_network" "test" {
 
 func TestPrivateNetworkResource_withTags(t *testing.T) {
 	fixtures := mockFixtures{
-		"createOrGetPrivateNetwork": `{"data":{"privateNetworkCreateOrGet":{"publicId":"pn-abc","projectId":"00000000-0000-0000-0000-000000000001","environmentId":"00000000-0000-0000-0000-000000000002","name":"test-network","dnsName":"test-network.internal","networkId":42,"tags":["tag1","tag2"]}}}`,
-		"getPrivateNetworks":        `{"data":{"privateNetworks":[{"publicId":"pn-abc","projectId":"00000000-0000-0000-0000-000000000001","environmentId":"00000000-0000-0000-0000-000000000002","name":"test-network","dnsName":"test-network.internal","networkId":42,"tags":["tag1","tag2"]}]}}`,
+		"createOrGetPrivateNetwork":           `{"data":{"privateNetworkCreateOrGet":{"publicId":"pn-abc","projectId":"00000000-0000-0000-0000-000000000001","environmentId":"00000000-0000-0000-0000-000000000002","name":"test-network","dnsName":"test-network.internal","networkId":42,"tags":["tag1","tag2"]}}}`,
+		"getPrivateNetworks":                  `{"data":{"privateNetworks":[{"publicId":"pn-abc","projectId":"00000000-0000-0000-0000-000000000001","environmentId":"00000000-0000-0000-0000-000000000002","name":"test-network","dnsName":"test-network.internal","networkId":42,"tags":["tag1","tag2"]}]}}`,
 		"deletePrivateNetworksForEnvironment": `{"data":{"privateNetworksForEnvironmentDelete":true}}`,
 	}
 
@@ -172,8 +172,8 @@ resource "railway_private_network" "test" {
 
 func TestPrivateNetworkResource_import(t *testing.T) {
 	fixtures := mockFixtures{
-		"createOrGetPrivateNetwork": `{"data":{"privateNetworkCreateOrGet":{"publicId":"pn-abc","projectId":"00000000-0000-0000-0000-000000000001","environmentId":"00000000-0000-0000-0000-000000000002","name":"test-network","dnsName":"test-network.internal","networkId":42,"tags":[]}}}`,
-		"getPrivateNetworks":        `{"data":{"privateNetworks":[{"publicId":"pn-abc","projectId":"00000000-0000-0000-0000-000000000001","environmentId":"00000000-0000-0000-0000-000000000002","name":"test-network","dnsName":"test-network.internal","networkId":42,"tags":[]}]}}`,
+		"createOrGetPrivateNetwork":           `{"data":{"privateNetworkCreateOrGet":{"publicId":"pn-abc","projectId":"00000000-0000-0000-0000-000000000001","environmentId":"00000000-0000-0000-0000-000000000002","name":"test-network","dnsName":"test-network.internal","networkId":42,"tags":[]}}}`,
+		"getPrivateNetworks":                  `{"data":{"privateNetworks":[{"publicId":"pn-abc","projectId":"00000000-0000-0000-0000-000000000001","environmentId":"00000000-0000-0000-0000-000000000002","name":"test-network","dnsName":"test-network.internal","networkId":42,"tags":[]}]}}`,
 		"deletePrivateNetworksForEnvironment": `{"data":{"privateNetworksForEnvironmentDelete":true}}`,
 	}
 

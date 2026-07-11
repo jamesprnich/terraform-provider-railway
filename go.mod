@@ -1,6 +1,6 @@
 module github.com/jamesprnich/terraform-provider-railway
 
-go 1.25.11
+go 1.25.12
 
 require (
 	github.com/Khan/genqlient v0.5.0

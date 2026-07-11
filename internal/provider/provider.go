@@ -2,9 +2,11 @@ package provider
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"os"
 	"regexp"
+	"strconv"
 	"time"
 
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
@@ -18,6 +20,7 @@ import (
 
 var (
 	envVarName          = "RAILWAY_TOKEN"
+	envVarStrictScoping = "RAILWAY_STRICT_ENV_SCOPING"
 	errMissingAuthToken = "Required token could not be found. Please set the token using an input variable in the provider configuration block or by using the `" + envVarName + "` environment variable."
 )
 
@@ -39,8 +42,17 @@ type RailwayProvider struct {
 var defaultAPIURL = "https://backboard.railway.app/graphql/v2?source=terraform_provider_railway"
 
 type RailwayProviderModel struct {
-	Token  types.String `tfsdk:"token"`
-	APIURL types.String `tfsdk:"api_url"`
+	Token            types.String `tfsdk:"token"`
+	APIURL           types.String `tfsdk:"api_url"`
+	StrictEnvScoping types.Bool   `tfsdk:"strict_env_scoping"`
+}
+
+// RailwayProviderData is the value passed to every Resource / DataSource
+// Configure() via req.ProviderData. It bundles the GraphQL client with
+// provider-level flags that resources need at runtime.
+type RailwayProviderData struct {
+	Client           *graphql.Client
+	StrictEnvScoping bool
 }
 
 func (p *RailwayProvider) Metadata(ctx context.Context, req provider.MetadataRequest, resp *provider.MetadataResponse) {
@@ -63,6 +75,19 @@ func (p *RailwayProvider) Schema(ctx context.Context, req provider.SchemaRequest
 				MarkdownDescription: "Override the Railway API URL. Used for testing.",
 				Description:         "Override the Railway API URL. Used for testing.",
 				Optional:            true,
+			},
+			"strict_env_scoping": schema.BoolAttribute{
+				MarkdownDescription: "Enforce environment-scoped resource creation. When `true` (default), " +
+					"`railway_service.environment_id` and `railway_environment.source_environment_id` are treated " +
+					"as required, and any attempt to create a service or additional environment without them fails " +
+					"at plan time. This prevents Railway's env-less mutation semantics (see " +
+					"`ServiceCreateInput.environmentId` in the Railway schema) from silently creating services " +
+					"across every non-fork environment. Set to `false` to opt out — you own the leak surface. " +
+					"May also be set via the `" + envVarStrictScoping + "` environment variable.",
+				Description: "Enforce environment-scoped resource creation. When true (default), " +
+					"railway_service.environment_id and railway_environment.source_environment_id are treated as " +
+					"required. Set to false to opt out. May also be set via the " + envVarStrictScoping + " env var.",
+				Optional: true,
 			},
 		},
 	}
@@ -110,10 +135,31 @@ func (p *RailwayProvider) Configure(ctx context.Context, req provider.ConfigureR
 		apiURL = data.APIURL.ValueString()
 	}
 
+	// Resolve strict_env_scoping. Precedence: explicit HCL > env var > default (true).
+	strictEnvScoping := true
+	if !data.StrictEnvScoping.IsNull() {
+		strictEnvScoping = data.StrictEnvScoping.ValueBool()
+	} else if v := os.Getenv(envVarStrictScoping); v != "" {
+		parsed, err := strconv.ParseBool(v)
+		if err != nil {
+			resp.Diagnostics.AddError(
+				"Invalid "+envVarStrictScoping,
+				fmt.Sprintf("Value %q is not a valid boolean. Use 'true' or 'false'.", v),
+			)
+			return
+		}
+		strictEnvScoping = parsed
+	}
+
 	client := graphql.NewClient(apiURL, &httpClient)
 
-	resp.DataSourceData = &client
-	resp.ResourceData = &client
+	providerData := &RailwayProviderData{
+		Client:           &client,
+		StrictEnvScoping: strictEnvScoping,
+	}
+
+	resp.DataSourceData = providerData
+	resp.ResourceData = providerData
 }
 
 func (p *RailwayProvider) Resources(ctx context.Context) []func() resource.Resource {
@@ -157,4 +203,29 @@ func New(version string) func() provider.Provider {
 			version: version,
 		}
 	}
+}
+
+// providerDataFrom is the standard extractor every Resource / DataSource
+// Configure() calls. It returns the RailwayProviderData bundle (client +
+// flags) or reports a diagnostic and returns nil.
+//
+// Callers use the returned pointer's Client field for GraphQL and
+// StrictEnvScoping to gate strict-mode diagnostics. Returning nil means
+// "provider not yet configured" — callers should simply return without
+// setting resource fields.
+func providerDataFrom(providerData any, diags interface{ AddError(string, string) }) *RailwayProviderData {
+	if providerData == nil {
+		return nil
+	}
+
+	data, ok := providerData.(*RailwayProviderData)
+	if !ok {
+		diags.AddError(
+			"Unexpected Resource Configure Type",
+			fmt.Sprintf("Expected *RailwayProviderData, got: %T. Please report this issue to the provider developers.", providerData),
+		)
+		return nil
+	}
+
+	return data
 }

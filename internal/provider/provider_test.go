@@ -30,7 +30,6 @@ var (
 	testAccProjectId       string
 	testAccServiceId       string
 	testAccEnvironmentId   string
-	testAccDefaultRegion   = "us-west2"
 	testAccEnvironmentName string
 	testAccProjectName     string
 	testAccServiceName     = "acc-test-service"
@@ -53,17 +52,23 @@ type testFixtures struct {
 
 func writeFixtureFile(projectId string) {
 	data, _ := json.Marshal(testFixtures{ProjectId: projectId})
-	os.WriteFile(testFixtureFile, data, 0600)
+	if err := os.WriteFile(testFixtureFile, data, 0o600); err != nil {
+		log.Printf("writeFixtureFile: WARN — failed to persist %s: %s", testFixtureFile, err)
+	}
 }
 
 func removeFixtureFile() {
-	os.Remove(testFixtureFile)
+	if err := os.Remove(testFixtureFile); err != nil && !os.IsNotExist(err) {
+		log.Printf("removeFixtureFile: WARN — failed to remove %s: %s", testFixtureFile, err)
+	}
 }
 
 // cleanupOrphanedFixtures reads the fixture file from a previous run and
 // deletes the orphaned project if it still exists.
 func cleanupOrphanedFixtures(ctx context.Context, client graphql.Client) {
-	data, err := os.ReadFile(testFixtureFile)
+	// The fixture-file path is a fixed test-time value under the OS temp dir,
+	// not user input; the gosec G304 warning does not apply.
+	data, err := os.ReadFile(testFixtureFile) //nolint:gosec // fixed test path
 	if err != nil {
 		return // no previous fixture file
 	}
@@ -124,7 +129,7 @@ func TestMain(m *testing.M) {
 	writeFixtureFile(testAccProjectId)
 
 	if len(project.Environments.Edges) != 1 {
-		deleteProject(ctx, client, testAccProjectId)
+		_, _ = deleteProject(ctx, client, testAccProjectId)
 		log.Fatalf("TestMain: expected 1 environment, got %d", len(project.Environments.Edges))
 	}
 
@@ -139,20 +144,23 @@ func TestMain(m *testing.M) {
 		ProjectId: testAccProjectId,
 	})
 	if err != nil {
-		deleteProject(ctx, client, testAccProjectId)
+		_, _ = deleteProject(ctx, client, testAccProjectId)
 		log.Fatalf("TestMain: failed to create test service: %s", err)
 	}
 
 	testAccServiceId = serviceResp.ServiceCreate.Id
 
-	// Connect service to image to trigger auto-deployment.
+	// Attach an image to the service's instance in the default env. Uses the
+	// env-scoped serviceInstanceUpdate — the env-less serviceConnect mutation
+	// was removed in v0.11.0 because it would create source connections
+	// across every non-fork environment.
 	image := "nginx:1.27-alpine"
-	_, err = connectService(ctx, client, testAccServiceId, ServiceConnectInput{
-		Image: &image,
+	_, err = updateServiceInstanceInEnvironment(ctx, client, testAccEnvironmentId, testAccServiceId, ServiceInstanceUpdateInput{
+		Source: &ServiceSourceInput{Image: &image},
 	})
 	if err != nil {
-		deleteProject(ctx, client, testAccProjectId)
-		log.Fatalf("TestMain: failed to connect service to image: %s", err)
+		_, _ = deleteProject(ctx, client, testAccProjectId)
+		log.Fatalf("TestMain: failed to attach image to service instance: %s", err)
 	}
 
 	// Wait for the service instance to exist (deployment initiated).
@@ -164,7 +172,7 @@ func TestMain(m *testing.M) {
 		return nil
 	})
 	if err != nil {
-		deleteProject(ctx, client, testAccProjectId)
+		_, _ = deleteProject(ctx, client, testAccProjectId)
 		log.Fatalf("TestMain: timed out waiting for service instance: %s", err)
 	}
 

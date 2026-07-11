@@ -1,4 +1,4 @@
-name: Tests
+name: CI
 on:
   pull_request:
     paths-ignore:
@@ -20,7 +20,7 @@ on:
       - 'mkdocs.yml'
       - 'docker-compose.yml'
 concurrency:
-  group: test-${{ github.ref }}
+  group: ci-${{ github.ref }}
   cancel-in-progress: true
 permissions:
   contents: read
@@ -43,6 +43,25 @@ jobs:
         run: go build -v .
       - name: Vet
         run: go vet ./...
+
+  lint:
+    name: Lint
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Install Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: 'go.mod'
+          cache: true
+      - name: Run golangci-lint
+        uses: golangci/golangci-lint-action@v7
+        with:
+          version: v2.4.0
+          args: --timeout=5m
 
   unit:
     name: Unit Tests

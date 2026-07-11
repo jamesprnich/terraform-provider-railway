@@ -33,6 +33,17 @@ go mod tidy
 
 Then commit the changes to `go.mod` and `go.sum`.
 
+## Linting
+
+`golangci-lint` is a required pre-merge check. The version is pinned in the `Makefile` and `.github/workflows/test.yml`; upgrade both together to keep local and CI in sync.
+
+```shell
+make lint       # runs golangci-lint with the .golangci.yml config
+make lint-fix   # runs golangci-lint with --fix (auto-applies safe fixes)
+```
+
+The `make check` target runs lint + tests + build together and is the recommended pre-commit gate.
+
 ## Testing
 
 Unit tests use mock HTTP servers and do not require a Railway account:
