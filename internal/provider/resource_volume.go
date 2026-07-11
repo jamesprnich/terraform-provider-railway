@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/Khan/genqlient/graphql"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
@@ -129,22 +130,12 @@ func (r *VolumeResource) Schema(ctx context.Context, req resource.SchemaRequest,
 }
 
 func (r *VolumeResource) Configure(ctx context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
-	if req.ProviderData == nil {
+	data := providerDataFrom(req.ProviderData, &resp.Diagnostics)
+	if data == nil {
 		return
 	}
 
-	client, ok := req.ProviderData.(*graphql.Client)
-
-	if !ok {
-		resp.Diagnostics.AddError(
-			"Unexpected Resource Configure Type",
-			fmt.Sprintf("Expected *graphql.Client, got: %T. Please report this issue to the provider developers.", req.ProviderData),
-		)
-
-		return
-	}
-
-	r.client = client
+	r.client = data.Client
 }
 
 func (r *VolumeResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
@@ -206,8 +197,13 @@ func (r *VolumeResource) Create(ctx context.Context, req resource.CreateRequest,
 		tflog.Debug(ctx, "updated volume name")
 	}
 
-	// Read back to get the final state
-	err = r.readVolumeState(ctx, data)
+	// Read back to get the final state. Railway's list endpoint has ~seconds
+	// of eventual consistency after a volumeCreate: getVolumeInstances can
+	// legitimately return "not found" even though the volume was created
+	// successfully. Retry until it shows up, or until the 30s budget is spent.
+	err = retryReadAfterCreateContext(ctx, 30*time.Second, func() error {
+		return r.readVolumeState(ctx, data)
+	})
 
 	if err != nil {
 		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to read volume after creation (id=%s, project_id=%s, service_id=%s), got error: %s", data.Id.ValueString(), data.ProjectId.ValueString(), data.ServiceId.ValueString(), err))

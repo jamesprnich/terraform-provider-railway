@@ -319,7 +319,9 @@ func TestGraphQLContract_EgressGatewayCreateInput_serialization(t *testing.T) {
 	}
 
 	var m map[string]interface{}
-	json.Unmarshal(b, &m)
+	if err := json.Unmarshal(b, &m); err != nil {
+		t.Fatalf("unmarshal: %s", err)
+	}
 
 	assertEqual(t, "serviceId", m["serviceId"].(string), "svc-1")
 	assertEqual(t, "environmentId", m["environmentId"].(string), "env-1")
@@ -335,7 +337,9 @@ func TestGraphQLContract_EgressGatewayCreateInput_serialization(t *testing.T) {
 		t.Fatalf("failed to marshal EgressGatewayCreateInput without region: %s", err)
 	}
 	var m2 map[string]interface{}
-	json.Unmarshal(b2, &m2)
+	if err := json.Unmarshal(b2, &m2); err != nil {
+		t.Fatalf("unmarshal: %s", err)
+	}
 	if _, exists := m2["region"]; exists {
 		t.Errorf("expected region to be omitted when nil, but got: %v", m2["region"])
 	}
@@ -363,7 +367,9 @@ func TestGraphQLContract_DeploymentTriggerCreateInput_serialization(t *testing.T
 	}
 
 	var m map[string]interface{}
-	json.Unmarshal(b, &m)
+	if err := json.Unmarshal(b, &m); err != nil {
+		t.Fatalf("unmarshal: %s", err)
+	}
 
 	assertEqual(t, "branch", m["branch"].(string), "main")
 	assertEqual(t, "provider", m["provider"].(string), "github")
@@ -392,7 +398,9 @@ func TestGraphQLContract_DeploymentTriggerCreateInput_omitsNulls(t *testing.T) {
 	}
 
 	var m map[string]interface{}
-	json.Unmarshal(b, &m)
+	if err := json.Unmarshal(b, &m); err != nil {
+		t.Fatalf("unmarshal: %s", err)
+	}
 
 	if _, ok := m["checkSuites"]; ok {
 		t.Error("checkSuites should be omitted when nil")
@@ -416,7 +424,9 @@ func TestGraphQLContract_DeploymentTriggerUpdateInput_serialization(t *testing.T
 	}
 
 	var m map[string]interface{}
-	json.Unmarshal(b, &m)
+	if err := json.Unmarshal(b, &m); err != nil {
+		t.Fatalf("unmarshal: %s", err)
+	}
 
 	assertEqual(t, "branch", m["branch"].(string), "develop")
 
@@ -443,7 +453,9 @@ func TestGraphQLContract_PrivateNetworkEndpointCreateOrGetInput_serialization(t 
 	}
 
 	var m map[string]interface{}
-	json.Unmarshal(b, &m)
+	if err := json.Unmarshal(b, &m); err != nil {
+		t.Fatalf("unmarshal: %s", err)
+	}
 
 	assertEqual(t, "environmentId", m["environmentId"].(string), "env-1")
 	assertEqual(t, "privateNetworkId", m["privateNetworkId"].(string), "pn-1")

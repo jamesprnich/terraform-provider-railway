@@ -43,6 +43,7 @@ nav:
   - Home: home.md
   - Provider Configuration: index.md
   - Guides:
+    - Multi-Environment Scoping: guides/multi-environment-scoping.md
     - Authentication: guides/authentication.md
   - Resources:
     - project: resources/project.md

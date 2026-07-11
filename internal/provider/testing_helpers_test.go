@@ -84,7 +84,7 @@ func testAccCheckEnvironmentDisappears(resourceName string) resource.TestCheckFu
 				return err
 			}
 			for _, edge := range response.Environments.Edges {
-				if edge.Node.Environment.Id == envId {
+				if edge.Node.Id == envId {
 					return nil // still in list
 				}
 			}
@@ -101,7 +101,7 @@ func testAccCheckServiceDisappears(resourceName string) resource.TestCheckFunc {
 			return fmt.Errorf("resource not found in state: %s", resourceName)
 		}
 		client := testAccNewClient()
-		_, err := deleteService(context.Background(), client, rs.Primary.ID)
+		_, err := deleteService(context.Background(), client, rs.Primary.ID, nil)
 		return err
 	}
 }
@@ -229,7 +229,7 @@ func testAccCheckCustomDomainDisappears(resourceName string) resource.TestCheckF
 				return err
 			}
 			for _, cd := range response.Domains.CustomDomains {
-				if cd.CustomDomain.Id == domainId {
+				if cd.Id == domainId {
 					return nil // still exists
 				}
 			}
@@ -342,19 +342,6 @@ func testAccCheckPrivateNetworkDisappears(resourceName string) resource.TestChec
 	}
 }
 
-// testAccCheckPrivateNetworkEndpointDisappears deletes the private network endpoint externally via the API.
-func testAccCheckPrivateNetworkEndpointDisappears(resourceName string) resource.TestCheckFunc {
-	return func(s *terraform.State) error {
-		rs, ok := s.RootModule().Resources[resourceName]
-		if !ok {
-			return fmt.Errorf("resource not found in state: %s", resourceName)
-		}
-		client := testAccNewClient()
-		_, err := deletePrivateNetworkEndpoint(context.Background(), client, rs.Primary.ID)
-		return err
-	}
-}
-
 // testAccCheckVolumeDisappears deletes the volume externally via the API.
 func testAccCheckVolumeDisappears(resourceName string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
@@ -364,22 +351,6 @@ func testAccCheckVolumeDisappears(resourceName string) resource.TestCheckFunc {
 		}
 		client := testAccNewClient()
 		_, err := deleteVolume(context.Background(), client, rs.Primary.ID)
-		return err
-	}
-}
-
-// testAccCheckServiceInstanceDisappears deletes the parent service externally via the API.
-// Service instances are implicit and cannot be deleted directly — deleting the parent service
-// causes the service instance to disappear.
-func testAccCheckServiceInstanceDisappears(resourceName string) resource.TestCheckFunc {
-	return func(s *terraform.State) error {
-		rs, ok := s.RootModule().Resources[resourceName]
-		if !ok {
-			return fmt.Errorf("resource not found in state: %s", resourceName)
-		}
-		client := testAccNewClient()
-		serviceId := rs.Primary.Attributes["service_id"]
-		_, err := deleteService(context.Background(), client, serviceId)
 		return err
 	}
 }
@@ -425,7 +396,7 @@ func testAccCheckEnvironmentDestroy(s *terraform.State) error {
 			return err
 		}
 		for _, edge := range response.Environments.Edges {
-			if edge.Node.Environment.Id == rs.Primary.ID {
+			if edge.Node.Id == rs.Primary.ID {
 				return fmt.Errorf("railway_environment %s still exists after destroy", rs.Primary.ID)
 			}
 		}
@@ -586,11 +557,11 @@ func testAccCheckVolumeDestroy(s *terraform.State) error {
 			return err
 		}
 		for _, edge := range response.Project.Volumes.Edges {
-			if edge.Node.Volume.Id == rs.Primary.ID {
+			if edge.Node.Id == rs.Primary.ID {
 				// Volume still exists in the API — check instance states.
 				// Railway retains volumes after volumeDelete for data protection.
 				// Accept DELETED, DELETING, or READY (current API no-op behavior).
-				for _, inst := range edge.Node.Volume.VolumeInstances.Edges {
+				for _, inst := range edge.Node.VolumeInstances.Edges {
 					if inst.Node.State == VolumeStateError {
 						return fmt.Errorf("railway_volume %s has instance in ERROR state", rs.Primary.ID)
 					}
@@ -620,7 +591,7 @@ func testAccCheckServiceDomainDestroy(s *terraform.State) error {
 			return err
 		}
 		for _, sd := range response.Domains.ServiceDomains {
-			if sd.ServiceDomain.Id == rs.Primary.ID {
+			if sd.Id == rs.Primary.ID {
 				return fmt.Errorf("railway_service_domain %s still exists after destroy", rs.Primary.ID)
 			}
 		}
@@ -647,7 +618,7 @@ func testAccCheckCustomDomainDestroy(s *terraform.State) error {
 			return err
 		}
 		for _, cd := range response.Domains.CustomDomains {
-			if cd.CustomDomain.Id == rs.Primary.ID {
+			if cd.Id == rs.Primary.ID {
 				return fmt.Errorf("railway_custom_domain %s still exists after destroy", rs.Primary.ID)
 			}
 		}
@@ -673,7 +644,7 @@ func testAccCheckTcpProxyDestroy(s *terraform.State) error {
 			return err
 		}
 		for _, proxy := range response.TcpProxies {
-			if proxy.TCPProxy.Id == rs.Primary.ID {
+			if proxy.Id == rs.Primary.ID {
 				return fmt.Errorf("railway_tcp_proxy %s still exists after destroy", rs.Primary.ID)
 			}
 		}
@@ -700,7 +671,7 @@ func testAccCheckDeploymentTriggerDestroy(s *terraform.State) error {
 			return err
 		}
 		for _, edge := range response.DeploymentTriggers.Edges {
-			if edge.Node.DeploymentTrigger.Id == rs.Primary.ID {
+			if edge.Node.Id == rs.Primary.ID {
 				return fmt.Errorf("railway_deployment_trigger %s still exists after destroy", rs.Primary.ID)
 			}
 		}
@@ -749,7 +720,7 @@ func testAccCheckPrivateNetworkDestroy(s *terraform.State) error {
 			return err
 		}
 		for _, network := range response.PrivateNetworks {
-			if network.PrivateNetworkFields.PublicId == rs.Primary.ID {
+			if network.PublicId == rs.Primary.ID {
 				return fmt.Errorf("railway_private_network %s still exists after destroy", rs.Primary.ID)
 			}
 		}

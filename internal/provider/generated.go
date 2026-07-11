@@ -304,9 +304,11 @@ func (v *EgressGatewayServiceTargetInput) GetServiceId() string { return v.Servi
 
 // Environment includes the GraphQL fields of Environment requested by the fragment Environment.
 type Environment struct {
-	Id        string `json:"id"`
-	Name      string `json:"name"`
-	ProjectId string `json:"projectId"`
+	Id                string                       `json:"id"`
+	Name              string                       `json:"name"`
+	ProjectId         string                       `json:"projectId"`
+	IsEphemeral       bool                         `json:"isEphemeral"`
+	SourceEnvironment EnvironmentSourceEnvironment `json:"sourceEnvironment"`
 }
 
 // GetId returns Environment.Id, and is useful for accessing the field via an interface.
@@ -317,6 +319,12 @@ func (v *Environment) GetName() string { return v.Name }
 
 // GetProjectId returns Environment.ProjectId, and is useful for accessing the field via an interface.
 func (v *Environment) GetProjectId() string { return v.ProjectId }
+
+// GetIsEphemeral returns Environment.IsEphemeral, and is useful for accessing the field via an interface.
+func (v *Environment) GetIsEphemeral() bool { return v.IsEphemeral }
+
+// GetSourceEnvironment returns Environment.SourceEnvironment, and is useful for accessing the field via an interface.
+func (v *Environment) GetSourceEnvironment() EnvironmentSourceEnvironment { return v.SourceEnvironment }
 
 type EnvironmentCreateInput struct {
 	// If true, the changes will be applied in the background and the mutation will return immediately. If false, the mutation will wait for the changes to be applied before returning.
@@ -361,6 +369,14 @@ type EnvironmentRenameInput struct {
 
 // GetName returns EnvironmentRenameInput.Name, and is useful for accessing the field via an interface.
 func (v *EnvironmentRenameInput) GetName() string { return v.Name }
+
+// EnvironmentSourceEnvironment includes the requested fields of the GraphQL type Environment.
+type EnvironmentSourceEnvironment struct {
+	Id string `json:"id"`
+}
+
+// GetId returns EnvironmentSourceEnvironment.Id, and is useful for accessing the field via an interface.
+func (v *EnvironmentSourceEnvironment) GetId() string { return v.Id }
 
 // NotificationRuleFields includes the GraphQL fields of NotificationRule requested by the fragment NotificationRuleFields.
 type NotificationRuleFields struct {
@@ -820,9 +836,10 @@ const (
 
 // Service includes the GraphQL fields of Service requested by the fragment Service.
 type Service struct {
-	Id        string `json:"id"`
-	Name      string `json:"name"`
-	ProjectId string `json:"projectId"`
+	Id        string  `json:"id"`
+	Name      string  `json:"name"`
+	Icon      *string `json:"icon"`
+	ProjectId string  `json:"projectId"`
 }
 
 // GetId returns Service.Id, and is useful for accessing the field via an interface.
@@ -831,26 +848,11 @@ func (v *Service) GetId() string { return v.Id }
 // GetName returns Service.Name, and is useful for accessing the field via an interface.
 func (v *Service) GetName() string { return v.Name }
 
+// GetIcon returns Service.Icon, and is useful for accessing the field via an interface.
+func (v *Service) GetIcon() *string { return v.Icon }
+
 // GetProjectId returns Service.ProjectId, and is useful for accessing the field via an interface.
 func (v *Service) GetProjectId() string { return v.ProjectId }
-
-type ServiceConnectInput struct {
-	// The branch to connect to. e.g. 'main'
-	Branch *string `json:"branch,omitempty"`
-	// Name of the Dockerhub or GHCR image to connect this service to.
-	Image *string `json:"image,omitempty"`
-	// The full name of the repo to connect to. e.g. 'railwayapp/starters'
-	Repo *string `json:"repo,omitempty"`
-}
-
-// GetBranch returns ServiceConnectInput.Branch, and is useful for accessing the field via an interface.
-func (v *ServiceConnectInput) GetBranch() *string { return v.Branch }
-
-// GetImage returns ServiceConnectInput.Image, and is useful for accessing the field via an interface.
-func (v *ServiceConnectInput) GetImage() *string { return v.Image }
-
-// GetRepo returns ServiceConnectInput.Repo, and is useful for accessing the field via an interface.
-func (v *ServiceConnectInput) GetRepo() *string { return v.Repo }
 
 type ServiceCreateInput struct {
 	Branch *string `json:"branch,omitempty"`
@@ -1531,18 +1533,6 @@ type __clearEgressGatewaysInput struct {
 // GetInput returns __clearEgressGatewaysInput.Input, and is useful for accessing the field via an interface.
 func (v *__clearEgressGatewaysInput) GetInput() EgressGatewayServiceTargetInput { return v.Input }
 
-// __connectServiceInput is used internally by genqlient
-type __connectServiceInput struct {
-	Id    string              `json:"id"`
-	Input ServiceConnectInput `json:"input"`
-}
-
-// GetId returns __connectServiceInput.Id, and is useful for accessing the field via an interface.
-func (v *__connectServiceInput) GetId() string { return v.Id }
-
-// GetInput returns __connectServiceInput.Input, and is useful for accessing the field via an interface.
-func (v *__connectServiceInput) GetInput() ServiceConnectInput { return v.Input }
-
 // __createBucketInput is used internally by genqlient
 type __createBucketInput struct {
 	Input BucketCreateInput `json:"input"`
@@ -1749,11 +1739,15 @@ func (v *__deleteServiceDomainInput) GetId() string { return v.Id }
 
 // __deleteServiceInput is used internally by genqlient
 type __deleteServiceInput struct {
-	Id string `json:"id"`
+	Id            string  `json:"id"`
+	EnvironmentId *string `json:"environmentId,omitempty"`
 }
 
 // GetId returns __deleteServiceInput.Id, and is useful for accessing the field via an interface.
 func (v *__deleteServiceInput) GetId() string { return v.Id }
+
+// GetEnvironmentId returns __deleteServiceInput.EnvironmentId, and is useful for accessing the field via an interface.
+func (v *__deleteServiceInput) GetEnvironmentId() *string { return v.EnvironmentId }
 
 // __deleteSshPublicKeyInput is used internally by genqlient
 type __deleteSshPublicKeyInput struct {
@@ -1806,14 +1800,6 @@ func (v *__deployServiceInstanceInput) GetEnvironmentId() string { return v.Envi
 
 // GetServiceId returns __deployServiceInstanceInput.ServiceId, and is useful for accessing the field via an interface.
 func (v *__deployServiceInstanceInput) GetServiceId() string { return v.ServiceId }
-
-// __disconnectServiceInput is used internally by genqlient
-type __disconnectServiceInput struct {
-	Id string `json:"id"`
-}
-
-// GetId returns __disconnectServiceInput.Id, and is useful for accessing the field via an interface.
-func (v *__disconnectServiceInput) GetId() string { return v.Id }
 
 // __getDeploymentTriggersInput is used internally by genqlient
 type __getDeploymentTriggersInput struct {
@@ -2255,18 +2241,6 @@ func (v *__updateServiceInstanceInEnvironmentInput) GetInput() ServiceInstanceUp
 	return v.Input
 }
 
-// __updateServiceInstanceInput is used internally by genqlient
-type __updateServiceInstanceInput struct {
-	ServiceId string                     `json:"serviceId"`
-	Input     ServiceInstanceUpdateInput `json:"input"`
-}
-
-// GetServiceId returns __updateServiceInstanceInput.ServiceId, and is useful for accessing the field via an interface.
-func (v *__updateServiceInstanceInput) GetServiceId() string { return v.ServiceId }
-
-// GetInput returns __updateServiceInstanceInput.Input, and is useful for accessing the field via an interface.
-func (v *__updateServiceInstanceInput) GetInput() ServiceInstanceUpdateInput { return v.Input }
-
 // __updateServiceInstanceLimitsInput is used internally by genqlient
 type __updateServiceInstanceLimitsInput struct {
 	Input ServiceInstanceLimitsUpdateInput `json:"input"`
@@ -2431,81 +2405,6 @@ type clearEgressGatewaysResponse struct {
 // GetEgressGatewayAssociationsClear returns clearEgressGatewaysResponse.EgressGatewayAssociationsClear, and is useful for accessing the field via an interface.
 func (v *clearEgressGatewaysResponse) GetEgressGatewayAssociationsClear() bool {
 	return v.EgressGatewayAssociationsClear
-}
-
-// connectServiceResponse is returned by connectService on success.
-type connectServiceResponse struct {
-	// Connect a service to a source
-	ServiceConnect connectServiceServiceConnectService `json:"serviceConnect"`
-}
-
-// GetServiceConnect returns connectServiceResponse.ServiceConnect, and is useful for accessing the field via an interface.
-func (v *connectServiceResponse) GetServiceConnect() connectServiceServiceConnectService {
-	return v.ServiceConnect
-}
-
-// connectServiceServiceConnectService includes the requested fields of the GraphQL type Service.
-type connectServiceServiceConnectService struct {
-	Service `json:"-"`
-}
-
-// GetId returns connectServiceServiceConnectService.Id, and is useful for accessing the field via an interface.
-func (v *connectServiceServiceConnectService) GetId() string { return v.Service.Id }
-
-// GetName returns connectServiceServiceConnectService.Name, and is useful for accessing the field via an interface.
-func (v *connectServiceServiceConnectService) GetName() string { return v.Service.Name }
-
-// GetProjectId returns connectServiceServiceConnectService.ProjectId, and is useful for accessing the field via an interface.
-func (v *connectServiceServiceConnectService) GetProjectId() string { return v.Service.ProjectId }
-
-func (v *connectServiceServiceConnectService) UnmarshalJSON(b []byte) error {
-
-	if string(b) == "null" {
-		return nil
-	}
-
-	var firstPass struct {
-		*connectServiceServiceConnectService
-		graphql.NoUnmarshalJSON
-	}
-	firstPass.connectServiceServiceConnectService = v
-
-	err := json.Unmarshal(b, &firstPass)
-	if err != nil {
-		return err
-	}
-
-	err = json.Unmarshal(
-		b, &v.Service)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-type __premarshalconnectServiceServiceConnectService struct {
-	Id string `json:"id"`
-
-	Name string `json:"name"`
-
-	ProjectId string `json:"projectId"`
-}
-
-func (v *connectServiceServiceConnectService) MarshalJSON() ([]byte, error) {
-	premarshaled, err := v.__premarshalJSON()
-	if err != nil {
-		return nil, err
-	}
-	return json.Marshal(premarshaled)
-}
-
-func (v *connectServiceServiceConnectService) __premarshalJSON() (*__premarshalconnectServiceServiceConnectService, error) {
-	var retval __premarshalconnectServiceServiceConnectService
-
-	retval.Id = v.Service.Id
-	retval.Name = v.Service.Name
-	retval.ProjectId = v.Service.ProjectId
-	return &retval, nil
 }
 
 // createBucketBucketCreateBucket includes the requested fields of the GraphQL type Bucket.
@@ -2908,6 +2807,16 @@ func (v *createEnvironmentEnvironmentCreateEnvironment) GetProjectId() string {
 	return v.Environment.ProjectId
 }
 
+// GetIsEphemeral returns createEnvironmentEnvironmentCreateEnvironment.IsEphemeral, and is useful for accessing the field via an interface.
+func (v *createEnvironmentEnvironmentCreateEnvironment) GetIsEphemeral() bool {
+	return v.Environment.IsEphemeral
+}
+
+// GetSourceEnvironment returns createEnvironmentEnvironmentCreateEnvironment.SourceEnvironment, and is useful for accessing the field via an interface.
+func (v *createEnvironmentEnvironmentCreateEnvironment) GetSourceEnvironment() EnvironmentSourceEnvironment {
+	return v.Environment.SourceEnvironment
+}
+
 func (v *createEnvironmentEnvironmentCreateEnvironment) UnmarshalJSON(b []byte) error {
 
 	if string(b) == "null" {
@@ -2939,6 +2848,10 @@ type __premarshalcreateEnvironmentEnvironmentCreateEnvironment struct {
 	Name string `json:"name"`
 
 	ProjectId string `json:"projectId"`
+
+	IsEphemeral bool `json:"isEphemeral"`
+
+	SourceEnvironment EnvironmentSourceEnvironment `json:"sourceEnvironment"`
 }
 
 func (v *createEnvironmentEnvironmentCreateEnvironment) MarshalJSON() ([]byte, error) {
@@ -2955,6 +2868,8 @@ func (v *createEnvironmentEnvironmentCreateEnvironment) __premarshalJSON() (*__p
 	retval.Id = v.Environment.Id
 	retval.Name = v.Environment.Name
 	retval.ProjectId = v.Environment.ProjectId
+	retval.IsEphemeral = v.Environment.IsEphemeral
+	retval.SourceEnvironment = v.Environment.SourceEnvironment
 	return &retval, nil
 }
 
@@ -3523,6 +3438,9 @@ func (v *createServiceServiceCreateService) GetId() string { return v.Service.Id
 // GetName returns createServiceServiceCreateService.Name, and is useful for accessing the field via an interface.
 func (v *createServiceServiceCreateService) GetName() string { return v.Service.Name }
 
+// GetIcon returns createServiceServiceCreateService.Icon, and is useful for accessing the field via an interface.
+func (v *createServiceServiceCreateService) GetIcon() *string { return v.Service.Icon }
+
 // GetProjectId returns createServiceServiceCreateService.ProjectId, and is useful for accessing the field via an interface.
 func (v *createServiceServiceCreateService) GetProjectId() string { return v.Service.ProjectId }
 
@@ -3556,6 +3474,8 @@ type __premarshalcreateServiceServiceCreateService struct {
 
 	Name string `json:"name"`
 
+	Icon *string `json:"icon"`
+
 	ProjectId string `json:"projectId"`
 }
 
@@ -3572,6 +3492,7 @@ func (v *createServiceServiceCreateService) __premarshalJSON() (*__premarshalcre
 
 	retval.Id = v.Service.Id
 	retval.Name = v.Service.Name
+	retval.Icon = v.Service.Icon
 	retval.ProjectId = v.Service.ProjectId
 	return &retval, nil
 }
@@ -4106,25 +4027,6 @@ func (v *deployServiceInstanceResponse) GetServiceInstanceDeploy() bool {
 	return v.ServiceInstanceDeploy
 }
 
-// disconnectServiceResponse is returned by disconnectService on success.
-type disconnectServiceResponse struct {
-	// Disconnect a service from a repo
-	ServiceDisconnect disconnectServiceServiceDisconnectService `json:"serviceDisconnect"`
-}
-
-// GetServiceDisconnect returns disconnectServiceResponse.ServiceDisconnect, and is useful for accessing the field via an interface.
-func (v *disconnectServiceResponse) GetServiceDisconnect() disconnectServiceServiceDisconnectService {
-	return v.ServiceDisconnect
-}
-
-// disconnectServiceServiceDisconnectService includes the requested fields of the GraphQL type Service.
-type disconnectServiceServiceDisconnectService struct {
-	Id string `json:"id"`
-}
-
-// GetId returns disconnectServiceServiceDisconnectService.Id, and is useful for accessing the field via an interface.
-func (v *disconnectServiceServiceDisconnectService) GetId() string { return v.Id }
-
 // getDeploymentTriggersDeploymentTriggersQueryDeploymentTriggersConnection includes the requested fields of the GraphQL type QueryDeploymentTriggersConnection.
 type getDeploymentTriggersDeploymentTriggersQueryDeploymentTriggersConnection struct {
 	Edges []getDeploymentTriggersDeploymentTriggersQueryDeploymentTriggersConnectionEdgesQueryDeploymentTriggersConnectionEdge `json:"edges"`
@@ -4351,6 +4253,14 @@ func (v *getEnvironmentEnvironment) GetName() string { return v.Environment.Name
 // GetProjectId returns getEnvironmentEnvironment.ProjectId, and is useful for accessing the field via an interface.
 func (v *getEnvironmentEnvironment) GetProjectId() string { return v.Environment.ProjectId }
 
+// GetIsEphemeral returns getEnvironmentEnvironment.IsEphemeral, and is useful for accessing the field via an interface.
+func (v *getEnvironmentEnvironment) GetIsEphemeral() bool { return v.Environment.IsEphemeral }
+
+// GetSourceEnvironment returns getEnvironmentEnvironment.SourceEnvironment, and is useful for accessing the field via an interface.
+func (v *getEnvironmentEnvironment) GetSourceEnvironment() EnvironmentSourceEnvironment {
+	return v.Environment.SourceEnvironment
+}
+
 func (v *getEnvironmentEnvironment) UnmarshalJSON(b []byte) error {
 
 	if string(b) == "null" {
@@ -4382,6 +4292,10 @@ type __premarshalgetEnvironmentEnvironment struct {
 	Name string `json:"name"`
 
 	ProjectId string `json:"projectId"`
+
+	IsEphemeral bool `json:"isEphemeral"`
+
+	SourceEnvironment EnvironmentSourceEnvironment `json:"sourceEnvironment"`
 }
 
 func (v *getEnvironmentEnvironment) MarshalJSON() ([]byte, error) {
@@ -4398,6 +4312,8 @@ func (v *getEnvironmentEnvironment) __premarshalJSON() (*__premarshalgetEnvironm
 	retval.Id = v.Environment.Id
 	retval.Name = v.Environment.Name
 	retval.ProjectId = v.Environment.ProjectId
+	retval.IsEphemeral = v.Environment.IsEphemeral
+	retval.SourceEnvironment = v.Environment.SourceEnvironment
 	return &retval, nil
 }
 
@@ -4450,6 +4366,16 @@ func (v *getEnvironmentsEnvironmentsQueryEnvironmentsConnectionEdgesQueryEnviron
 	return v.Environment.ProjectId
 }
 
+// GetIsEphemeral returns getEnvironmentsEnvironmentsQueryEnvironmentsConnectionEdgesQueryEnvironmentsConnectionEdgeNodeEnvironment.IsEphemeral, and is useful for accessing the field via an interface.
+func (v *getEnvironmentsEnvironmentsQueryEnvironmentsConnectionEdgesQueryEnvironmentsConnectionEdgeNodeEnvironment) GetIsEphemeral() bool {
+	return v.Environment.IsEphemeral
+}
+
+// GetSourceEnvironment returns getEnvironmentsEnvironmentsQueryEnvironmentsConnectionEdgesQueryEnvironmentsConnectionEdgeNodeEnvironment.SourceEnvironment, and is useful for accessing the field via an interface.
+func (v *getEnvironmentsEnvironmentsQueryEnvironmentsConnectionEdgesQueryEnvironmentsConnectionEdgeNodeEnvironment) GetSourceEnvironment() EnvironmentSourceEnvironment {
+	return v.Environment.SourceEnvironment
+}
+
 func (v *getEnvironmentsEnvironmentsQueryEnvironmentsConnectionEdgesQueryEnvironmentsConnectionEdgeNodeEnvironment) UnmarshalJSON(b []byte) error {
 
 	if string(b) == "null" {
@@ -4481,6 +4407,10 @@ type __premarshalgetEnvironmentsEnvironmentsQueryEnvironmentsConnectionEdgesQuer
 	Name string `json:"name"`
 
 	ProjectId string `json:"projectId"`
+
+	IsEphemeral bool `json:"isEphemeral"`
+
+	SourceEnvironment EnvironmentSourceEnvironment `json:"sourceEnvironment"`
 }
 
 func (v *getEnvironmentsEnvironmentsQueryEnvironmentsConnectionEdgesQueryEnvironmentsConnectionEdgeNodeEnvironment) MarshalJSON() ([]byte, error) {
@@ -4497,6 +4427,8 @@ func (v *getEnvironmentsEnvironmentsQueryEnvironmentsConnectionEdgesQueryEnviron
 	retval.Id = v.Environment.Id
 	retval.Name = v.Environment.Name
 	retval.ProjectId = v.Environment.ProjectId
+	retval.IsEphemeral = v.Environment.IsEphemeral
+	retval.SourceEnvironment = v.Environment.SourceEnvironment
 	return &retval, nil
 }
 
@@ -5592,6 +5524,9 @@ func (v *getServiceService) GetId() string { return v.Service.Id }
 // GetName returns getServiceService.Name, and is useful for accessing the field via an interface.
 func (v *getServiceService) GetName() string { return v.Service.Name }
 
+// GetIcon returns getServiceService.Icon, and is useful for accessing the field via an interface.
+func (v *getServiceService) GetIcon() *string { return v.Service.Icon }
+
 // GetProjectId returns getServiceService.ProjectId, and is useful for accessing the field via an interface.
 func (v *getServiceService) GetProjectId() string { return v.Service.ProjectId }
 
@@ -5625,6 +5560,8 @@ type __premarshalgetServiceService struct {
 
 	Name string `json:"name"`
 
+	Icon *string `json:"icon"`
+
 	ProjectId string `json:"projectId"`
 }
 
@@ -5641,6 +5578,7 @@ func (v *getServiceService) __premarshalJSON() (*__premarshalgetServiceService, 
 
 	retval.Id = v.Service.Id
 	retval.Name = v.Service.Name
+	retval.Icon = v.Service.Icon
 	retval.ProjectId = v.Service.ProjectId
 	return &retval, nil
 }
@@ -6638,6 +6576,16 @@ func (v *renameEnvironmentEnvironmentRenameEnvironment) GetProjectId() string {
 	return v.Environment.ProjectId
 }
 
+// GetIsEphemeral returns renameEnvironmentEnvironmentRenameEnvironment.IsEphemeral, and is useful for accessing the field via an interface.
+func (v *renameEnvironmentEnvironmentRenameEnvironment) GetIsEphemeral() bool {
+	return v.Environment.IsEphemeral
+}
+
+// GetSourceEnvironment returns renameEnvironmentEnvironmentRenameEnvironment.SourceEnvironment, and is useful for accessing the field via an interface.
+func (v *renameEnvironmentEnvironmentRenameEnvironment) GetSourceEnvironment() EnvironmentSourceEnvironment {
+	return v.Environment.SourceEnvironment
+}
+
 func (v *renameEnvironmentEnvironmentRenameEnvironment) UnmarshalJSON(b []byte) error {
 
 	if string(b) == "null" {
@@ -6669,6 +6617,10 @@ type __premarshalrenameEnvironmentEnvironmentRenameEnvironment struct {
 	Name string `json:"name"`
 
 	ProjectId string `json:"projectId"`
+
+	IsEphemeral bool `json:"isEphemeral"`
+
+	SourceEnvironment EnvironmentSourceEnvironment `json:"sourceEnvironment"`
 }
 
 func (v *renameEnvironmentEnvironmentRenameEnvironment) MarshalJSON() ([]byte, error) {
@@ -6685,6 +6637,8 @@ func (v *renameEnvironmentEnvironmentRenameEnvironment) __premarshalJSON() (*__p
 	retval.Id = v.Environment.Id
 	retval.Name = v.Environment.Name
 	retval.ProjectId = v.Environment.ProjectId
+	retval.IsEphemeral = v.Environment.IsEphemeral
+	retval.SourceEnvironment = v.Environment.SourceEnvironment
 	return &retval, nil
 }
 
@@ -7263,17 +7217,6 @@ func (v *updateServiceInstanceLimitsResponse) GetServiceInstanceLimitsUpdate() b
 	return v.ServiceInstanceLimitsUpdate
 }
 
-// updateServiceInstanceResponse is returned by updateServiceInstance on success.
-type updateServiceInstanceResponse struct {
-	// Update a service instance
-	ServiceInstanceUpdate bool `json:"serviceInstanceUpdate"`
-}
-
-// GetServiceInstanceUpdate returns updateServiceInstanceResponse.ServiceInstanceUpdate, and is useful for accessing the field via an interface.
-func (v *updateServiceInstanceResponse) GetServiceInstanceUpdate() bool {
-	return v.ServiceInstanceUpdate
-}
-
 // updateServiceResponse is returned by updateService on success.
 type updateServiceResponse struct {
 	// Updates a service.
@@ -7295,6 +7238,9 @@ func (v *updateServiceServiceUpdateService) GetId() string { return v.Service.Id
 
 // GetName returns updateServiceServiceUpdateService.Name, and is useful for accessing the field via an interface.
 func (v *updateServiceServiceUpdateService) GetName() string { return v.Service.Name }
+
+// GetIcon returns updateServiceServiceUpdateService.Icon, and is useful for accessing the field via an interface.
+func (v *updateServiceServiceUpdateService) GetIcon() *string { return v.Service.Icon }
 
 // GetProjectId returns updateServiceServiceUpdateService.ProjectId, and is useful for accessing the field via an interface.
 func (v *updateServiceServiceUpdateService) GetProjectId() string { return v.Service.ProjectId }
@@ -7329,6 +7275,8 @@ type __premarshalupdateServiceServiceUpdateService struct {
 
 	Name string `json:"name"`
 
+	Icon *string `json:"icon"`
+
 	ProjectId string `json:"projectId"`
 }
 
@@ -7345,6 +7293,7 @@ func (v *updateServiceServiceUpdateService) __premarshalJSON() (*__premarshalupd
 
 	retval.Id = v.Service.Id
 	retval.Name = v.Service.Name
+	retval.Icon = v.Service.Icon
 	retval.ProjectId = v.Service.ProjectId
 	return &retval, nil
 }
@@ -7523,45 +7472,6 @@ mutation clearEgressGateways ($input: EgressGatewayServiceTargetInput!) {
 	var err error
 
 	var data clearEgressGatewaysResponse
-	resp := &graphql.Response{Data: &data}
-
-	err = client.MakeRequest(
-		ctx,
-		req,
-		resp,
-	)
-
-	return &data, err
-}
-
-func connectService(
-	ctx context.Context,
-	client graphql.Client,
-	id string,
-	input ServiceConnectInput,
-) (*connectServiceResponse, error) {
-	req := &graphql.Request{
-		OpName: "connectService",
-		Query: `
-mutation connectService ($id: String!, $input: ServiceConnectInput!) {
-	serviceConnect(id: $id, input: $input) {
-		... Service
-	}
-}
-fragment Service on Service {
-	id
-	name
-	projectId
-}
-`,
-		Variables: &__connectServiceInput{
-			Id:    id,
-			Input: input,
-		},
-	}
-	var err error
-
-	var data connectServiceResponse
 	resp := &graphql.Response{Data: &data}
 
 	err = client.MakeRequest(
@@ -7753,6 +7663,10 @@ fragment Environment on Environment {
 	id
 	name
 	projectId
+	isEphemeral
+	sourceEnvironment {
+		id
+	}
 }
 `,
 		Variables: &__createEnvironmentInput{
@@ -7994,6 +7908,7 @@ mutation createService ($input: ServiceCreateInput!) {
 fragment Service on Service {
 	id
 	name
+	icon
 	projectId
 }
 `,
@@ -8465,16 +8380,18 @@ func deleteService(
 	ctx context.Context,
 	client graphql.Client,
 	id string,
+	environmentId *string,
 ) (*deleteServiceResponse, error) {
 	req := &graphql.Request{
 		OpName: "deleteService",
 		Query: `
-mutation deleteService ($id: String!) {
-	serviceDelete(id: $id)
+mutation deleteService ($id: String!, $environmentId: String) {
+	serviceDelete(id: $id, environmentId: $environmentId)
 }
 `,
 		Variables: &__deleteServiceInput{
-			Id: id,
+			Id:            id,
+			EnvironmentId: environmentId,
 		},
 	}
 	var err error
@@ -8703,38 +8620,6 @@ mutation deployServiceInstance ($environmentId: String!, $serviceId: String!) {
 	return &data, err
 }
 
-func disconnectService(
-	ctx context.Context,
-	client graphql.Client,
-	id string,
-) (*disconnectServiceResponse, error) {
-	req := &graphql.Request{
-		OpName: "disconnectService",
-		Query: `
-mutation disconnectService ($id: String!) {
-	serviceDisconnect(id: $id) {
-		id
-	}
-}
-`,
-		Variables: &__disconnectServiceInput{
-			Id: id,
-		},
-	}
-	var err error
-
-	var data disconnectServiceResponse
-	resp := &graphql.Response{Data: &data}
-
-	err = client.MakeRequest(
-		ctx,
-		req,
-		resp,
-	)
-
-	return &data, err
-}
-
 // Uses a unique operation name to avoid conflict with listDeploymentTriggers
 // in resource_service.graphql (which only returns id and branch).
 func getDeploymentTriggers(
@@ -8842,6 +8727,10 @@ fragment Environment on Environment {
 	id
 	name
 	projectId
+	isEphemeral
+	sourceEnvironment {
+		id
+	}
 }
 `,
 		Variables: &__getEnvironmentInput{
@@ -8883,6 +8772,10 @@ fragment Environment on Environment {
 	id
 	name
 	projectId
+	isEphemeral
+	sourceEnvironment {
+		id
+	}
 }
 `,
 		Variables: &__getEnvironmentsInput{
@@ -9264,6 +9157,7 @@ query getService ($id: String!) {
 fragment Service on Service {
 	id
 	name
+	icon
 	projectId
 }
 `,
@@ -9972,6 +9866,10 @@ fragment Environment on Environment {
 	id
 	name
 	projectId
+	isEphemeral
+	sourceEnvironment {
+		id
+	}
 }
 `,
 		Variables: &__renameEnvironmentInput{
@@ -10300,6 +10198,7 @@ mutation updateService ($id: String!, $input: ServiceUpdateInput!) {
 fragment Service on Service {
 	id
 	name
+	icon
 	projectId
 }
 `,
@@ -10341,38 +10240,6 @@ mutation updateServiceDomain ($input: ServiceDomainUpdateInput!) {
 	var err error
 
 	var data updateServiceDomainResponse
-	resp := &graphql.Response{Data: &data}
-
-	err = client.MakeRequest(
-		ctx,
-		req,
-		resp,
-	)
-
-	return &data, err
-}
-
-func updateServiceInstance(
-	ctx context.Context,
-	client graphql.Client,
-	serviceId string,
-	input ServiceInstanceUpdateInput,
-) (*updateServiceInstanceResponse, error) {
-	req := &graphql.Request{
-		OpName: "updateServiceInstance",
-		Query: `
-mutation updateServiceInstance ($serviceId: String!, $input: ServiceInstanceUpdateInput!) {
-	serviceInstanceUpdate(environmentId: null, input: $input, serviceId: $serviceId)
-}
-`,
-		Variables: &__updateServiceInstanceInput{
-			ServiceId: serviceId,
-			Input:     input,
-		},
-	}
-	var err error
-
-	var data updateServiceInstanceResponse
 	resp := &graphql.Response{Data: &data}
 
 	err = client.MakeRequest(

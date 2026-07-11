@@ -10,7 +10,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
-	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -33,9 +32,11 @@ type RegistryCredentialsModel struct {
 	Password types.String `tfsdk:"password"`
 }
 
-var registryCredentialsAttrTypes = map[string]attr.Type{
-	"username": types.StringType,
-	"password": types.StringType,
+// numReplicas is the JSON shape Railway expects inside
+// ServiceInstanceUpdateInput.multiRegionConfig — a map of region name to
+// { numReplicas: N }.
+type numReplicas struct {
+	NumReplicas int64 `json:"numReplicas"`
 }
 
 func NewServiceInstanceResource() resource.Resource {
@@ -47,31 +48,31 @@ type ServiceInstanceResource struct {
 }
 
 type ServiceInstanceResourceModel struct {
-	Id               types.String  `tfsdk:"id"`
-	ServiceId        types.String  `tfsdk:"service_id"`
-	EnvironmentId    types.String  `tfsdk:"environment_id"`
-	SourceImage      types.String  `tfsdk:"source_image"`
-	SourceRepo       types.String  `tfsdk:"source_repo"`
-	RootDirectory    types.String  `tfsdk:"root_directory"`
-	ConfigPath       types.String  `tfsdk:"config_path"`
-	BuildCommand     types.String  `tfsdk:"build_command"`
-	StartCommand     types.String  `tfsdk:"start_command"`
-	Region           types.String  `tfsdk:"region"`
-	CronSchedule     types.String  `tfsdk:"cron_schedule"`
-	HealthcheckPath  types.String  `tfsdk:"healthcheck_path"`
-	NumReplicas      types.Int64   `tfsdk:"num_replicas"`
-	VCPUs            types.Float64 `tfsdk:"vcpus"`
-	MemoryGB         types.Float64 `tfsdk:"memory_gb"`
-	SleepApplication       types.Bool    `tfsdk:"sleep_application"`
-	OverlapSeconds         types.Int64   `tfsdk:"overlap_seconds"`
-	DrainingSeconds        types.Int64   `tfsdk:"draining_seconds"`
-	HealthcheckTimeout     types.Int64   `tfsdk:"healthcheck_timeout"`
-	RestartPolicyType      types.String  `tfsdk:"restart_policy_type"`
-	RestartPolicyMaxRetries types.Int64  `tfsdk:"restart_policy_max_retries"`
-	PreDeployCommand       types.List    `tfsdk:"pre_deploy_command"`
-	WatchPatterns          types.List    `tfsdk:"watch_patterns"`
-	Builder                types.String  `tfsdk:"builder"`
-	RegistryCredentials    types.Object  `tfsdk:"registry_credentials"`
+	Id                      types.String  `tfsdk:"id"`
+	ServiceId               types.String  `tfsdk:"service_id"`
+	EnvironmentId           types.String  `tfsdk:"environment_id"`
+	SourceImage             types.String  `tfsdk:"source_image"`
+	SourceRepo              types.String  `tfsdk:"source_repo"`
+	RootDirectory           types.String  `tfsdk:"root_directory"`
+	ConfigPath              types.String  `tfsdk:"config_path"`
+	BuildCommand            types.String  `tfsdk:"build_command"`
+	StartCommand            types.String  `tfsdk:"start_command"`
+	Region                  types.String  `tfsdk:"region"`
+	CronSchedule            types.String  `tfsdk:"cron_schedule"`
+	HealthcheckPath         types.String  `tfsdk:"healthcheck_path"`
+	NumReplicas             types.Int64   `tfsdk:"num_replicas"`
+	VCPUs                   types.Float64 `tfsdk:"vcpus"`
+	MemoryGB                types.Float64 `tfsdk:"memory_gb"`
+	SleepApplication        types.Bool    `tfsdk:"sleep_application"`
+	OverlapSeconds          types.Int64   `tfsdk:"overlap_seconds"`
+	DrainingSeconds         types.Int64   `tfsdk:"draining_seconds"`
+	HealthcheckTimeout      types.Int64   `tfsdk:"healthcheck_timeout"`
+	RestartPolicyType       types.String  `tfsdk:"restart_policy_type"`
+	RestartPolicyMaxRetries types.Int64   `tfsdk:"restart_policy_max_retries"`
+	PreDeployCommand        types.List    `tfsdk:"pre_deploy_command"`
+	WatchPatterns           types.List    `tfsdk:"watch_patterns"`
+	Builder                 types.String  `tfsdk:"builder"`
+	RegistryCredentials     types.Object  `tfsdk:"registry_credentials"`
 }
 
 func (r *ServiceInstanceResource) Metadata(ctx context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
@@ -340,22 +341,12 @@ func (r *ServiceInstanceResource) ValidateConfig(ctx context.Context, req resour
 }
 
 func (r *ServiceInstanceResource) Configure(ctx context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
-	if req.ProviderData == nil {
+	data := providerDataFrom(req.ProviderData, &resp.Diagnostics)
+	if data == nil {
 		return
 	}
 
-	client, ok := req.ProviderData.(*graphql.Client)
-
-	if !ok {
-		resp.Diagnostics.AddError(
-			"Unexpected Resource Configure Type",
-			fmt.Sprintf("Expected *graphql.Client, got: %T. Please report this issue to the provider developers.", req.ProviderData),
-		)
-
-		return
-	}
-
-	r.client = client
+	r.client = data.Client
 }
 
 func (r *ServiceInstanceResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
@@ -765,12 +756,13 @@ func (r *ServiceInstanceResource) readServiceInstanceState(ctx context.Context, 
 		data.Region = types.StringNull()
 	}
 
-	if numReplicasRead > 0 {
+	switch {
+	case numReplicasRead > 0:
 		data.NumReplicas = types.Int64Value(numReplicasRead)
-	} else if instance.NumReplicas != nil {
+	case instance.NumReplicas != nil:
 		// Fallback to the direct field if deployment meta didn't have it
 		data.NumReplicas = types.Int64Value(int64(*instance.NumReplicas))
-	} else if data.NumReplicas.IsUnknown() {
+	case data.NumReplicas.IsUnknown():
 		data.NumReplicas = types.Int64Null()
 	}
 

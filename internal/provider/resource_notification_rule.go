@@ -120,18 +120,12 @@ func (r *NotificationRuleResource) Schema(ctx context.Context, req resource.Sche
 }
 
 func (r *NotificationRuleResource) Configure(ctx context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
-	if req.ProviderData == nil {
+	data := providerDataFrom(req.ProviderData, &resp.Diagnostics)
+	if data == nil {
 		return
 	}
-	client, ok := req.ProviderData.(*graphql.Client)
-	if !ok {
-		resp.Diagnostics.AddError(
-			"Unexpected Resource Configure Type",
-			fmt.Sprintf("Expected *graphql.Client, got: %T. Please report this issue to the provider developers.", req.ProviderData),
-		)
-		return
-	}
-	r.client = client
+
+	r.client = data.Client
 }
 
 func (r *NotificationRuleResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
@@ -223,7 +217,7 @@ func (r *NotificationRuleResource) Read(ctx context.Context, req resource.ReadRe
 				data.ProjectId = types.StringValue(rule.ProjectId)
 			}
 			// Preserve null if user didn't set ephemeral_environments and API returned the default (false).
-			if !(data.EphemeralEnvironments.IsNull() && !rule.EphemeralEnvironments) {
+			if !data.EphemeralEnvironments.IsNull() || rule.EphemeralEnvironments {
 				data.EphemeralEnvironments = types.BoolValue(rule.EphemeralEnvironments)
 			}
 

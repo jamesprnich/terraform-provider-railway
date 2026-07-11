@@ -98,12 +98,12 @@ func TestBucketResource_update(t *testing.T) {
 		}
 		switch req.OperationName {
 		case "createBucket":
-			fmt.Fprint(w, `{"data":{"bucketCreate":{"id":"bkt-2","name":"data-v1","projectId":"`+projectId+`","createdAt":"2026-05-15T00:00:00Z","updatedAt":"2026-05-15T00:00:00Z"}}}`)
+			_, _ = fmt.Fprint(w, `{"data":{"bucketCreate":{"id":"bkt-2","name":"data-v1","projectId":"`+projectId+`","createdAt":"2026-05-15T00:00:00Z","updatedAt":"2026-05-15T00:00:00Z"}}}`)
 		case "updateBucket":
 			updated = true
-			fmt.Fprint(w, `{"data":{"bucketUpdate":{"id":"bkt-2","name":"data-v2","projectId":"`+projectId+`","createdAt":"2026-05-15T00:00:00Z","updatedAt":"2026-05-15T00:00:00Z"}}}`)
+			_, _ = fmt.Fprint(w, `{"data":{"bucketUpdate":{"id":"bkt-2","name":"data-v2","projectId":"`+projectId+`","createdAt":"2026-05-15T00:00:00Z","updatedAt":"2026-05-15T00:00:00Z"}}}`)
 		case "getProjectBuckets":
-			fmt.Fprintf(w, `{"data":{"project":{"buckets":{"edges":[{"node":{"id":"bkt-2","name":"%s","projectId":"%s","createdAt":"2026-05-15T00:00:00Z","updatedAt":"2026-05-15T00:00:00Z"}}]}}}}`, name, projectId)
+			_, _ = fmt.Fprintf(w, `{"data":{"project":{"buckets":{"edges":[{"node":{"id":"bkt-2","name":"%s","projectId":"%s","createdAt":"2026-05-15T00:00:00Z","updatedAt":"2026-05-15T00:00:00Z"}}]}}}}`, name, projectId)
 		default:
 			t.Errorf("mock server: unexpected operation %q", req.OperationName)
 			w.WriteHeader(http.StatusInternalServerError)

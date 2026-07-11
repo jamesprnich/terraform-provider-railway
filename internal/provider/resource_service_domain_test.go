@@ -29,8 +29,8 @@ func TestAccServiceDomainResourceDefault(t *testing.T) {
 			},
 			// ImportState testing
 			{
-				ResourceName:  "railway_service_domain.test",
-				ImportState:   true,
+				ResourceName: "railway_service_domain.test",
+				ImportState:  true,
 				ImportStateIdFunc: func(s *terraform.State) (string, error) {
 					rs, ok := s.RootModule().Resources["railway_service_domain.test"]
 					if !ok {

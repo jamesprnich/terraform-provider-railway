@@ -1,131 +1,205 @@
 # =============================================================================
-# Railway Reference Deployment — Full Stack
+# Railway Reference Deployment — self-contained demo
 # =============================================================================
-# Deploys a Flask app + Postgres on Railway with private networking.
-# Demonstrates: project, services, variable collections, volume, service instances, domain.
+# What this example does:
+#
+#   Creates a throwaway Railway project with the v0.11.0 fork-based scoping
+#   pattern — an empty `core` environment plus a `dev` fork — then stands up
+#   a Postgres + Flask application in `dev` to demonstrate the shape.
+#
+# What it is NOT:
+#
+#   A production template. It provisions billable Railway resources under
+#   your account. When you are done experimenting, `tofu destroy` at the
+#   bottom of this file removes everything, or delete the project from the
+#   Railway dashboard.
+#
+# What you need:
+#
+#   1. A Railway account and an account token — see
+#      https://docs.railway.com/reference/api and set the `RAILWAY_TOKEN`
+#      environment variable.
+#   2. OpenTofu >= 1.11 (or Terraform >= 1.0).
+#   3. Nothing else. The example pulls a public Postgres image and points at
+#      the public terraform-provider-railway repository for the Flask test
+#      app — no GitHub token, no private image registry, no external
+#      infrastructure needed.
+#
+# What it demonstrates:
+#
+#   • Project's default environment is named `core` and stays empty forever
+#     — the "safety anchor" that makes fork-based scoping possible.
+#   • `dev` is a fork of `core`. Every real environment in your topology
+#     (dev/tst/qa/prd) is a fork of `core` by the same pattern.
+#   • Every service has `environment_id` set to `dev` so it lives only in
+#     `dev`. Under strict env-scoping (the default), omitting it fails at
+#     plan time.
+#   • Source, build, deploy, and resource-limit configuration lives on
+#     `railway_service_instance` — Railway's per-environment configuration
+#     surface. See docs/guides/multi-environment-scoping.md for the full
+#     explainer.
 #
 # Usage:
-#   tofu apply -var='app_repo=owner/repo' -var='postgres_password=xxx'
+#
+#   export RAILWAY_TOKEN="your-account-token"
+#   tofu init && tofu apply
+#
+#   When done experimenting:
+#
+#   tofu destroy
 # =============================================================================
 
 terraform {
   required_providers {
     railway = {
       source  = "jamesprnich/railway"
-      version = "~> 0.8.0"
+      version = "~> 0.11.0"
     }
   }
 }
 
 provider "railway" {
-  # Set via RAILWAY_TOKEN environment variable
+  # RAILWAY_TOKEN comes from your environment.
+  # strict_env_scoping defaults to true.
 }
 
 # --- Variables ---
+# Every default is set so `tofu apply` works with zero arguments. Override
+# individually if you want a specific name or password.
 
 variable "project_name" {
   type        = string
-  description = "Name of the Railway project."
-  default     = "test-app"
-}
-
-variable "app_repo" {
-  type        = string
-  description = "GitHub repo for the Flask test app (e.g. owner/railway-terraform-provider)."
+  description = "Throwaway project name. Prefix with AAA- so it sorts to the top of your Railway dashboard and is obviously a demo."
+  default     = "AAA-provider-demo"
 }
 
 variable "postgres_password" {
   type        = string
+  description = "Postgres password. Change this before running against any real environment."
+  default     = "demo-only-not-a-real-password"
   sensitive   = true
-  description = "Password for the Postgres database."
 }
 
 # --- Project ---
+# Default env is `core`. Kept empty forever. See the concept guide for why.
 
-resource "railway_project" "main" {
+resource "railway_project" "demo" {
   name = var.project_name
 
   default_environment = {
-    name = "dev"
+    name = "core"
   }
 }
 
 locals {
-  environment_id = railway_project.main.default_environment.id
+  core_env_id = railway_project.demo.default_environment.id
 }
 
-# --- Services ---
+# --- Fork environment: dev ---
+
+resource "railway_environment" "dev" {
+  name                  = "dev"
+  project_id            = railway_project.demo.id
+  source_environment_id = local.core_env_id
+}
+
+# --- Services (empty shells scoped to dev) ---
 
 resource "railway_service" "postgres" {
-  name         = "postgres-dev"
-  project_id   = railway_project.main.id
-  source_image = "postgres:17.5-alpine"
+  name           = "dev-postgres"
+  project_id     = railway_project.demo.id
+  environment_id = railway_environment.dev.id
 
-  volume = {
-    name       = "pgdata"
-    mount_path = "/data"
-  }
+  # See docs/resources/service.md — `depends_on` is required because
+  # railway_service references only project_id.
+  depends_on = [railway_environment.dev]
+}
+
+# Persistent volume for postgres data.
+#
+# Prefer the standalone `railway_volume` over the inline `volume` block on
+# `railway_service` when you want explicit lifecycle control — backup
+# schedule, cross-service references, or independent destroy behaviour.
+#
+# Note the `name` — every resource in this file is env-prefixed (`dev-`)
+# because Railway enforces name uniqueness *per project*, not per environment.
+# When this pattern is grown to `dev`/`tst`/`prd`, each environment gets its
+# own `<env>-postgres-data`, `<env>-postgres` service, `<env>-app` service,
+# etc. — no name collisions, no ambiguity in the Railway dashboard.
+resource "railway_volume" "postgres" {
+  name           = "dev-postgres-data"
+  project_id     = railway_project.demo.id
+  service_id     = railway_service.postgres.id
+  environment_id = railway_environment.dev.id
+  mount_path     = "/var/lib/postgresql/data"
 }
 
 resource "railway_service" "app" {
-  name               = "app-dev"
-  project_id         = railway_project.main.id
-  source_repo        = var.app_repo
-  source_repo_branch = "main"
-  root_directory     = "examples/test-app"
+  name           = "dev-app"
+  project_id     = railway_project.demo.id
+  environment_id = railway_environment.dev.id
+
+  depends_on = [railway_environment.dev]
 }
 
-# --- Postgres variables ---
-# Use variable_collection to set all variables in one API call (one redeployment,
-# not one per variable).
+# --- Environment variables ---
 
 resource "railway_variable_collection" "postgres" {
-  environment_id = local.environment_id
+  environment_id = railway_environment.dev.id
   service_id     = railway_service.postgres.id
 
   variables = [
-    { name = "PGDATA", value = "/data/pgdata" },
-    { name = "POSTGRES_USER", value = "testapp" },
+    { name = "PGDATA", value = "/var/lib/postgresql/data/pgdata" },
+    { name = "POSTGRES_USER", value = "demo" },
     { name = "POSTGRES_PASSWORD", value = var.postgres_password },
-    { name = "POSTGRES_DB", value = "testapp" },
+    { name = "POSTGRES_DB", value = "demo" },
     { name = "PORT", value = "5432" },
   ]
 }
 
-# --- App variables ---
-
 resource "railway_variable_collection" "app" {
-  environment_id = local.environment_id
+  environment_id = railway_environment.dev.id
   service_id     = railway_service.app.id
 
   variables = [
     { name = "PORT", value = "8080" },
-    { name = "DATABASE_URL", value = "postgresql://testapp:${var.postgres_password}@postgres-dev.railway.internal:5432/testapp?connect_timeout=5" },
+    { name = "DATABASE_URL", value = "postgresql://demo:${var.postgres_password}@dev-postgres.railway.internal:5432/demo?connect_timeout=5" },
   ]
 }
 
-# --- Service instance config ---
+# --- Service instances (per-env source and config) ---
+# This is where source, build, and deploy configuration lives. Railway's
+# serviceInstanceUpdate is env-scoped, so nothing here can leak out of dev.
 
 resource "railway_service_instance" "postgres" {
   service_id     = railway_service.postgres.id
-  environment_id = local.environment_id
+  environment_id = railway_environment.dev.id
+  source_image   = "postgres:17.5-alpine"
   vcpus          = 0.5
   memory_gb      = 0.25
 }
 
 resource "railway_service_instance" "app" {
-  service_id       = railway_service.app.id
-  environment_id   = local.environment_id
+  service_id     = railway_service.app.id
+  environment_id = railway_environment.dev.id
+
+  # Points at THIS repository's test-app example (a small Flask app). The
+  # repo is public so no GitHub token is required. Railway will build from
+  # the repo's default branch. If you fork the repo, change source_repo to
+  # your fork.
+  source_repo    = "jamesprnich/terraform-provider-railway"
+  root_directory = "examples/test-app"
+
   vcpus            = 0.5
   memory_gb        = 0.25
   healthcheck_path = "/health"
 }
 
-# --- Public domain ---
+# --- Public domain for the app ---
 
 resource "railway_service_domain" "app" {
   service_id     = railway_service.app.id
-  environment_id = local.environment_id
+  environment_id = railway_environment.dev.id
 
   depends_on = [railway_service_instance.app]
 }
@@ -133,13 +207,19 @@ resource "railway_service_domain" "app" {
 # --- Outputs ---
 
 output "project_id" {
-  value = railway_project.main.id
+  value = railway_project.demo.id
 }
 
-output "environment_id" {
-  value = local.environment_id
+output "core_environment_id" {
+  description = "Empty core env — anchor for the fork pattern. Export this if you extend the example to multiple envs (dev/tst/qa/prd)."
+  value       = local.core_env_id
+}
+
+output "dev_environment_id" {
+  value = railway_environment.dev.id
 }
 
 output "app_url" {
-  value = "https://${railway_service_domain.app.domain}"
+  description = "Public URL for the deployed Flask test app. May take a couple of minutes to become live after apply."
+  value       = "https://${railway_service_domain.app.domain}"
 }

@@ -1,0 +1,66 @@
+# golangci-lint config for terraform-provider-railway
+#
+# Version compatibility: golangci-lint v2.4.0+
+# Run locally:  golangci-lint run
+# Docs:         https://golangci-lint.run/usage/configuration/
+#
+# The linter set is deliberately conservative for a Terraform provider — every
+# enabled linter has a low false-positive rate and catches real correctness /
+# reliability / security issues.
+
+version: "2"
+
+run:
+  timeout: 5m
+  tests: true            # lint _test.go files too — tests need the same rigour
+  concurrency: 4
+
+linters:
+  default: none          # explicit-only, no surprises from linter set drift
+
+  enable:
+    # Correctness — catches real bugs
+    - errcheck            # unchecked error returns
+    - govet               # go vet's checks
+    - ineffassign         # ineffectual assignments
+    - staticcheck         # a large family of correctness checks
+    - unused              # unused code
+    - gosec               # security-focused patterns
+    - errorlint           # error handling issues (wrapping, comparisons)
+    - bodyclose           # http.Response.Body must be closed
+    - noctx               # http requests without context
+
+    # Style / readability — catches sloppy patterns
+    - misspell            # typos in comments and strings
+    - unconvert           # unnecessary type conversions
+    - gocritic            # broad set of style opinions
+    - copyloopvar         # loop variable copies (Go 1.22+)
+    - nilerr              # returning nil when err is non-nil
+
+  settings:
+    gosec:
+      # G404 (weak RNG) is fine for our uses — no crypto contexts use math/rand.
+      # G115 (integer overflow conversion) is noisy for perfectly-safe int64<->int32 conversions.
+      excludes:
+        - G404
+        - G115
+    errcheck:
+      # These are pre-existing patterns in the codebase; ignoring shouldn't hide new
+      # issues since new code will still get flagged.
+      exclude-functions:
+        - (github.com/hashicorp/terraform-plugin-log/tflog).Debug
+        - (github.com/hashicorp/terraform-plugin-log/tflog).Info
+        - (github.com/hashicorp/terraform-plugin-log/tflog).Warn
+        - (github.com/hashicorp/terraform-plugin-log/tflog).Error
+        - (github.com/hashicorp/terraform-plugin-log/tflog).Trace
+
+  exclusions:
+    generated: strict     # do not lint generated.go
+    paths:
+      - internal/provider/generated.go
+      - tools/tools.go
+
+formatters:
+  enable:
+    - gofmt
+    - goimports

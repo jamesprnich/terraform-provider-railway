@@ -41,12 +41,12 @@ func newMockGraphQLServer(t *testing.T, fixtures mockFixtures) *httptest.Server 
 		if !ok {
 			t.Errorf("mock server: unexpected operation %q", req.OperationName)
 			w.WriteHeader(http.StatusInternalServerError)
-			fmt.Fprintf(w, `{"errors":[{"message":"unexpected operation: %s"}]}`, req.OperationName)
+			_, _ = fmt.Fprintf(w, `{"errors":[{"message":"unexpected operation: %s"}]}`, req.OperationName)
 			return
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		fmt.Fprint(w, response)
+		_, _ = fmt.Fprint(w, response)
 	}))
 }
 
@@ -78,7 +78,7 @@ func newDisappearsMockServer(t *testing.T, fixtures mockFixtures, readOperation 
 
 		// If resource has "disappeared" and this is a read operation, return not-found
 		if atomic.LoadInt32(&disappeared) == 1 && req.OperationName == readOperation {
-			fmt.Fprint(w, `{"errors":[{"message":"Could not find resource"}]}`)
+			_, _ = fmt.Fprint(w, `{"errors":[{"message":"Could not find resource"}]}`)
 			return
 		}
 
@@ -86,11 +86,11 @@ func newDisappearsMockServer(t *testing.T, fixtures mockFixtures, readOperation 
 		if !ok {
 			t.Errorf("mock server: unexpected operation %q", req.OperationName)
 			w.WriteHeader(http.StatusInternalServerError)
-			fmt.Fprintf(w, `{"errors":[{"message":"unexpected operation: %s"}]}`, req.OperationName)
+			_, _ = fmt.Fprintf(w, `{"errors":[{"message":"unexpected operation: %s"}]}`, req.OperationName)
 			return
 		}
 
-		fmt.Fprint(w, response)
+		_, _ = fmt.Fprint(w, response)
 	}))
 
 	return server, func() { atomic.StoreInt32(&disappeared, 1) }

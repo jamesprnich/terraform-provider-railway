@@ -117,22 +117,12 @@ func (r *PrivateNetworkResource) Schema(ctx context.Context, req resource.Schema
 }
 
 func (r *PrivateNetworkResource) Configure(ctx context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
-	if req.ProviderData == nil {
+	data := providerDataFrom(req.ProviderData, &resp.Diagnostics)
+	if data == nil {
 		return
 	}
 
-	client, ok := req.ProviderData.(*graphql.Client)
-
-	if !ok {
-		resp.Diagnostics.AddError(
-			"Unexpected Resource Configure Type",
-			fmt.Sprintf("Expected *graphql.Client, got: %T. Please report this issue to the provider developers.", req.ProviderData),
-		)
-
-		return
-	}
-
-	r.client = client
+	r.client = data.Client
 }
 
 func (r *PrivateNetworkResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
@@ -172,12 +162,12 @@ func (r *PrivateNetworkResource) Create(ctx context.Context, req resource.Create
 
 	network := response.PrivateNetworkCreateOrGet
 
-	data.Id = types.StringValue(network.PrivateNetworkFields.PublicId)
-	data.DnsName = types.StringValue(network.PrivateNetworkFields.DnsName)
-	data.NetworkId = types.Int64Value(network.PrivateNetworkFields.NetworkId)
-	data.Name = types.StringValue(network.PrivateNetworkFields.Name)
+	data.Id = types.StringValue(network.PublicId)
+	data.DnsName = types.StringValue(network.DnsName)
+	data.NetworkId = types.Int64Value(network.NetworkId)
+	data.Name = types.StringValue(network.Name)
 
-	tagList, diags := types.ListValueFrom(ctx, types.StringType, network.PrivateNetworkFields.Tags)
+	tagList, diags := types.ListValueFrom(ctx, types.StringType, network.Tags)
 	resp.Diagnostics.Append(diags...)
 
 	if resp.Diagnostics.HasError() {
@@ -251,12 +241,12 @@ func (r *PrivateNetworkResource) Update(ctx context.Context, req resource.Update
 
 	network := response.PrivateNetworkCreateOrGet
 
-	data.Id = types.StringValue(network.PrivateNetworkFields.PublicId)
-	data.DnsName = types.StringValue(network.PrivateNetworkFields.DnsName)
-	data.NetworkId = types.Int64Value(network.PrivateNetworkFields.NetworkId)
-	data.Name = types.StringValue(network.PrivateNetworkFields.Name)
+	data.Id = types.StringValue(network.PublicId)
+	data.DnsName = types.StringValue(network.DnsName)
+	data.NetworkId = types.Int64Value(network.NetworkId)
+	data.Name = types.StringValue(network.Name)
 
-	tagList, diags := types.ListValueFrom(ctx, types.StringType, network.PrivateNetworkFields.Tags)
+	tagList, diags := types.ListValueFrom(ctx, types.StringType, network.Tags)
 	resp.Diagnostics.Append(diags...)
 
 	if resp.Diagnostics.HasError() {
@@ -328,16 +318,16 @@ func (r *PrivateNetworkResource) readPrivateNetworkState(ctx context.Context, da
 	}
 
 	for _, network := range response.PrivateNetworks {
-		if network.PrivateNetworkFields.PublicId != data.Id.ValueString() {
+		if network.PublicId != data.Id.ValueString() {
 			continue
 		}
 
-		data.Name = types.StringValue(network.PrivateNetworkFields.Name)
-		data.DnsName = types.StringValue(network.PrivateNetworkFields.DnsName)
-		data.NetworkId = types.Int64Value(network.PrivateNetworkFields.NetworkId)
-		data.ProjectId = types.StringValue(network.PrivateNetworkFields.ProjectId)
+		data.Name = types.StringValue(network.Name)
+		data.DnsName = types.StringValue(network.DnsName)
+		data.NetworkId = types.Int64Value(network.NetworkId)
+		data.ProjectId = types.StringValue(network.ProjectId)
 
-		tagList, diags := types.ListValueFrom(ctx, types.StringType, network.PrivateNetworkFields.Tags)
+		tagList, diags := types.ListValueFrom(ctx, types.StringType, network.Tags)
 		if diags.HasError() {
 			return fmt.Errorf("unable to convert tags: %s", diags.Errors())
 		}

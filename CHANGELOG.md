@@ -1,3 +1,50 @@
+## 0.11.0
+
+### BREAKING
+
+* **`railway_service` is now a per-environment shell.** These fields moved off `railway_service` — they belong on `railway_service_instance`, which is the resource Railway's own API canonically models per environment: `source_image`, `source_image_registry_username`, `source_image_registry_password`, `source_repo`, `source_repo_branch`, `root_directory`, `config_path`, `cron_schedule`, `regions`. All were previously set via env-less GraphQL mutations (`serviceConnect`, `updateServiceInstance`) which create source connections across every non-fork environment in the project — a real bug when a project had multiple environments. Migration: move these attributes from any `railway_service` resource onto a matching `railway_service_instance` (create one per environment). No state migration is provided; delete affected resources from state before applying.
+* **`railway_service.environment_id` added.** Under `strict_env_scoping = true` (provider default) it is required and RequiresReplace. Passing a fork environment scopes the service to that environment only. Omitting it under permissive mode (`strict_env_scoping = false`) restores the pre-v0.11.0 project-wide creation semantics.
+* **`railway_environment.source_environment_id` added.** Under strict env-scoping it is required — every additional environment must be a fork of another. Non-fork environments break the safety property (see below); strict mode rejects them at plan time. Passing `false` on the provider block opts out.
+* **`serviceDelete` mutation now accepts `environmentId`.** When `railway_service.environment_id` is set on the resource, `Delete()` passes it so the service is removed only from that fork. Legacy env-less deletes still work when the attribute is unset.
+
+### Known Limitations
+
+* Inline `volume` block on `railway_service` currently fails when Railway auto-assigns the same name as `volume.name` (e.g. `mount_path = "/var/lib/postgresql/data"` triggers `pgdata` auto-name that collides with the requested `name = "pgdata"`). Workaround: use the standalone `railway_volume` resource instead — that path is exhaustively tested and gives better lifecycle control. The schema description on `railway_service.volume` documents this.
+
+### Security
+
+* **Bump Go 1.25.11 → 1.25.12** to fix `crypto/tls` [GO-2026-5856](https://pkg.go.dev/vuln/GO-2026-5856) — "Invoking Encrypted Client Hello privacy leak." The provider's HTTP client used the affected paths (`providerserver.Serve`, `authedTransport.RoundTrip`). All CI workflows read the Go version from `go.mod`, so the bump cascades automatically.
+
+### Enhancements
+
+* **New `strict_env_scoping` provider attribute** (Bool, default `true`). Also settable via `RAILWAY_STRICT_ENV_SCOPING` env var. When enabled, forces `railway_service.environment_id` and `railway_environment.source_environment_id` to be set — the provider makes the class of bug that motivated this release structurally impossible to express in HCL. Set to `false` to opt out — you own the leak surface.
+* **Plan-time diagnostics** for strict-mode violations via `ModifyPlan` — `tofu plan` fails with a clear error before any live mutation is attempted. Previously the same check was in Create and only fired at apply time.
+* **Non-fork target rejection** — under strict mode, `railway_service.environment_id` pointing at a non-fork environment is rejected in Create with a specific diagnostic. Without this, Railway silently ignores the target id and creates the service across every non-fork environment in the project.
+* **New `railway_service.icon` attribute** (String, Optional). Cosmetic icon displayed in the Railway dashboard. Applies project-wide (this is a genuinely service-level field on Railway's Service type, not per-environment).
+* **`railway_volume` now retries the post-create read** with a 30s eventual-consistency budget. Fixes intermittent `"volume instance {id} not found"` failures that broke the first apply of every new environment when a volume was declared inline on `railway_service`.
+* **Provider-side cooldown retry** on `projectCreate` and `environmentCreate`. Railway enforces "1 project per 30 seconds" and "one environment per user per 30 seconds" cooldowns; the provider now transparently waits them out with a 90s budget, so back-to-back applies no longer need external sleeps.
+* **Inline volume post-create retry** — `getAndBuildVolumeInstance` in `railway_service.Create` is now wrapped in the same 30s eventual-consistency retry as `railway_volume.Create`. Prevents "inconsistent result after apply" when Railway's list endpoint hasn't caught up to the just-created volume.
+* **Explicit `stageInitialChanges: false`** on `environmentCreate` — changes commit immediately rather than sitting as unmerged changes the user has to click "apply" on in the Railway dashboard.
+* **`getAndBuildVolumeInstance` uses the service's own `environment_id`** rather than always resolving `defaultEnvironmentForProject`, so an inline volume on a fork-scoped service is read from its own environment.
+* **Documented Railway API footguns** on the affected schema attributes:
+  * `railway_service.name` — service names are unique per project, not per environment; use an environment prefix (e.g., `dev-backend`, `prd-backend`) when running the same role in multiple environments.
+  * `railway_service.environment_id` — must be a fork; `depends_on = [railway_environment.<name>]` required because Terraform cannot infer the dependency from `project_id` alone.
+  * `railway_environment.source_environment_id` — never fork a real environment; Railway's fork semantic copies every service, volume, variable, and configuration.
+
+### Safety property
+
+With this release, the "empty core" pattern is a first-class property enforced by the provider:
+
+1. Project's default environment (`railway_project.default_environment.name = "core"`) stays empty forever. It is the project's only non-fork environment.
+2. Every additional environment is a fork of `core` via `source_environment_id`.
+3. Every service is scoped to a fork via `environment_id`.
+
+Under this layout, any accidentally-unscoped `serviceCreate` lands inertly in `core` — it cannot contaminate a real environment. Strict env-scoping makes this the default; permissive mode restores the pre-v0.11.0 behaviour where an unscoped `serviceCreate` creates the service across every non-fork environment.
+
+### Removed
+
+* `serviceConnect` / `serviceDisconnect` / env-less `updateServiceInstance` mutations removed from the generated GraphQL client — they were project-wide and unused after the source-attachment path moved to env-scoped `serviceInstanceUpdate`.
+
 ## 0.10.0
 
 ### Enhancements
