@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
@@ -204,7 +205,10 @@ func (r *VariableCollectionResource) Create(ctx context.Context, req resource.Cr
 		return
 	}
 
-	_, err = redeployServiceInstance(ctx, *r.client, data.EnvironmentId.ValueString(), data.ServiceId.ValueString())
+	err = retryRedeployContext(ctx, 3*time.Minute, func() error {
+		_, redeployErr := redeployServiceInstance(ctx, *r.client, data.EnvironmentId.ValueString(), data.ServiceId.ValueString())
+		return redeployErr
+	})
 
 	if err != nil {
 		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to redeploy service after variable collection created (service_id=%s, environment_id=%s), got error: %s", data.ServiceId.ValueString(), data.EnvironmentId.ValueString(), err))
@@ -313,7 +317,10 @@ func (r *VariableCollectionResource) Update(ctx context.Context, req resource.Up
 		return
 	}
 
-	_, err = redeployServiceInstance(ctx, *r.client, data.EnvironmentId.ValueString(), data.ServiceId.ValueString())
+	err = retryRedeployContext(ctx, 3*time.Minute, func() error {
+		_, redeployErr := redeployServiceInstance(ctx, *r.client, data.EnvironmentId.ValueString(), data.ServiceId.ValueString())
+		return redeployErr
+	})
 
 	if err != nil {
 		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to redeploy service after variable collection updated, got error: %s", err))
@@ -346,11 +353,17 @@ func (r *VariableCollectionResource) Delete(ctx context.Context, req resource.De
 		return
 	}
 
-	_, err = redeployServiceInstance(ctx, *r.client, data.EnvironmentId.ValueString(), data.ServiceId.ValueString())
+	err = retryRedeployContext(ctx, 3*time.Minute, func() error {
+		_, redeployErr := redeployServiceInstance(ctx, *r.client, data.EnvironmentId.ValueString(), data.ServiceId.ValueString())
+		return redeployErr
+	})
 
+	// Delete path: if the redeploy still can't fire after the retry budget
+	// (or the service is already gone), the *deletion itself* succeeded —
+	// downgrade to a warning rather than blocking `tofu destroy`. The
+	// variables are removed; the container is stale until the next redeploy.
 	if err != nil && !isNotFoundOrGone(err) {
-		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to redeploy service after variable collection deleted, got error: %s", err))
-		return
+		resp.Diagnostics.AddWarning("Redeploy after variable collection delete did not complete", fmt.Sprintf("The variable collection was deleted but the follow-up redeploy could not be triggered (service_id=%s, environment_id=%s). The running container may hold stale variable values until the next redeploy. Underlying error: %s", data.ServiceId.ValueString(), data.EnvironmentId.ValueString(), err))
 	}
 
 	tflog.Debug(ctx, "deleted a variable collection")

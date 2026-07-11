@@ -84,7 +84,8 @@ func retryFindContext(ctx context.Context, timeout time.Duration, f func() error
 
 // retryCreateContext retries a function that may return transient errors during
 // resource creation due to Railway's eventual consistency (e.g., "Problem
-// processing request" when creating a volume on a newly created service).
+// processing request" when creating a volume on a newly created service) or
+// per-mutation creation throttles (see isCreationRateLimited).
 func retryCreateContext(ctx context.Context, timeout time.Duration, f func() error) error {
 	return retry.RetryContext(ctx, timeout, func() *retry.RetryError {
 		err := f()
@@ -92,11 +93,28 @@ func retryCreateContext(ctx context.Context, timeout time.Duration, f func() err
 			return nil
 		}
 		msg := strings.ToLower(err.Error())
-		if strings.Contains(msg, "problem processing request") || isRateLimited(err) {
+		if strings.Contains(msg, "problem processing request") ||
+			isRateLimited(err) ||
+			isCreationRateLimited(err) {
 			return retry.RetryableError(err)
 		}
 		return retry.NonRetryableError(err)
 	})
+}
+
+// isCreationRateLimited returns true if the error indicates a Railway
+// per-mutation creation throttle. Distinct from the account-wide isRateLimited
+// / isCreationCooldown patterns — this fires when the SAME mutation is called
+// too rapidly (e.g. two volumeCreate calls within seconds) and is answered with
+// Railway's characteristic "Whoa there pal!" wording. Transient; a short wait
+// clears it.
+func isCreationRateLimited(err error) bool {
+	if err == nil {
+		return false
+	}
+	msg := strings.ToLower(err.Error())
+	return strings.Contains(msg, "whoa there pal") ||
+		strings.Contains(msg, "try again in a sec")
 }
 
 // retryReadAfterCreateContext retries a post-create read that may fail due to
@@ -175,6 +193,42 @@ func retryOnCooldownContext(ctx context.Context, timeout time.Duration, f func()
 			return nil
 		}
 		if isCreationCooldown(err) || isRateLimited(err) {
+			return retry.RetryableError(err)
+		}
+		return retry.NonRetryableError(err)
+	})
+}
+
+// isRedeployNotReady returns true if the error indicates Railway's
+// serviceInstanceRedeploy mutation was rejected because a previous deployment
+// on the same service is still building. This happens on rapid apply cycles
+// (initial deploy still in progress when a variable_collection or variable
+// mutation triggers a follow-up redeploy) and is fully transient — waiting
+// for the in-flight build to finish and retrying resolves it.
+func isRedeployNotReady(err error) bool {
+	if err == nil {
+		return false
+	}
+	msg := strings.ToLower(err.Error())
+	return strings.Contains(msg, "cannot redeploy yet") ||
+		strings.Contains(msg, "wait for the original deployment")
+}
+
+// retryRedeployContext wraps a serviceInstanceRedeploy call, retrying if the
+// error is Railway's "Cannot redeploy yet, please wait for the original
+// deployment to finish building" transient conflict. Also retries on rate
+// limits. Everything else is treated as non-retryable so genuine failures
+// (auth, invalid service, etc.) surface immediately.
+//
+// Default budget: 3 minutes. Railway builds typically settle in under a
+// minute; 3 minutes covers the tail with margin.
+func retryRedeployContext(ctx context.Context, timeout time.Duration, f func() error) error {
+	return retry.RetryContext(ctx, timeout, func() *retry.RetryError {
+		err := f()
+		if err == nil {
+			return nil
+		}
+		if isRedeployNotReady(err) || isRateLimited(err) {
 			return retry.RetryableError(err)
 		}
 		return retry.NonRetryableError(err)

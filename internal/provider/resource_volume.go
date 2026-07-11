@@ -156,7 +156,16 @@ func (r *VolumeResource) Create(ctx context.Context, req resource.CreateRequest,
 		EnvironmentId: &environmentId,
 	}
 
-	response, err := createVolume(ctx, *r.client, input)
+	// Retry across Railway's per-mutation creation throttle ("Whoa there
+	// pal! You are creating volumes too quickly") and the newly-created-
+	// service eventual-consistency window ("Problem processing request").
+	// 60s covers back-to-back parallel creates cleanly.
+	var response *createVolumeResponse
+	err := retryCreateContext(ctx, 60*time.Second, func() error {
+		var createErr error
+		response, createErr = createVolume(ctx, *r.client, input)
+		return createErr
+	})
 
 	if err != nil {
 		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to create volume (project_id=%s, service_id=%s), got error: %s", data.ProjectId.ValueString(), data.ServiceId.ValueString(), err))

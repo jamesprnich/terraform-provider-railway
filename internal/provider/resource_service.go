@@ -3,7 +3,6 @@ package provider
 import (
 	"context"
 	"fmt"
-	"strings"
 	"time"
 
 	"github.com/Khan/genqlient/graphql"
@@ -140,14 +139,8 @@ func (r *ServiceResource) Schema(ctx context.Context, req resource.SchemaRequest
 			},
 			"volume": schema.SingleNestedAttribute{
 				MarkdownDescription: "Volume connected to the service. Created in the same environment as the " +
-					"service (`environment_id`).\n\n" +
-					"~> **Known limitation.** If the volume's `mount_path` causes Railway to auto-assign the " +
-					"same name you specify in `name` (e.g. `/var/lib/postgresql/data` → `pgdata`), the create " +
-					"will fail with `A volume named X already exists in this project` because Railway's " +
-					"idempotent-rename check rejects updates that don't change the name. As a workaround, use " +
-					"the standalone `railway_volume` resource — which is also the more flexible option for " +
-					"volumes that need their own lifecycle, backup schedule, or cross-service references. This " +
-					"limitation will be lifted in a future release.",
+					"service (`environment_id`). Prefer the standalone `railway_volume` resource when the " +
+					"volume needs its own lifecycle, backup schedule, or references from other resources.",
 				Description: "Volume connected to the service. Created in the same environment as the service.",
 				Optional:    true,
 				Attributes: map[string]schema.Attribute{
@@ -394,32 +387,17 @@ func (r *ServiceResource) Create(ctx context.Context, req resource.CreateRequest
 		volId := volumeResponse.VolumeCreate.Id
 		desiredName := volumeData.Name.ValueString()
 
-		// Rename the volume to the desired name. Two subtleties:
-		//   1. Railway auto-names newly-created volumes from the mount path
-		//      (e.g. /var/lib/postgresql/data → "pgdata"), so the desired name
-		//      may already match. The createVolume response can return an empty
-		//      Name field before Railway assigns one, so we cannot rely on
-		//      comparing it — we always issue the update and treat the
-		//      "already exists" error as an idempotent success when the volume
-		//      already has the desired name.
-		//   2. Any other error is a genuine failure; clean up the orphaned
-		//      volume so it doesn't leak.
-		_, err = updateVolume(ctx, *r.client, volId, VolumeUpdateInput{
-			Name: desiredName,
-		})
-
-		if err != nil {
-			if isVolumeNameAlreadyExists(err) && volumeHasName(ctx, *r.client, data.ProjectId.ValueString(), volId, desiredName) {
-				tflog.Debug(ctx, "volume was already named as desired — treating rename as idempotent success")
-			} else {
-				if _, delErr := deleteVolume(ctx, *r.client, volId); delErr != nil {
-					tflog.Warn(ctx, fmt.Sprintf("failed to clean up orphaned volume %s: %s", volId, delErr))
-				}
-				resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to rename volume (service_id=%s, project_id=%s), got error: %s", data.Id.ValueString(), data.ProjectId.ValueString(), err))
-				return
+		// Rename only if the volume's current name genuinely differs from the
+		// desired name. Railway auto-names newly-created volumes as
+		// {service-name}-volume; the read-then-rename path safely handles both
+		// the differ-and-rename and no-op cases without incurring the rejected
+		// self-collision that would fire if we always issued updateVolume.
+		if err := renameServiceVolumeIfNeeded(ctx, *r.client, data.ProjectId.ValueString(), volId, desiredName); err != nil {
+			if _, delErr := deleteVolume(ctx, *r.client, volId); delErr != nil {
+				tflog.Warn(ctx, fmt.Sprintf("failed to clean up orphaned volume %s: %s", volId, delErr))
 			}
-		} else {
-			tflog.Debug(ctx, "renamed a volume")
+			resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to rename volume (service_id=%s, project_id=%s), got error: %s", data.Id.ValueString(), data.ProjectId.ValueString(), err))
+			return
 		}
 	}
 
@@ -427,13 +405,23 @@ func (r *ServiceResource) Create(ctx context.Context, req resource.CreateRequest
 	// consistency window. Without this, a service that was just given an
 	// inline volume can have data.Volume stay null in state (the volume
 	// instance hasn't appeared in getVolumeInstances yet), and Terraform
-	// rejects the create with "inconsistent result after apply".
-	err = retryReadAfterCreateContext(ctx, 30*time.Second, func() error {
+	// rejects the create with "inconsistent result after apply". Empirically
+	// this window is usually 2–5 s but has been observed exceeding 28 s
+	// during workspace-wide slow moments — a generous 90 s budget preserves
+	// success in the tail without hanging the apply on a real failure.
+	err = retryReadAfterCreateContext(ctx, 90*time.Second, func() error {
 		if buildErr := getAndBuildVolumeInstance(ctx, *r.client, data.ProjectId.ValueString(), data.Id.ValueString(), envId, data); buildErr != nil {
 			return buildErr
 		}
 		if hasPlannedVolume && data.Volume.IsNull() {
-			return fmt.Errorf("inline volume not yet visible for service %s in environment %s", data.Id.ValueString(), envId)
+			// Wrap a NotFoundError sentinel so retryReadAfterCreateContext
+			// classifies this as retryable — the volumeInstances edge is
+			// populated a few seconds after createVolume returns, and without
+			// the sentinel the retry loop misclassifies the "not yet visible"
+			// signal as terminal and bails out inside a single poll interval.
+			return fmt.Errorf("inline volume not yet visible for service %s in environment %s: %w",
+				data.Id.ValueString(), envId,
+				&NotFoundError{ResourceType: "inline volume for service", Id: data.Id.ValueString()})
 		}
 		return nil
 	})
@@ -600,23 +588,12 @@ func (r *ServiceResource) Update(ctx context.Context, req resource.UpdateRequest
 		volId := volumeResponse.VolumeCreate.Id
 		desiredName := volumeData.Name.ValueString()
 
-		// See Create() for the reasoning.
-		_, err = updateVolume(ctx, *r.client, volId, VolumeUpdateInput{
-			Name: desiredName,
-		})
-
-		if err != nil {
-			if isVolumeNameAlreadyExists(err) && volumeHasName(ctx, *r.client, data.ProjectId.ValueString(), volId, desiredName) {
-				tflog.Debug(ctx, "volume was already named as desired — treating rename as idempotent success")
-			} else {
-				if _, delErr := deleteVolume(ctx, *r.client, volId); delErr != nil {
-					tflog.Warn(ctx, fmt.Sprintf("failed to clean up orphaned volume %s: %s", volId, delErr))
-				}
-				resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to rename volume, got error: %s", err))
-				return
+		if err := renameServiceVolumeIfNeeded(ctx, *r.client, data.ProjectId.ValueString(), volId, desiredName); err != nil {
+			if _, delErr := deleteVolume(ctx, *r.client, volId); delErr != nil {
+				tflog.Warn(ctx, fmt.Sprintf("failed to clean up orphaned volume %s: %s", volId, delErr))
 			}
-		} else {
-			tflog.Debug(ctx, "renamed a volume")
+			resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to rename volume, got error: %s", err))
+			return
 		}
 	}
 
@@ -747,33 +724,45 @@ func resolveTargetEnvironment(ctx context.Context, client graphql.Client, data *
 	return defaultEnv.Id, nil
 }
 
-// isVolumeNameAlreadyExists reports whether an updateVolume error is the
-// specific "A volume named X already exists in this project" case. Used to
-// make the rename step idempotent — Railway rejects updates that don't
-// change the name, but createVolume can return an empty Name field before
-// Railway has assigned one, so we cannot skip the update pre-emptively.
-func isVolumeNameAlreadyExists(err error) bool {
-	if err == nil {
-		return false
-	}
-	msg := strings.ToLower(err.Error())
-	return strings.Contains(msg, "already exists in this project") && strings.Contains(msg, "volume")
-}
-
-// volumeHasName returns true if the volume identified by volId in the given
-// project already has the given name. Best-effort — network failures return
-// false (which triggers the caller's error path, which is the safe default).
-func volumeHasName(ctx context.Context, client graphql.Client, projectId, volId, name string) bool {
-	response, err := getVolumeInstances(ctx, client, projectId)
-	if err != nil {
-		return false
-	}
-	for _, volume := range response.Project.Volumes.Edges {
-		if volume.Node.Id == volId && volume.Node.Name == name {
-			return true
+// renameServiceVolumeIfNeeded renames the inline volume attached to a
+// railway_service when — and only when — Railway's auto-assigned name does
+// not already match the desired name.
+//
+// The read is retried across Railway's eventual-consistency window because
+// getVolumeInstances does not immediately reflect a just-created volume;
+// without the retry the lookup returns "not found" and the caller cannot
+// tell whether the auto-name already matches, which is the exact case that
+// causes updateVolume to fail with "A volume named X already exists in
+// this project".
+//
+// Returns nil when the rename is unnecessary or succeeds; a non-nil error
+// means either the current name could not be determined within the retry
+// budget, or updateVolume genuinely failed.
+func renameServiceVolumeIfNeeded(ctx context.Context, client graphql.Client, projectId, volId, desiredName string) error {
+	var currentName string
+	err := retryReadAfterCreateContext(ctx, 30*time.Second, func() error {
+		response, readErr := getVolumeInstances(ctx, client, projectId)
+		if readErr != nil {
+			return readErr
 		}
+		for _, volume := range response.Project.Volumes.Edges {
+			if volume.Node.Id == volId {
+				currentName = volume.Node.Name
+				return nil
+			}
+		}
+		return &NotFoundError{ResourceType: "volume", Id: volId}
+	})
+	if err != nil {
+		return fmt.Errorf("determining current volume name: %w", err)
 	}
-	return false
+
+	if currentName == desiredName {
+		return nil
+	}
+
+	_, err = updateVolume(ctx, client, volId, VolumeUpdateInput{Name: desiredName})
+	return err
 }
 
 func getAndBuildVolumeInstance(ctx context.Context, client graphql.Client, projectId string, serviceId string, envId string, data *ServiceResourceModel) error {

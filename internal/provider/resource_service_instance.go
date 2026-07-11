@@ -492,7 +492,10 @@ func (r *ServiceInstanceResource) Update(ctx context.Context, req resource.Updat
 	}
 
 	// Redeploy the instance to pick up changes
-	_, err = redeployServiceInstance(ctx, *r.client, data.EnvironmentId.ValueString(), data.ServiceId.ValueString())
+	err = retryRedeployContext(ctx, 3*time.Minute, func() error {
+		_, redeployErr := redeployServiceInstance(ctx, *r.client, data.EnvironmentId.ValueString(), data.ServiceId.ValueString())
+		return redeployErr
+	})
 
 	if err != nil {
 		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to redeploy service instance after update, got error: %s", err))

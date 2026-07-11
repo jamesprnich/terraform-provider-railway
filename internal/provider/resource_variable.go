@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/Khan/genqlient/graphql"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
@@ -175,7 +176,10 @@ func (r *VariableResource) Create(ctx context.Context, req resource.CreateReques
 		return
 	}
 
-	_, err = redeployServiceInstance(ctx, *r.client, data.EnvironmentId.ValueString(), data.ServiceId.ValueString())
+	err = retryRedeployContext(ctx, 3*time.Minute, func() error {
+		_, redeployErr := redeployServiceInstance(ctx, *r.client, data.EnvironmentId.ValueString(), data.ServiceId.ValueString())
+		return redeployErr
+	})
 
 	if err != nil {
 		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to redeploy service after variable %q created (service_id=%s, environment_id=%s), got error: %s", data.Name.ValueString(), data.ServiceId.ValueString(), data.EnvironmentId.ValueString(), err))
@@ -246,7 +250,10 @@ func (r *VariableResource) Update(ctx context.Context, req resource.UpdateReques
 		return
 	}
 
-	_, err = redeployServiceInstance(ctx, *r.client, data.EnvironmentId.ValueString(), data.ServiceId.ValueString())
+	err = retryRedeployContext(ctx, 3*time.Minute, func() error {
+		_, redeployErr := redeployServiceInstance(ctx, *r.client, data.EnvironmentId.ValueString(), data.ServiceId.ValueString())
+		return redeployErr
+	})
 
 	if err != nil {
 		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to redeploy service after variable updated, got error: %s", err))
@@ -279,11 +286,17 @@ func (r *VariableResource) Delete(ctx context.Context, req resource.DeleteReques
 		return
 	}
 
-	_, err = redeployServiceInstance(ctx, *r.client, data.EnvironmentId.ValueString(), data.ServiceId.ValueString())
+	err = retryRedeployContext(ctx, 3*time.Minute, func() error {
+		_, redeployErr := redeployServiceInstance(ctx, *r.client, data.EnvironmentId.ValueString(), data.ServiceId.ValueString())
+		return redeployErr
+	})
 
+	// Delete path: if the redeploy still can't fire after the retry budget
+	// (or the service is already gone), the deletion itself succeeded —
+	// downgrade to a warning rather than blocking `tofu destroy`. Variable
+	// is removed; container is stale until the next redeploy.
 	if err != nil && !isNotFoundOrGone(err) {
-		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to redeploy service after variable updated, got error: %s", err))
-		return
+		resp.Diagnostics.AddWarning("Redeploy after variable delete did not complete", fmt.Sprintf("The variable %q was deleted but the follow-up redeploy could not be triggered (service_id=%s, environment_id=%s). The running container may hold a stale value until the next redeploy. Underlying error: %s", data.Name.ValueString(), data.ServiceId.ValueString(), data.EnvironmentId.ValueString(), err))
 	}
 
 	tflog.Debug(ctx, "deleted a variable")
