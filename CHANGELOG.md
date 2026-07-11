@@ -1,3 +1,19 @@
+## 0.11.1
+
+### Fixes
+
+Three categories of Railway transient errors now retry across a bounded window instead of failing immediately. Each fix has unit-test coverage of its classifier and retry mechanic; all were validated against a live Railway workspace before release.
+
+* **Inline volume readback classification.** The post-create readback of an inline `volume` block on `railway_service` synthesised a `"not yet visible"` error whose string did not match `isNotFound`'s dictionary. `retryReadAfterCreateContext` misclassified it as terminal and bailed in a single poll interval. The sentinel is now wrapped in `NotFoundError` so `isNotFound` picks it up via `errors.As`, and the budget is bumped 30 s → 90 s to cover Railway's observed >28 s tail. Removes the v0.11.0 known limitation about inline volume rename.
+* **Redeploy-in-flight conflict.** `variable_collection` Create/Update/Delete, `variable` Create/Update/Delete, and `service_instance` Update now retry when Railway returns `"Cannot redeploy yet, please wait for the original deployment to finish building"`. Delete paths downgrade to a Warning if the 3-minute budget expires so a still-building service cannot wedge `tofu destroy`; Create/Update paths hard-fail on timeout.
+* **Volume creation throttle.** `railway_volume` Create and inline volume Create in `railway_service` both retry on Railway's per-mutation throttle (`"Whoa there pal! You are creating volumes too quickly. Try again in a sec"`), bounded to 60 s.
+
+### Test hardening
+
+* **Live lifecycle acceptance test now asserts `unmergedChangesCount == 0`** on every fork it creates. The C1 "deploys, not staged" property was previously defended only by the `StageInitialChanges: false` code setting; the assertion turns that from "we set the flag" into "we watched the flag's effect."
+* **Manual comprehensive test regime** at `workshop/manual-test-regime/`. Tiered (least → most demanding), strictly sequential, workspace-hygiene checked. Not for CI — a human runs this against a real Railway workspace before shipping. Twelve self-contained test configs cover every non-skipped resource. Full run ~60–70 min, ~$0.10–$0.30 Railway compute.
+* **Release workflow now runs the full CI pipeline** (`lint`, `unit`, `build`) before goreleaser publishes. Previously the release trusted that CI had already run on the merged commit; if a merge-squash introduced a regression, the release would still fire.
+
 ## 0.11.0
 
 ### BREAKING
@@ -9,7 +25,7 @@
 
 ### Known Limitations
 
-* Inline `volume` block on `railway_service` currently fails when Railway auto-assigns the same name as `volume.name` (e.g. `mount_path = "/var/lib/postgresql/data"` triggers `pgdata` auto-name that collides with the requested `name = "pgdata"`). Workaround: use the standalone `railway_volume` resource instead — that path is exhaustively tested and gives better lifecycle control. The schema description on `railway_service.volume` documents this.
+* Inline `volume` block on `railway_service` currently fails when Railway auto-assigns the same name as `volume.name` (e.g. `mount_path = "/var/lib/postgresql/data"` triggers `pgdata` auto-name that collides with the requested `name = "pgdata"`). Workaround: use the standalone `railway_volume` resource instead — that path is exhaustively tested and gives better lifecycle control. The schema description on `railway_service.volume` documents this. **Fixed in v0.11.1.**
 
 ### Security
 
