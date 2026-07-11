@@ -1,8 +1,14 @@
+# @genqlient(for: "Environment.unmergedChangesCount", pointer: true)
 fragment Environment on Environment {
   id
   name
   projectId
   isEphemeral
+  # unmergedChangesCount = 0/null when changes commit immediately (the
+  # StageInitialChanges: false path the design depends on). Included on
+  # every environment read so the acceptance suite can assert the
+  # "deploys, not staged" property without a second round-trip.
+  unmergedChangesCount
   sourceEnvironment {
     id
   }

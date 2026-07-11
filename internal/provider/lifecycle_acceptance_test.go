@@ -1,13 +1,60 @@
 package provider
 
 import (
+	"context"
 	"fmt"
 	"regexp"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
+
+// testAccCheckEnvironmentCommittedNotStaged fetches the environment identified
+// by (project attribute, env attribute) and asserts that its
+// unmergedChangesCount is nil or 0 — i.e. Railway committed the environment's
+// creates rather than leaving them as staged changes the user has to click
+// "apply" on in the dashboard.
+//
+// This is the C1 property the design depends on. The provider sets
+// StageInitialChanges: false in environmentCreate, but the review flagged
+// that we defended the property by a code setting rather than by an
+// assertion. This test check closes that gap: even under a live apply the
+// property is verified against the API's own view of the environment.
+func testAccCheckEnvironmentCommittedNotStaged(projectAttr, envAttr string) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		projectRS, ok := s.RootModule().Resources[projectAttr]
+		if !ok {
+			return fmt.Errorf("resource %s not found in state", projectAttr)
+		}
+		envRS, ok := s.RootModule().Resources[envAttr]
+		if !ok {
+			return fmt.Errorf("resource %s not found in state", envAttr)
+		}
+
+		client := testAccNewClient()
+		resp, err := getEnvironments(context.Background(), client, projectRS.Primary.ID)
+		if err != nil {
+			return fmt.Errorf("querying environments for project %s: %w", projectRS.Primary.ID, err)
+		}
+
+		for _, edge := range resp.Environments.Edges {
+			env := edge.Node.Environment
+			if env.Id != envRS.Primary.ID {
+				continue
+			}
+			if env.UnmergedChangesCount != nil && *env.UnmergedChangesCount > 0 {
+				return fmt.Errorf(
+					"env %s (%s) has %d unmerged changes — the design's 'deploys, not staged' property is violated. Something is queuing changes as staged rather than committing them (StageInitialChanges must be false on environmentCreate)",
+					env.Name, env.Id, *env.UnmergedChangesCount,
+				)
+			}
+			return nil
+		}
+		return fmt.Errorf("env id %s not found in project %s environment list", envRS.Primary.ID, projectRS.Primary.ID)
+	}
+}
 
 // =============================================================================
 // Lifecycle acceptance tests for v0.11.0 fork-based env scoping.
@@ -69,6 +116,14 @@ func TestAccLifecycle_forkTopology(t *testing.T) {
 					resource.TestCheckResourceAttrSet("railway_volume.dev_data", "volume_instance_id"),
 					resource.TestCheckResourceAttr("railway_volume.dev_data", "mount_path", "/data"),
 					resource.TestCheckResourceAttrSet("railway_volume.dev_data", "size_mb"),
+					// C1: services and environments deploy immediately —
+					// they don't land as unmerged staged changes. The
+					// design depends on this and the provider defends it
+					// with StageInitialChanges: false on environmentCreate;
+					// this assertion turns that from "we set the flag" into
+					// "we watched the flag's effect."
+					testAccCheckEnvironmentCommittedNotStaged("railway_project.acc", "railway_environment.dev"),
+					testAccCheckEnvironmentCommittedNotStaged("railway_project.acc", "railway_environment.prd"),
 				),
 			},
 			// -----------------------------------------------------------------

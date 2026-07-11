@@ -54,7 +54,7 @@ resource "railway_service" "api" {
 
 ~> **Dependency note:** `railway_service` references only `project_id`, so Terraform cannot infer the environment dependency from the reference in `environment_id`. Add `depends_on = [railway_environment.<name>]` on the service resource, or the environment may not exist when `serviceCreate` runs.
 - `icon` (String) Icon displayed for the service in the Railway dashboard. Cosmetic, applies project-wide (not per-environment). See [Railway's icon docs](https://docs.railway.com/reference/services).
-- `volume` (Attributes) Volume connected to the service. Created in the same environment as the service (`environment_id`). Prefer this over a standalone `railway_volume` when the volume is dedicated to one service. (see [below for nested schema](#nestedatt--volume))
+- `volume` (Attributes) Volume connected to the service. Created in the same environment as the service (`environment_id`). Prefer the standalone `railway_volume` resource when the volume needs its own lifecycle, backup schedule, or references from other resources. (see [below for nested schema](#nestedatt--volume))
 
 ### Read-Only
 

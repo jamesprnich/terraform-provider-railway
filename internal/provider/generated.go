@@ -304,11 +304,12 @@ func (v *EgressGatewayServiceTargetInput) GetServiceId() string { return v.Servi
 
 // Environment includes the GraphQL fields of Environment requested by the fragment Environment.
 type Environment struct {
-	Id                string                       `json:"id"`
-	Name              string                       `json:"name"`
-	ProjectId         string                       `json:"projectId"`
-	IsEphemeral       bool                         `json:"isEphemeral"`
-	SourceEnvironment EnvironmentSourceEnvironment `json:"sourceEnvironment"`
+	Id                   string                       `json:"id"`
+	Name                 string                       `json:"name"`
+	ProjectId            string                       `json:"projectId"`
+	IsEphemeral          bool                         `json:"isEphemeral"`
+	UnmergedChangesCount *int                         `json:"unmergedChangesCount"`
+	SourceEnvironment    EnvironmentSourceEnvironment `json:"sourceEnvironment"`
 }
 
 // GetId returns Environment.Id, and is useful for accessing the field via an interface.
@@ -322,6 +323,9 @@ func (v *Environment) GetProjectId() string { return v.ProjectId }
 
 // GetIsEphemeral returns Environment.IsEphemeral, and is useful for accessing the field via an interface.
 func (v *Environment) GetIsEphemeral() bool { return v.IsEphemeral }
+
+// GetUnmergedChangesCount returns Environment.UnmergedChangesCount, and is useful for accessing the field via an interface.
+func (v *Environment) GetUnmergedChangesCount() *int { return v.UnmergedChangesCount }
 
 // GetSourceEnvironment returns Environment.SourceEnvironment, and is useful for accessing the field via an interface.
 func (v *Environment) GetSourceEnvironment() EnvironmentSourceEnvironment { return v.SourceEnvironment }
@@ -2812,6 +2816,11 @@ func (v *createEnvironmentEnvironmentCreateEnvironment) GetIsEphemeral() bool {
 	return v.Environment.IsEphemeral
 }
 
+// GetUnmergedChangesCount returns createEnvironmentEnvironmentCreateEnvironment.UnmergedChangesCount, and is useful for accessing the field via an interface.
+func (v *createEnvironmentEnvironmentCreateEnvironment) GetUnmergedChangesCount() *int {
+	return v.Environment.UnmergedChangesCount
+}
+
 // GetSourceEnvironment returns createEnvironmentEnvironmentCreateEnvironment.SourceEnvironment, and is useful for accessing the field via an interface.
 func (v *createEnvironmentEnvironmentCreateEnvironment) GetSourceEnvironment() EnvironmentSourceEnvironment {
 	return v.Environment.SourceEnvironment
@@ -2851,6 +2860,8 @@ type __premarshalcreateEnvironmentEnvironmentCreateEnvironment struct {
 
 	IsEphemeral bool `json:"isEphemeral"`
 
+	UnmergedChangesCount *int `json:"unmergedChangesCount"`
+
 	SourceEnvironment EnvironmentSourceEnvironment `json:"sourceEnvironment"`
 }
 
@@ -2869,6 +2880,7 @@ func (v *createEnvironmentEnvironmentCreateEnvironment) __premarshalJSON() (*__p
 	retval.Name = v.Environment.Name
 	retval.ProjectId = v.Environment.ProjectId
 	retval.IsEphemeral = v.Environment.IsEphemeral
+	retval.UnmergedChangesCount = v.Environment.UnmergedChangesCount
 	retval.SourceEnvironment = v.Environment.SourceEnvironment
 	return &retval, nil
 }
@@ -4256,6 +4268,11 @@ func (v *getEnvironmentEnvironment) GetProjectId() string { return v.Environment
 // GetIsEphemeral returns getEnvironmentEnvironment.IsEphemeral, and is useful for accessing the field via an interface.
 func (v *getEnvironmentEnvironment) GetIsEphemeral() bool { return v.Environment.IsEphemeral }
 
+// GetUnmergedChangesCount returns getEnvironmentEnvironment.UnmergedChangesCount, and is useful for accessing the field via an interface.
+func (v *getEnvironmentEnvironment) GetUnmergedChangesCount() *int {
+	return v.Environment.UnmergedChangesCount
+}
+
 // GetSourceEnvironment returns getEnvironmentEnvironment.SourceEnvironment, and is useful for accessing the field via an interface.
 func (v *getEnvironmentEnvironment) GetSourceEnvironment() EnvironmentSourceEnvironment {
 	return v.Environment.SourceEnvironment
@@ -4295,6 +4312,8 @@ type __premarshalgetEnvironmentEnvironment struct {
 
 	IsEphemeral bool `json:"isEphemeral"`
 
+	UnmergedChangesCount *int `json:"unmergedChangesCount"`
+
 	SourceEnvironment EnvironmentSourceEnvironment `json:"sourceEnvironment"`
 }
 
@@ -4313,6 +4332,7 @@ func (v *getEnvironmentEnvironment) __premarshalJSON() (*__premarshalgetEnvironm
 	retval.Name = v.Environment.Name
 	retval.ProjectId = v.Environment.ProjectId
 	retval.IsEphemeral = v.Environment.IsEphemeral
+	retval.UnmergedChangesCount = v.Environment.UnmergedChangesCount
 	retval.SourceEnvironment = v.Environment.SourceEnvironment
 	return &retval, nil
 }
@@ -4371,6 +4391,11 @@ func (v *getEnvironmentsEnvironmentsQueryEnvironmentsConnectionEdgesQueryEnviron
 	return v.Environment.IsEphemeral
 }
 
+// GetUnmergedChangesCount returns getEnvironmentsEnvironmentsQueryEnvironmentsConnectionEdgesQueryEnvironmentsConnectionEdgeNodeEnvironment.UnmergedChangesCount, and is useful for accessing the field via an interface.
+func (v *getEnvironmentsEnvironmentsQueryEnvironmentsConnectionEdgesQueryEnvironmentsConnectionEdgeNodeEnvironment) GetUnmergedChangesCount() *int {
+	return v.Environment.UnmergedChangesCount
+}
+
 // GetSourceEnvironment returns getEnvironmentsEnvironmentsQueryEnvironmentsConnectionEdgesQueryEnvironmentsConnectionEdgeNodeEnvironment.SourceEnvironment, and is useful for accessing the field via an interface.
 func (v *getEnvironmentsEnvironmentsQueryEnvironmentsConnectionEdgesQueryEnvironmentsConnectionEdgeNodeEnvironment) GetSourceEnvironment() EnvironmentSourceEnvironment {
 	return v.Environment.SourceEnvironment
@@ -4410,6 +4435,8 @@ type __premarshalgetEnvironmentsEnvironmentsQueryEnvironmentsConnectionEdgesQuer
 
 	IsEphemeral bool `json:"isEphemeral"`
 
+	UnmergedChangesCount *int `json:"unmergedChangesCount"`
+
 	SourceEnvironment EnvironmentSourceEnvironment `json:"sourceEnvironment"`
 }
 
@@ -4428,6 +4455,7 @@ func (v *getEnvironmentsEnvironmentsQueryEnvironmentsConnectionEdgesQueryEnviron
 	retval.Name = v.Environment.Name
 	retval.ProjectId = v.Environment.ProjectId
 	retval.IsEphemeral = v.Environment.IsEphemeral
+	retval.UnmergedChangesCount = v.Environment.UnmergedChangesCount
 	retval.SourceEnvironment = v.Environment.SourceEnvironment
 	return &retval, nil
 }
@@ -6581,6 +6609,11 @@ func (v *renameEnvironmentEnvironmentRenameEnvironment) GetIsEphemeral() bool {
 	return v.Environment.IsEphemeral
 }
 
+// GetUnmergedChangesCount returns renameEnvironmentEnvironmentRenameEnvironment.UnmergedChangesCount, and is useful for accessing the field via an interface.
+func (v *renameEnvironmentEnvironmentRenameEnvironment) GetUnmergedChangesCount() *int {
+	return v.Environment.UnmergedChangesCount
+}
+
 // GetSourceEnvironment returns renameEnvironmentEnvironmentRenameEnvironment.SourceEnvironment, and is useful for accessing the field via an interface.
 func (v *renameEnvironmentEnvironmentRenameEnvironment) GetSourceEnvironment() EnvironmentSourceEnvironment {
 	return v.Environment.SourceEnvironment
@@ -6620,6 +6653,8 @@ type __premarshalrenameEnvironmentEnvironmentRenameEnvironment struct {
 
 	IsEphemeral bool `json:"isEphemeral"`
 
+	UnmergedChangesCount *int `json:"unmergedChangesCount"`
+
 	SourceEnvironment EnvironmentSourceEnvironment `json:"sourceEnvironment"`
 }
 
@@ -6638,6 +6673,7 @@ func (v *renameEnvironmentEnvironmentRenameEnvironment) __premarshalJSON() (*__p
 	retval.Name = v.Environment.Name
 	retval.ProjectId = v.Environment.ProjectId
 	retval.IsEphemeral = v.Environment.IsEphemeral
+	retval.UnmergedChangesCount = v.Environment.UnmergedChangesCount
 	retval.SourceEnvironment = v.Environment.SourceEnvironment
 	return &retval, nil
 }
@@ -7664,6 +7700,7 @@ fragment Environment on Environment {
 	name
 	projectId
 	isEphemeral
+	unmergedChangesCount
 	sourceEnvironment {
 		id
 	}
@@ -8728,6 +8765,7 @@ fragment Environment on Environment {
 	name
 	projectId
 	isEphemeral
+	unmergedChangesCount
 	sourceEnvironment {
 		id
 	}
@@ -8773,6 +8811,7 @@ fragment Environment on Environment {
 	name
 	projectId
 	isEphemeral
+	unmergedChangesCount
 	sourceEnvironment {
 		id
 	}
@@ -9867,6 +9906,7 @@ fragment Environment on Environment {
 	name
 	projectId
 	isEphemeral
+	unmergedChangesCount
 	sourceEnvironment {
 		id
 	}
