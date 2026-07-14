@@ -3,7 +3,12 @@ fragment CustomDomain on CustomDomain {
   domain
   targetPort
   status {
+    verified
+    verificationDnsHost
+    verificationToken
     dnsRecords {
+      recordType
+      purpose
       hostlabel
       requiredValue
       zone

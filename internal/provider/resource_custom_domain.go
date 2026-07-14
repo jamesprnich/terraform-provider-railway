@@ -11,6 +11,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/boolplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
@@ -31,15 +32,18 @@ type CustomDomainResource struct {
 }
 
 type CustomDomainResourceModel struct {
-	Id             types.String `tfsdk:"id"`
-	Domain         types.String `tfsdk:"domain"`
-	EnvironmentId  types.String `tfsdk:"environment_id"`
-	ServiceId      types.String `tfsdk:"service_id"`
-	ProjectId      types.String `tfsdk:"project_id"`
-	TargetPort     types.Int64  `tfsdk:"target_port"`
-	HostLabel      types.String `tfsdk:"host_label"`
-	Zone           types.String `tfsdk:"zone"`
-	DNSRecordValue types.String `tfsdk:"dns_record_value"`
+	Id                  types.String `tfsdk:"id"`
+	Domain              types.String `tfsdk:"domain"`
+	EnvironmentId       types.String `tfsdk:"environment_id"`
+	ServiceId           types.String `tfsdk:"service_id"`
+	ProjectId           types.String `tfsdk:"project_id"`
+	TargetPort          types.Int64  `tfsdk:"target_port"`
+	HostLabel           types.String `tfsdk:"host_label"`
+	Zone                types.String `tfsdk:"zone"`
+	DNSRecordValue      types.String `tfsdk:"dns_record_value"`
+	Verified            types.Bool   `tfsdk:"verified"`
+	VerificationDnsHost types.String `tfsdk:"verification_dns_host"`
+	VerificationToken   types.String `tfsdk:"verification_token"`
 }
 
 func (r *CustomDomainResource) Metadata(ctx context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
@@ -114,24 +118,54 @@ func (r *CustomDomainResource) Schema(ctx context.Context, req resource.SchemaRe
 				},
 			},
 			"host_label": schema.StringAttribute{
-				MarkdownDescription: "Host label of the custom domain.",
-				Description:         "Host label of the custom domain.",
+				MarkdownDescription: "Host label of the CNAME that routes traffic to the Railway edge (e.g. `dev` for `dev.example.com`). Point a `CNAME` record at this host to `dns_record_value` in your DNS provider.",
+				Description:         "Host label of the CNAME that routes traffic to the Railway edge.",
 				Computed:            true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
 			"zone": schema.StringAttribute{
-				MarkdownDescription: "Zone of the custom domain.",
-				Description:         "Zone of the custom domain.",
+				MarkdownDescription: "Zone the CNAME belongs to (e.g. `example.com`).",
+				Description:         "Zone the CNAME belongs to.",
 				Computed:            true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
 			"dns_record_value": schema.StringAttribute{
-				MarkdownDescription: "DNS record value of the custom domain.",
-				Description:         "DNS record value of the custom domain.",
+				MarkdownDescription: "CNAME target the user must point their DNS at (e.g. `your-service.up.railway.app`). Selected by Railway's `purpose == TRAFFIC_ROUTE` — order-independent, so this stays correct even if Railway reorders the DNS record list.",
+				Description:         "CNAME target the user must point their DNS at.",
+				Computed:            true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
+			},
+			// The three attributes below expose Railway's dedicated domain-verification
+			// fields on `CustomDomainStatus` (`verified`, `verificationDnsHost`,
+			// `verificationToken`). Before v0.11.4 the provider only surfaced the CNAME
+			// traffic-routing record and silently discarded the TXT verification record,
+			// forcing consumers to shell out to the Railway GraphQL API to fetch the
+			// verification token themselves.
+			"verified": schema.BoolAttribute{
+				MarkdownDescription: "Whether Railway has confirmed the domain's ownership TXT record is in place. Reflects `status.verified` on Railway's `CustomDomainStatus`. Read at refresh time — flips from `false` to `true` after the user creates the required TXT record and Railway's verifier polls it.",
+				Description:         "Whether Railway has confirmed the domain's ownership TXT record is in place.",
+				Computed:            true,
+				PlanModifiers: []planmodifier.Bool{
+					boolplanmodifier.UseStateForUnknown(),
+				},
+			},
+			"verification_dns_host": schema.StringAttribute{
+				MarkdownDescription: "Hostname where the user must create a TXT record for Railway to verify domain ownership (e.g. `_railway-verify.dev.example.com`). Reflects `status.verificationDnsHost`.",
+				Description:         "Hostname where the user must create a TXT record for domain ownership verification.",
+				Computed:            true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
+			},
+			"verification_token": schema.StringAttribute{
+				MarkdownDescription: "Value the user must place in the TXT record at `verification_dns_host`. Reflects `status.verificationToken`.",
+				Description:         "Value to place in the TXT record at verification_dns_host.",
 				Computed:            true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
@@ -139,6 +173,33 @@ func (r *CustomDomainResource) Schema(ctx context.Context, req resource.SchemaRe
 			},
 		},
 	}
+}
+
+// selectTrafficRouteCNAME returns the DNS record Railway designates as the
+// customer-facing CNAME — the one they must point their zone at. Selection is
+// by Railway's semantic `purpose` field with a fallback to `recordType`, never
+// by array position: the raw `dnsRecords` list contains at least the CNAME
+// and a TXT verification record, and Railway does not guarantee any ordering.
+// Pre-v0.11.4 the provider took `dnsRecords[0]`, which was correct only by
+// luck and would silently substitute the TXT value for the CNAME on a
+// Railway-side reorder. Returns nil when no CNAME is present (e.g. Railway
+// hasn't computed status yet).
+func selectTrafficRouteCNAME(records []CustomDomainStatusDnsRecordsDNSRecords) *CustomDomainStatusDnsRecordsDNSRecords {
+	// First pass: purpose == TRAFFIC_ROUTE is Railway's semantic label for
+	// "this is the record the consumer must point at us". Prefer it.
+	for i := range records {
+		if records[i].Purpose == DNSRecordPurposeDnsRecordPurposeTrafficRoute {
+			return &records[i]
+		}
+	}
+	// Fallback: no record carries an explicit purpose (older Railway responses
+	// or the UNSPECIFIED case). Match by recordType == CNAME instead.
+	for i := range records {
+		if records[i].RecordType == DNSRecordTypeDnsRecordTypeCname {
+			return &records[i]
+		}
+	}
+	return nil
 }
 
 func (r *CustomDomainResource) Configure(ctx context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
@@ -206,6 +267,15 @@ func (r *CustomDomainResource) Create(ctx context.Context, req resource.CreateRe
 	if data.DNSRecordValue.IsUnknown() {
 		data.DNSRecordValue = types.StringNull()
 	}
+	if data.Verified.IsUnknown() {
+		data.Verified = types.BoolNull()
+	}
+	if data.VerificationDnsHost.IsUnknown() {
+		data.VerificationDnsHost = types.StringNull()
+	}
+	if data.VerificationToken.IsUnknown() {
+		data.VerificationToken = types.StringNull()
+	}
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 	if resp.Diagnostics.HasError() {
@@ -223,13 +293,42 @@ func (r *CustomDomainResource) Create(ctx context.Context, req resource.CreateRe
 		data.TargetPort = types.Int64Null()
 	}
 
-	if len(domain.Status.DnsRecords) > 0 {
-		data.HostLabel = types.StringValue(domain.Status.DnsRecords[0].Hostlabel)
-		data.Zone = types.StringValue(domain.Status.DnsRecords[0].Zone)
-		data.DNSRecordValue = types.StringValue(domain.Status.DnsRecords[0].RequiredValue)
-	}
+	applyCustomDomainStatus(&data, &domain.Status)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
+}
+
+// applyCustomDomainStatus copies Railway's status block (dnsRecords + the
+// verified/verificationDnsHost/verificationToken triple) onto the resource
+// model. Selection is type-based (see selectTrafficRouteCNAME) so we never
+// substitute the TXT verification value for the CNAME target on a
+// Railway-side reorder. Called from both Create and Read to keep the two
+// state-population paths consistent.
+func applyCustomDomainStatus(data **CustomDomainResourceModel, status *CustomDomainStatus) {
+	m := *data
+
+	if cname := selectTrafficRouteCNAME(status.DnsRecords); cname != nil {
+		m.HostLabel = types.StringValue(cname.Hostlabel)
+		m.Zone = types.StringValue(cname.Zone)
+		m.DNSRecordValue = types.StringValue(cname.RequiredValue)
+	} else {
+		m.HostLabel = types.StringNull()
+		m.Zone = types.StringNull()
+		m.DNSRecordValue = types.StringNull()
+	}
+
+	m.Verified = types.BoolValue(status.Verified)
+
+	if status.VerificationDnsHost != "" {
+		m.VerificationDnsHost = types.StringValue(status.VerificationDnsHost)
+	} else {
+		m.VerificationDnsHost = types.StringNull()
+	}
+	if status.VerificationToken != "" {
+		m.VerificationToken = types.StringValue(status.VerificationToken)
+	} else {
+		m.VerificationToken = types.StringNull()
+	}
 }
 
 func (r *CustomDomainResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
@@ -277,11 +376,7 @@ func (r *CustomDomainResource) Read(ctx context.Context, req resource.ReadReques
 		data.TargetPort = types.Int64Null()
 	}
 
-	if len(domain.Status.DnsRecords) > 0 {
-		data.HostLabel = types.StringValue(domain.Status.DnsRecords[0].Hostlabel)
-		data.Zone = types.StringValue(domain.Status.DnsRecords[0].Zone)
-		data.DNSRecordValue = types.StringValue(domain.Status.DnsRecords[0].RequiredValue)
-	}
+	applyCustomDomainStatus(&data, &domain.Status)
 
 	service, err := getService(ctx, *r.client, domain.ServiceId)
 

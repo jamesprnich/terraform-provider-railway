@@ -150,8 +150,20 @@ func (v *CustomDomainCreateInput) GetTargetPort() *int { return v.TargetPort }
 
 // CustomDomainStatus includes the requested fields of the GraphQL type CustomDomainStatus.
 type CustomDomainStatus struct {
-	DnsRecords []CustomDomainStatusDnsRecordsDNSRecords `json:"dnsRecords"`
+	Verified            bool                                     `json:"verified"`
+	VerificationDnsHost string                                   `json:"verificationDnsHost"`
+	VerificationToken   string                                   `json:"verificationToken"`
+	DnsRecords          []CustomDomainStatusDnsRecordsDNSRecords `json:"dnsRecords"`
 }
+
+// GetVerified returns CustomDomainStatus.Verified, and is useful for accessing the field via an interface.
+func (v *CustomDomainStatus) GetVerified() bool { return v.Verified }
+
+// GetVerificationDnsHost returns CustomDomainStatus.VerificationDnsHost, and is useful for accessing the field via an interface.
+func (v *CustomDomainStatus) GetVerificationDnsHost() string { return v.VerificationDnsHost }
+
+// GetVerificationToken returns CustomDomainStatus.VerificationToken, and is useful for accessing the field via an interface.
+func (v *CustomDomainStatus) GetVerificationToken() string { return v.VerificationToken }
 
 // GetDnsRecords returns CustomDomainStatus.DnsRecords, and is useful for accessing the field via an interface.
 func (v *CustomDomainStatus) GetDnsRecords() []CustomDomainStatusDnsRecordsDNSRecords {
@@ -160,10 +172,18 @@ func (v *CustomDomainStatus) GetDnsRecords() []CustomDomainStatusDnsRecordsDNSRe
 
 // CustomDomainStatusDnsRecordsDNSRecords includes the requested fields of the GraphQL type DNSRecords.
 type CustomDomainStatusDnsRecordsDNSRecords struct {
-	Hostlabel     string `json:"hostlabel"`
-	RequiredValue string `json:"requiredValue"`
-	Zone          string `json:"zone"`
+	RecordType    DNSRecordType    `json:"recordType"`
+	Purpose       DNSRecordPurpose `json:"purpose"`
+	Hostlabel     string           `json:"hostlabel"`
+	RequiredValue string           `json:"requiredValue"`
+	Zone          string           `json:"zone"`
 }
+
+// GetRecordType returns CustomDomainStatusDnsRecordsDNSRecords.RecordType, and is useful for accessing the field via an interface.
+func (v *CustomDomainStatusDnsRecordsDNSRecords) GetRecordType() DNSRecordType { return v.RecordType }
+
+// GetPurpose returns CustomDomainStatusDnsRecordsDNSRecords.Purpose, and is useful for accessing the field via an interface.
+func (v *CustomDomainStatusDnsRecordsDNSRecords) GetPurpose() DNSRecordPurpose { return v.Purpose }
 
 // GetHostlabel returns CustomDomainStatusDnsRecordsDNSRecords.Hostlabel, and is useful for accessing the field via an interface.
 func (v *CustomDomainStatusDnsRecordsDNSRecords) GetHostlabel() string { return v.Hostlabel }
@@ -173,6 +193,26 @@ func (v *CustomDomainStatusDnsRecordsDNSRecords) GetRequiredValue() string { ret
 
 // GetZone returns CustomDomainStatusDnsRecordsDNSRecords.Zone, and is useful for accessing the field via an interface.
 func (v *CustomDomainStatusDnsRecordsDNSRecords) GetZone() string { return v.Zone }
+
+type DNSRecordPurpose string
+
+const (
+	DNSRecordPurposeDnsRecordPurposeAcmeDns01Challenge DNSRecordPurpose = "DNS_RECORD_PURPOSE_ACME_DNS01_CHALLENGE"
+	DNSRecordPurposeDnsRecordPurposeTrafficRoute       DNSRecordPurpose = "DNS_RECORD_PURPOSE_TRAFFIC_ROUTE"
+	DNSRecordPurposeDnsRecordPurposeUnspecified        DNSRecordPurpose = "DNS_RECORD_PURPOSE_UNSPECIFIED"
+	DNSRecordPurposeUnrecognized                       DNSRecordPurpose = "UNRECOGNIZED"
+)
+
+type DNSRecordType string
+
+const (
+	DNSRecordTypeDnsRecordTypeA           DNSRecordType = "DNS_RECORD_TYPE_A"
+	DNSRecordTypeDnsRecordTypeCname       DNSRecordType = "DNS_RECORD_TYPE_CNAME"
+	DNSRecordTypeDnsRecordTypeNs          DNSRecordType = "DNS_RECORD_TYPE_NS"
+	DNSRecordTypeDnsRecordTypeTxt         DNSRecordType = "DNS_RECORD_TYPE_TXT"
+	DNSRecordTypeDnsRecordTypeUnspecified DNSRecordType = "DNS_RECORD_TYPE_UNSPECIFIED"
+	DNSRecordTypeUnrecognized             DNSRecordType = "UNRECOGNIZED"
+)
 
 // DeploymentTrigger includes the GraphQL fields of DeploymentTrigger requested by the fragment DeploymentTrigger.
 type DeploymentTrigger struct {
@@ -7576,7 +7616,12 @@ fragment CustomDomain on CustomDomain {
 	domain
 	targetPort
 	status {
+		verified
+		verificationDnsHost
+		verificationToken
 		dnsRecords {
+			recordType
+			purpose
 			hostlabel
 			requiredValue
 			zone
@@ -9673,7 +9718,12 @@ fragment CustomDomain on CustomDomain {
 	domain
 	targetPort
 	status {
+		verified
+		verificationDnsHost
+		verificationToken
 		dnsRecords {
+			recordType
+			purpose
 			hostlabel
 			requiredValue
 			zone

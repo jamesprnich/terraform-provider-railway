@@ -209,8 +209,21 @@ func (r *EgressGatewayResource) Read(ctx context.Context, req resource.ReadReque
 	// Only persist region if the user specified it in config (already in state).
 	// Region has RequiresReplace — setting it when the user didn't specify it
 	// would cause a spurious destroy+recreate on the next plan.
-	if !data.Region.IsNull() && len(response.EgressGateways) > 0 && response.EgressGateways[0].Region != "" {
-		data.Region = types.StringValue(response.EgressGateways[0].Region)
+	//
+	// Selection is by state-region match, never by array position. Railway's
+	// getEgressGateways returns every gateway on the service+environment (one
+	// per region for multi-region deploys); pre-v0.11.4 the provider took
+	// EgressGateways[0].Region, which would silently swap the resource's
+	// state to some other region's identifier under multi-region deploys and
+	// then trigger a spurious RequiresReplace on the next plan.
+	if !data.Region.IsNull() {
+		stateRegion := data.Region.ValueString()
+		for _, gw := range response.EgressGateways {
+			if gw.Region == stateRegion {
+				data.Region = types.StringValue(gw.Region)
+				break
+			}
+		}
 	}
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)

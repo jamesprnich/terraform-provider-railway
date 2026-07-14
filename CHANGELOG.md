@@ -1,3 +1,25 @@
+## 0.11.4
+
+### Fixes
+
+* **`railway_custom_domain` silently discarded the TXT verification record and could substitute it for the CNAME target on any Railway-side reorder.** Railway returns `status.dnsRecords` as an unordered array containing (at least) the CNAME that routes traffic and the TXT that proves domain ownership. The provider selected the traffic-routing CNAME by taking `dnsRecords[0]` — correct only by luck of ordering, and the TXT verification record was unreachable through the resource at all. Consumers had to shell out to the Railway GraphQL API (or run an external data source through the provider token) to fetch the TXT value themselves. Two changes:
+  1. The GraphQL fragment now selects `recordType` and `purpose`; the CNAME is picked by `purpose == TRAFFIC_ROUTE` with a fallback to `recordType == CNAME`. Order-independent by construction — `dns_record_value` is the CNAME target regardless of how Railway serialises the record list. See `selectTrafficRouteCNAME` in `internal/provider/resource_custom_domain.go` and the 6-case `TestSelectTrafficRouteCNAME_pure` unit test.
+  2. Three new computed attributes expose Railway's dedicated verification fields directly (rather than reconstructing them from the record list):
+     * `verified` (Bool) — `status.verified`. `true` once Railway's verifier confirms the TXT is in place.
+     * `verification_dns_host` (String) — `status.verificationDnsHost`. The hostname the user places the TXT record at (e.g. `_railway-verify.dev.example.com`).
+     * `verification_token` (String) — `status.verificationToken`. The value that goes into the TXT record.
+
+  Consumers can now read the verification pair straight off the resource — the whole `data "external"` + shell-script + secret-piping dance is unnecessary.
+
+* **`railway_egress_gateway` picked the wrong region under multi-region deploys.** `Read` took `EgressGateways[0].Region` unconditionally. For a service with egress gateways in more than one region, the provider would silently overwrite `region` state to whichever gateway happened to be first in Railway's response, causing spurious `RequiresReplace` on the next plan. Fixed at `resource_egress_gateway.go` — selection now matches by `gw.Region == state.Region.ValueString()`, never by array position. Same class of bug as the custom-domain issue above; caught via a scope-check grep for `\.[A-Z][a-zA-Z]+\[0\]` across `internal/provider/`.
+
+### Tests
+
+* **`TestSelectTrafficRouteCNAME_pure`** — pure-Go table test hitting the selector across six cases: empty array, CNAME with TRAFFIC_ROUTE purpose, reversed order, purpose fallback to recordType, only-TXT array (returns nil), and a defensive mislabeled-record case (asserts purpose takes precedence over recordType).
+* **`TestCustomDomainResource_cnameSelectionIsOrderIndependent`** — resource-level mock test that drives Read against both `[CNAME, TXT]` and `[TXT, CNAME]` orderings and asserts `dns_record_value` picks the CNAME in both. Reporter's specific concern.
+* **`TestCustomDomainResource_cnameFallsBackToRecordType`** — asserts the `purpose == UNSPECIFIED` fallback correctly picks the CNAME by `recordType`.
+* **`TestAccCustomDomainResourceDefault` extended** to assert the three new verification attributes are populated by a real Railway workspace (`verified == false` for a fresh unverified domain, `verification_dns_host` and `verification_token` both set). Live-verified: Railway does populate these fields on the customDomain response — the design choice (use dedicated status fields over parsing dnsRecords) is validated end-to-end.
+
 ## 0.11.3
 
 ### Fixes

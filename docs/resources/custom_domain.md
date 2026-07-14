@@ -38,11 +38,14 @@ resource "railway_custom_domain" "api" {
 
 ### Read-Only
 
-- `dns_record_value` (String) DNS record value of the custom domain.
-- `host_label` (String) Host label of the custom domain.
+- `dns_record_value` (String) CNAME target the user must point their DNS at (e.g. `your-service.up.railway.app`). Selected by Railway's `purpose == TRAFFIC_ROUTE` — order-independent, so this stays correct even if Railway reorders the DNS record list.
+- `host_label` (String) Host label of the CNAME that routes traffic to the Railway edge (e.g. `dev` for `dev.example.com`). Point a `CNAME` record at this host to `dns_record_value` in your DNS provider.
 - `id` (String) Identifier of the custom domain.
 - `project_id` (String) Identifier of the project the custom domain belongs to.
-- `zone` (String) Zone of the custom domain.
+- `verification_dns_host` (String) Hostname where the user must create a TXT record for Railway to verify domain ownership (e.g. `_railway-verify.dev.example.com`). Reflects `status.verificationDnsHost`.
+- `verification_token` (String) Value the user must place in the TXT record at `verification_dns_host`. Reflects `status.verificationToken`.
+- `verified` (Boolean) Whether Railway has confirmed the domain's ownership TXT record is in place. Reflects `status.verified` on Railway's `CustomDomainStatus`. Read at refresh time — flips from `false` to `true` after the user creates the required TXT record and Railway's verifier polls it.
+- `zone` (String) Zone the CNAME belongs to (e.g. `example.com`).
 
 ## Import
 

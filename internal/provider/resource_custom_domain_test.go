@@ -13,7 +13,11 @@ func TestAccCustomDomainResourceDefault(t *testing.T) {
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
 		CheckDestroy:             testAccCheckCustomDomainDestroy,
 		Steps: []resource.TestStep{
-			// Create and Read testing
+			// Create and Read testing. The CNAME + verification fields all come
+			// from Railway's status block on the customDomain response. Before
+			// v0.11.4 the provider took dnsRecords[0] and discarded verification
+			// info entirely; this test asserts the full replacement contract
+			// against a real Railway workspace.
 			{
 				Config: testAccCustomDomainResourceConfigDefault("terraform.example.com"),
 				Check: resource.ComposeAggregateTestCheckFunc(
@@ -25,6 +29,12 @@ func TestAccCustomDomainResourceDefault(t *testing.T) {
 					resource.TestCheckResourceAttr("railway_custom_domain.test", "host_label", "terraform"),
 					resource.TestCheckResourceAttr("railway_custom_domain.test", "zone", "example.com"),
 					resource.TestCheckResourceAttrSet("railway_custom_domain.test", "dns_record_value"),
+					// A fresh custom domain hasn't had its TXT set up, so verified
+					// must be false. The verification host + token must both be
+					// present so the consumer can build the TXT record.
+					resource.TestCheckResourceAttr("railway_custom_domain.test", "verified", "false"),
+					resource.TestCheckResourceAttrSet("railway_custom_domain.test", "verification_dns_host"),
+					resource.TestCheckResourceAttrSet("railway_custom_domain.test", "verification_token"),
 				),
 			},
 			// ImportState testing
