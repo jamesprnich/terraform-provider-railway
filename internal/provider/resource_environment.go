@@ -21,6 +21,7 @@ import (
 var _ resource.Resource = &EnvironmentResource{}
 var _ resource.ResourceWithImportState = &EnvironmentResource{}
 var _ resource.ResourceWithModifyPlan = &EnvironmentResource{}
+var _ resource.ResourceWithUpgradeState = &EnvironmentResource{}
 
 func NewEnvironmentResource() resource.Resource {
 	return &EnvironmentResource{}

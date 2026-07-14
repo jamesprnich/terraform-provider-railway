@@ -34,6 +34,13 @@ jobs:
         run: go build -v .
       - name: Vet
         run: go vet ./...
+      - name: Check generated code freshness
+        run: |
+          go run github.com/Khan/genqlient
+          git diff --exit-code internal/provider/generated.go || {
+            echo "::error::generated.go is stale in the tagged commit. Regenerate and re-tag."
+            exit 1
+          }
       - name: Lint
         uses: golangci/golangci-lint-action@v7
         with:
@@ -45,6 +52,17 @@ jobs:
           TF_ACC_PROVIDER_HOST: registry.opentofu.org
         run: |
           TF_ACC_TERRAFORM_PATH="$(which tofu)" go test -v -timeout 5m ./internal/provider/
+      # Fail if the tag doesn't have a matching CHANGELOG entry. Cheap
+      # backstop for "tagged v0.11.X without updating the changelog" — the
+      # release notes generation depends on this entry existing.
+      - name: CHANGELOG entry for tag
+        run: |
+          TAG_VERSION="${GITHUB_REF_NAME#v}"
+          if ! grep -q "^## ${TAG_VERSION}$" CHANGELOG.md; then
+            echo "::error::CHANGELOG.md has no '## ${TAG_VERSION}' entry for tag ${GITHUB_REF_NAME}."
+            echo "::error::Add a section for this release under CHANGELOG.md before tagging."
+            exit 1
+          fi
 
   goreleaser:
     name: goreleaser

@@ -1,3 +1,20 @@
+## 0.11.3
+
+### Fixes
+
+* **`railway_service_instance` was unloadable against any v0.11.1-or-earlier state.** v0.11.2 changed `pre_deploy_command` from `list(string)` to `string` and correctly bumped the resource schema Version 1 → 2, but shipped without an `UpgradeState` implementation. Every user with existing state hit the framework's `Unable to Upgrade Resource State — was expecting an implementation for version 1 upgrade` error on the first refresh, with no recovery short of downgrading or hand-editing state. Fixed by implementing `UpgradeState` on `ServiceInstanceResource` — see `internal/provider/resource_service_instance_upgrade.go`. The v1→v2 upgrader converts `pre_deploy_command` list values: `null → null`, single element → string, multi-element → `strings.Join(..., " && ")` (lossless per the reporter's recommendation, though the provider never produced multi-element state itself). Anyone on v0.11.1 can now upgrade directly to v0.11.3 with no manual state surgery.
+
+* **`railway_service` and `railway_environment` had the same latent bug from v0.11.0.** Both bumped their schema Version 1 → 2 in v0.11.0 as part of the strict env-scoping redesign, and both shipped without `UpgradeState`. The v0.11.0 CHANGELOG documented a manual `terraform state rm` migration path, but users who missed that guidance hit the framework's cryptic "was expecting an implementation for version 1 upgrade" error with no explanation of what to do. v0.11.3 registers rejecting upgraders on both resources that surface the actual migration instructions in a clear diagnostic. Users who followed the v0.11.0 CHANGELOG migration are unaffected (their state is already at Version 2).
+
+### Prevention
+
+The class of bug above is systemic — the terraform-plugin-framework does not validate `Version` vs `UpgradeState` at registration time; the mismatch only surfaces at the first refresh RPC after a real user's state hits the mismatched provider. `tfproviderlint` has no rule for it either. Mock unit tests, live acceptance tests, and code review all missed v0.11.2 because none of them exercise state carrying a prior-version stamp. v0.11.3 adds three guardrails that would have blocked v0.11.2 in CI:
+
+* **`TestSchemaVersionsHaveUpgraders`** — a reflection-based invariant test that walks every registered resource and asserts that if current `Version ≥ 2`, the resource implements `ResourceWithUpgradeState` and its `UpgradeState` returns entries for every prior version in `[1..Version-1]`. Runs as part of `go test ./internal/provider/` — no new CI job. This is a novel test — no other Terraform provider ships it because everyone else has the same latent gap; consider surfacing upstream. See `internal/provider/schema_upgrade_invariant_test.go`.
+* **HashiCorp-pattern per-upgrader unit test** (`TestUpgradePreDeployCommandV1ToV2`) — hand-builds prior-shape values, calls the upgrader directly, `Equal`-compares against expected new-shape values. Seven cases: null, unknown, empty, single, two-element, three-element, shell-metachar-containing. Same shape as `internal/service/kinesis/migrate_test.go` in `hashicorp/terraform-provider-aws`.
+* **Generated-code drift check in CI** — `test.yml` and `release.yml` now run `go run github.com/Khan/genqlient` and fail if `internal/provider/generated.go` diverges from the schema. Canonical HashiCorp idiom.
+* **CHANGELOG entry required for tagged version** — `release.yml` now greps `CHANGELOG.md` for the tag version before goreleaser publishes. Fails with a clear message if the entry is missing.
+
 ## 0.11.2
 
 ### BREAKING

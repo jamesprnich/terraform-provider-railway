@@ -43,6 +43,16 @@ jobs:
         run: go build -v .
       - name: Vet
         run: go vet ./...
+      # Fail the build if internal/provider/generated.go drifted from
+      # schema.graphql + resource_*.graphql. Canonical Go idiom used by
+      # HashiCorp providers, genqlient itself, and terraform-plugin-scaffolding.
+      - name: Check generated code freshness
+        run: |
+          go run github.com/Khan/genqlient
+          git diff --exit-code internal/provider/generated.go || {
+            echo "::error::generated.go is stale. Run 'go run github.com/Khan/genqlient' locally and commit the result."
+            exit 1
+          }
 
   lint:
     name: Lint

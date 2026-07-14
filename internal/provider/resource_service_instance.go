@@ -25,6 +25,7 @@ import (
 var _ resource.Resource = &ServiceInstanceResource{}
 var _ resource.ResourceWithImportState = &ServiceInstanceResource{}
 var _ resource.ResourceWithValidateConfig = &ServiceInstanceResource{}
+var _ resource.ResourceWithUpgradeState = &ServiceInstanceResource{}
 
 type RegistryCredentialsModel struct {
 	Username types.String `tfsdk:"username"`

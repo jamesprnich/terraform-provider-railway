@@ -23,6 +23,7 @@ import (
 var _ resource.Resource = &ServiceResource{}
 var _ resource.ResourceWithImportState = &ServiceResource{}
 var _ resource.ResourceWithModifyPlan = &ServiceResource{}
+var _ resource.ResourceWithUpgradeState = &ServiceResource{}
 
 func NewServiceResource() resource.Resource {
 	return &ServiceResource{}
