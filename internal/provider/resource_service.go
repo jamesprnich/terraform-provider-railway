@@ -3,6 +3,7 @@ package provider
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/Khan/genqlient/graphql"
@@ -704,8 +705,78 @@ func (r *ServiceResource) Delete(ctx context.Context, req resource.DeleteRequest
 	}
 }
 
+// parseServiceImportId splits a railway_service import id into service_id and
+// optional environment_id. Two accepted forms:
+//   - `<service_id>` (bare) — a project-wide service; permitted only when
+//     strict is false. Returns envId as the empty string.
+//   - `<service_id>:<environment_id>` — a fork-scoped service.
+//
+// Errors:
+//   - Bare form under strict env-scoping: fork-scoped services need
+//     environment_id in state up front; without it the next plan would see
+//     the fork env_id in HCL as a change requiring replace and silently
+//     destroy the just-imported service.
+//   - Empty service_id or empty environment_id after the colon: malformed.
+//
+// The function returns two error slots so callers can render "malformed id"
+// and "strict-mode omission" as separate diagnostics with different
+// summaries. Pure — safe to unit-test without the framework.
+type serviceImportIdError struct {
+	summary string
+	detail  string
+}
+
+func parseServiceImportId(raw string, strict bool) (serviceId, envId string, importErr *serviceImportIdError) {
+	parts := strings.SplitN(raw, ":", 2)
+	serviceId = parts[0]
+
+	if serviceId == "" {
+		return "", "", &serviceImportIdError{
+			summary: "Unexpected Import Identifier",
+			detail:  fmt.Sprintf("Expected import identifier with format `service_id` or `service_id:environment_id`. Got: %q", raw),
+		}
+	}
+
+	if len(parts) == 2 {
+		envId = parts[1]
+		if envId == "" {
+			return "", "", &serviceImportIdError{
+				summary: "Unexpected Import Identifier",
+				detail:  fmt.Sprintf("Import identifier `service_id:environment_id` has an empty environment_id. Got: %q", raw),
+			}
+		}
+		return serviceId, envId, nil
+	}
+
+	if strict {
+		return "", "", &serviceImportIdError{
+			summary: "environment_id required under strict env-scoping",
+			detail:  fmt.Sprintf("Import identifier %q omits the environment_id. Under strict env-scoping (provider default) every service is fork-scoped and must carry the environment id it belongs to; without it, the subsequent plan would see environment_id as a change requiring replace and destroy the imported service. Use `terraform import railway_service.<name> <service_id>:<environment_id>` instead, or opt into permissive mode via `strict_env_scoping = false` on the provider block.", raw),
+		}
+	}
+
+	return serviceId, "", nil
+}
+
+// ImportState accepts either `<service_id>` for a project-wide service
+// (permissive env-scoping) or `<service_id>:<environment_id>` for a
+// fork-scoped service. Under strict env-scoping (provider default) the
+// environment_id part is required — importing a strict-mode service with just
+// its id would leave environment_id null in state, and the subsequent plan
+// would see the env_id in HCL as a change requiring replace, silently
+// destroying and re-creating the service. Setting environment_id up front
+// avoids that trap.
 func (r *ServiceResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
-	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
+	serviceId, envId, importErr := parseServiceImportId(req.ID, r.strictEnvScoping)
+	if importErr != nil {
+		resp.Diagnostics.AddError(importErr.summary, importErr.detail)
+		return
+	}
+
+	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("id"), serviceId)...)
+	if envId != "" {
+		resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("environment_id"), envId)...)
+	}
 }
 
 // resolveTargetEnvironment returns the environment id the service is scoped to.

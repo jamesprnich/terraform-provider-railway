@@ -5300,7 +5300,7 @@ type getServiceInstanceDetailedServiceInstance struct {
 	Builder                 *Builder                                                      `json:"builder"`
 	OverlapSeconds          *int                                                          `json:"overlapSeconds"`
 	DrainingSeconds         *int                                                          `json:"drainingSeconds"`
-	PreDeployCommand        *map[string]interface{}                                       `json:"preDeployCommand"`
+	PreDeployCommand        *[]string                                                     `json:"preDeployCommand"`
 	WatchPatterns           []string                                                      `json:"watchPatterns"`
 	// The most recent deployment for this service instance
 	LatestDeployment getServiceInstanceDetailedServiceInstanceLatestDeployment `json:"latestDeployment"`
@@ -5373,7 +5373,7 @@ func (v *getServiceInstanceDetailedServiceInstance) GetDrainingSeconds() *int {
 }
 
 // GetPreDeployCommand returns getServiceInstanceDetailedServiceInstance.PreDeployCommand, and is useful for accessing the field via an interface.
-func (v *getServiceInstanceDetailedServiceInstance) GetPreDeployCommand() *map[string]interface{} {
+func (v *getServiceInstanceDetailedServiceInstance) GetPreDeployCommand() *[]string {
 	return v.PreDeployCommand
 }
 
@@ -9261,6 +9261,12 @@ query getServiceInstance ($environmentId: String!, $serviceId: String!) {
 	return &data, err
 }
 
+// Railway's schema declares this as `JSON` on the read type but `[String!]` on the
+// update input. Without an explicit read-side bind, genqlient would use the global
+// JSON binding (map[string]interface{}) and Read-after-Update would panic on
+// `json: cannot unmarshal array into Go struct field ... of type map[string]interface {}`
+// once Railway starts returning a non-null command list. Pin the read type to what
+// Railway actually returns.
 func getServiceInstanceDetailed(
 	ctx context.Context,
 	client graphql.Client,

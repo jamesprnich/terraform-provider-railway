@@ -209,8 +209,12 @@ func (r *VolumeResource) Create(ctx context.Context, req resource.CreateRequest,
 	// Read back to get the final state. Railway's list endpoint has ~seconds
 	// of eventual consistency after a volumeCreate: getVolumeInstances can
 	// legitimately return "not found" even though the volume was created
-	// successfully. Retry until it shows up, or until the 30s budget is spent.
-	err = retryReadAfterCreateContext(ctx, 30*time.Second, func() error {
+	// successfully. Retry until it shows up, or until the 90 s budget is
+	// spent. The budget matches the inline-volume readback in resource_service.go
+	// (bumped 30 s → 90 s in v0.11.1); Railway's tail was observed exceeding
+	// 28 s under workspace load, and standalone-volume creates share the same
+	// upstream indexing path so they share the same tolerance.
+	err = retryReadAfterCreateContext(ctx, 90*time.Second, func() error {
 		return r.readVolumeState(ctx, data)
 	})
 

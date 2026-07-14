@@ -87,10 +87,14 @@ func TestAccLifecycle_forkTopology(t *testing.T) {
 			// Step 1: full topology.
 			// Asserts: fork relationships, per-env service scoping, volume
 			// created without hitting the "not found" race that motivated the
-			// §4.3 retry.
+			// §4.3 retry. Also sets pre_deploy_command on dev_app so the
+			// Read-after-Create path exercises the JSON→[]string bind added
+			// in v0.11.2 — pre-fix, this Read would panic with a JSON
+			// unmarshal error the moment Railway returned a non-null command
+			// list.
 			// -----------------------------------------------------------------
 			{
-				Config: testAccLifecycleFullConfig(projectName),
+				Config: testAccLifecycleFullConfig(projectName, `"echo initial migration"`),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					// Project has an empty core.
 					resource.TestCheckResourceAttr("railway_project.acc", "default_environment.name", "core"),
@@ -116,6 +120,8 @@ func TestAccLifecycle_forkTopology(t *testing.T) {
 					resource.TestCheckResourceAttrSet("railway_volume.dev_data", "volume_instance_id"),
 					resource.TestCheckResourceAttr("railway_volume.dev_data", "mount_path", "/data"),
 					resource.TestCheckResourceAttrSet("railway_volume.dev_data", "size_mb"),
+					// pre_deploy_command round-tripped through Read-after-Create.
+					resource.TestCheckResourceAttr("railway_service_instance.dev_app", "pre_deploy_command", "echo initial migration"),
 					// C1: services and environments deploy immediately —
 					// they don't land as unmerged staged changes. The
 					// design depends on this and the provider defends it
@@ -127,7 +133,20 @@ func TestAccLifecycle_forkTopology(t *testing.T) {
 				),
 			},
 			// -----------------------------------------------------------------
-			// Step 2: remove every dev-side resource from config. The
+			// Step 2: update pre_deploy_command on dev_app. This is the exact
+			// failure mode the v0.11.2 fix targets — the WRITE succeeds,
+			// Railway retains the value, and every subsequent refresh/plan
+			// used to hit the JSON unmarshal error on Read-after-Update. The
+			// resource became permanently unplannable pre-fix.
+			// -----------------------------------------------------------------
+			{
+				Config: testAccLifecycleFullConfig(projectName, `"echo updated migration"`),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("railway_service_instance.dev_app", "pre_deploy_command", "echo updated migration"),
+				),
+			},
+			// -----------------------------------------------------------------
+			// Step 3: remove every dev-side resource from config. The
 			// framework will plan and apply destroys for anything no longer
 			// declared. This is the closest equivalent to "tofu destroy of
 			// the dev workspace" within a single test run.
@@ -249,7 +268,7 @@ resource "railway_service" "loose" {
 // service connection (e.g., GitHub repository access).
 // -----------------------------------------------------------------------------
 
-func testAccLifecycleFullConfig(projectName string) string {
+func testAccLifecycleFullConfig(projectName, devPreDeployCommand string) string {
 	return fmt.Sprintf(`
 resource "railway_project" "acc" {
   name = "%s"
@@ -276,9 +295,10 @@ resource "railway_service" "dev_app" {
 }
 
 resource "railway_service_instance" "dev_app" {
-  service_id     = railway_service.dev_app.id
-  environment_id = railway_environment.dev.id
-  source_image   = "nginx:alpine"
+  service_id         = railway_service.dev_app.id
+  environment_id     = railway_environment.dev.id
+  source_image       = "nginx:alpine"
+  pre_deploy_command = %s
 }
 
 resource "railway_volume" "dev_data" {
@@ -300,7 +320,7 @@ resource "railway_service_instance" "prd_app" {
   environment_id = railway_environment.prd.id
   source_image   = "nginx:alpine"
 }
-`, projectName)
+`, projectName, devPreDeployCommand)
 }
 
 func testAccLifecyclePrdOnlyConfig(projectName string) string {

@@ -8,7 +8,6 @@ import (
 
 	"github.com/Khan/genqlient/graphql"
 	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
-	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -69,7 +68,7 @@ type ServiceInstanceResourceModel struct {
 	HealthcheckTimeout      types.Int64   `tfsdk:"healthcheck_timeout"`
 	RestartPolicyType       types.String  `tfsdk:"restart_policy_type"`
 	RestartPolicyMaxRetries types.Int64   `tfsdk:"restart_policy_max_retries"`
-	PreDeployCommand        types.List    `tfsdk:"pre_deploy_command"`
+	PreDeployCommand        types.String  `tfsdk:"pre_deploy_command"`
 	WatchPatterns           types.List    `tfsdk:"watch_patterns"`
 	Builder                 types.String  `tfsdk:"builder"`
 	RegistryCredentials     types.Object  `tfsdk:"registry_credentials"`
@@ -81,7 +80,7 @@ func (r *ServiceInstanceResource) Metadata(ctx context.Context, req resource.Met
 
 func (r *ServiceInstanceResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		Version:             1,
+		Version:             2,
 		MarkdownDescription: "Railway service instance. Configures a service in a specific environment, including source, build, deploy settings, and resource limits.",
 		Description:         "Railway service instance. Configures a service in a specific environment, including source, build, deploy settings, and resource limits.",
 		Attributes: map[string]schema.Attribute{
@@ -229,13 +228,13 @@ func (r *ServiceInstanceResource) Schema(ctx context.Context, req resource.Schem
 					int64validator.AtLeast(0),
 				},
 			},
-			"pre_deploy_command": schema.ListAttribute{
-				MarkdownDescription: "Pre-deploy command(s) to run before starting the service.",
-				Description:         "Pre-deploy command(s) to run before starting the service.",
-				Optional:            true,
-				ElementType:         types.StringType,
-				Validators: []validator.List{
-					listvalidator.SizeAtLeast(1),
+			"pre_deploy_command": schema.StringAttribute{
+				MarkdownDescription: "Shell command run inside the service container before each deploy. Typical use: `python manage.py migrate`, `npx prisma migrate deploy`, `bundle exec rake db:migrate`. " +
+					"Railway's underlying API models this as a list of strings but its dashboard exposes a single command field and its server-side validation rejects lists with more than one entry (`Error in preDeployCommand - Invalid input`). The provider reflects the dashboard shape so an invalid config fails at plan time rather than apply time.",
+				Description: "Shell command run inside the service container before each deploy.",
+				Optional:    true,
+				Validators: []validator.String{
+					stringvalidator.LengthAtLeast(1),
 				},
 			},
 			"watch_patterns": schema.ListAttribute{
@@ -657,8 +656,7 @@ func buildServiceInstanceUpdateInput(ctx context.Context, data *ServiceInstanceR
 	}
 
 	if !data.PreDeployCommand.IsNull() {
-		var cmds []string
-		data.PreDeployCommand.ElementsAs(context.Background(), &cmds, false)
+		cmds := []string{data.PreDeployCommand.ValueString()}
 		input.PreDeployCommand = &cmds
 	}
 

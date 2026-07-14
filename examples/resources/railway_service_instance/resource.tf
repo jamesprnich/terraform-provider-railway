@@ -44,7 +44,7 @@ resource "railway_service_instance" "api" {
   # restart_policy_max_retries = 3
   # builder                    = "RAILPACK"
   # watch_patterns             = ["backend/**"]
-  # pre_deploy_command         = ["python manage.py migrate"]
+  # pre_deploy_command         = "python manage.py migrate"
 
   # Cron mode — only allowed when num_replicas across all regions is 1.
   # cron_schedule = "0 3 * * *"

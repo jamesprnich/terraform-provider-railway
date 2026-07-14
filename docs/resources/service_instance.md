@@ -59,7 +59,7 @@ resource "railway_service_instance" "api" {
   # restart_policy_max_retries = 3
   # builder                    = "RAILPACK"
   # watch_patterns             = ["backend/**"]
-  # pre_deploy_command         = ["python manage.py migrate"]
+  # pre_deploy_command         = "python manage.py migrate"
 
   # Cron mode — only allowed when num_replicas across all regions is 1.
   # cron_schedule = "0 3 * * *"
@@ -86,7 +86,7 @@ resource "railway_service_instance" "api" {
 - `memory_gb` (Number) Amount of memory in GB to allocate (e.g. `0.5`, `1`, `2`). Maps to Railway's container memory limit.
 - `num_replicas` (Number) Number of replicas.
 - `overlap_seconds` (Number) Number of seconds to keep the old deployment running alongside the new one during a rollout.
-- `pre_deploy_command` (List of String) Pre-deploy command(s) to run before starting the service.
+- `pre_deploy_command` (String) Shell command run inside the service container before each deploy. Typical use: `python manage.py migrate`, `npx prisma migrate deploy`, `bundle exec rake db:migrate`. Railway's underlying API models this as a list of strings but its dashboard exposes a single command field and its server-side validation rejects lists with more than one entry (`Error in preDeployCommand - Invalid input`). The provider reflects the dashboard shape so an invalid config fails at plan time rather than apply time.
 - `region` (String) Region to deploy the service instance in.
 - `registry_credentials` (Attributes) Credentials for a private Docker registry. Required when `source_image` references a private image. Only available on Railway Pro plan. The `password` is write-only — it is sent to Railway on create/update but is never returned on read; plan output will not show diffs on the password after the initial apply. **Important:** always source `password` from a `sensitive` Terraform variable or a secrets data source (e.g. Vault). Ensure your Terraform state backend uses encryption at rest — the credential is stored in state for the lifetime of the resource. (see [below for nested schema](#nestedatt--registry_credentials))
 - `restart_policy_max_retries` (Number) Maximum number of restart retries when `restart_policy_type` is `ON_FAILURE`.

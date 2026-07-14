@@ -6,6 +6,7 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
 // =============================================================================
@@ -42,9 +43,16 @@ func TestAccServiceResource_basic(t *testing.T) {
 					resource.TestCheckNoResourceAttr("railway_service.test", "regions"),
 				),
 			},
+			// Fork-scoped services must be imported as `<service_id>:<environment_id>`.
+			// A bare service id would leave environment_id null in state, and the
+			// plan following the import would see the fork env_id in HCL as a
+			// change requiring replace — silently destroying and recreating the
+			// service we just imported. ImportState rejects the bare form under
+			// strict env-scoping (provider default) for exactly that reason.
 			{
 				ResourceName:      "railway_service.test",
 				ImportState:       true,
+				ImportStateIdFunc: testAccServiceImportStateIdFunc("railway_service.test"),
 				ImportStateVerify: true,
 			},
 		},
@@ -172,4 +180,23 @@ resource "railway_service" "test" {
   }
 }
 `, name, testAccProjectId, testAccEnvironmentId, name, testAccProjectId)
+}
+
+// testAccServiceImportStateIdFunc returns an import-id function that produces
+// `<service_id>:<environment_id>` from the resource's current state. Fork-scoped
+// services must be imported this way; see ImportState in resource_service.go
+// for why the bare id form is rejected under strict env-scoping.
+func testAccServiceImportStateIdFunc(resourceName string) resource.ImportStateIdFunc {
+	return func(state *terraform.State) (string, error) {
+		rs, ok := state.RootModule().Resources[resourceName]
+		if !ok {
+			return "", fmt.Errorf("resource %s not found in state", resourceName)
+		}
+		id := rs.Primary.Attributes["id"]
+		envId := rs.Primary.Attributes["environment_id"]
+		if id == "" || envId == "" {
+			return "", fmt.Errorf("resource %s missing id or environment_id in state (id=%q, environment_id=%q)", resourceName, id, envId)
+		}
+		return id + ":" + envId, nil
+	}
 }

@@ -16,7 +16,13 @@
 # @genqlient(for: "ServiceInstance.builder", pointer: true)
 # @genqlient(for: "ServiceInstance.overlapSeconds", pointer: true)
 # @genqlient(for: "ServiceInstance.drainingSeconds", pointer: true)
-# @genqlient(for: "ServiceInstance.preDeployCommand", pointer: true)
+# Railway's schema declares this as `JSON` on the read type but `[String!]` on the
+# update input. Without an explicit read-side bind, genqlient would use the global
+# JSON binding (map[string]interface{}) and Read-after-Update would panic on
+# `json: cannot unmarshal array into Go struct field ... of type map[string]interface {}`
+# once Railway starts returning a non-null command list. Pin the read type to what
+# Railway actually returns.
+# @genqlient(for: "ServiceInstance.preDeployCommand", pointer: true, bind: "*[]string")
 query getServiceInstanceDetailed(
   $environmentId: String!
   $serviceId: String!
