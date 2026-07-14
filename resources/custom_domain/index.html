@@ -1466,11 +1466,14 @@
 </ul>
 <h3 id="read-only">Read-Only<a class="headerlink" href="#read-only" title="Permanent link">&para;</a></h3>
 <ul>
-<li><code>dns_record_value</code> (String) DNS record value of the custom domain.</li>
-<li><code>host_label</code> (String) Host label of the custom domain.</li>
+<li><code>dns_record_value</code> (String) CNAME target the user must point their DNS at (e.g. <code>your-service.up.railway.app</code>). Selected by Railway's <code>purpose == TRAFFIC_ROUTE</code> — order-independent, so this stays correct even if Railway reorders the DNS record list.</li>
+<li><code>host_label</code> (String) Host label of the CNAME that routes traffic to the Railway edge (e.g. <code>dev</code> for <code>dev.example.com</code>). Point a <code>CNAME</code> record at this host to <code>dns_record_value</code> in your DNS provider.</li>
 <li><code>id</code> (String) Identifier of the custom domain.</li>
 <li><code>project_id</code> (String) Identifier of the project the custom domain belongs to.</li>
-<li><code>zone</code> (String) Zone of the custom domain.</li>
+<li><code>verification_dns_host</code> (String) Hostname where the user must create a TXT record for Railway to verify domain ownership (e.g. <code>_railway-verify.dev.example.com</code>). Reflects <code>status.verificationDnsHost</code>.</li>
+<li><code>verification_token</code> (String) Value the user must place in the TXT record at <code>verification_dns_host</code>. Reflects <code>status.verificationToken</code>.</li>
+<li><code>verified</code> (Boolean) Whether Railway has confirmed the domain's ownership TXT record is in place. Reflects <code>status.verified</code> on Railway's <code>CustomDomainStatus</code>. Read at refresh time — flips from <code>false</code> to <code>true</code> after the user creates the required TXT record and Railway's verifier polls it.</li>
+<li><code>zone</code> (String) Zone the CNAME belongs to (e.g. <code>example.com</code>).</li>
 </ul>
 <h2 id="import">Import<a class="headerlink" href="#import" title="Permanent link">&para;</a></h2>
 <p>Import is supported using the following syntax:</p>
