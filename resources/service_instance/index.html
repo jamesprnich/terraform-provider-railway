@@ -1511,7 +1511,7 @@
 <a id="__codelineno-0-44" name="__codelineno-0-44" href="#__codelineno-0-44"></a><span class="c1">  # restart_policy_max_retries = 3</span>
 <a id="__codelineno-0-45" name="__codelineno-0-45" href="#__codelineno-0-45"></a><span class="c1">  # builder                    = &quot;RAILPACK&quot;</span>
 <a id="__codelineno-0-46" name="__codelineno-0-46" href="#__codelineno-0-46"></a><span class="c1">  # watch_patterns             = [&quot;backend/**&quot;]</span>
-<a id="__codelineno-0-47" name="__codelineno-0-47" href="#__codelineno-0-47"></a><span class="c1">  # pre_deploy_command         = [&quot;python manage.py migrate&quot;]</span>
+<a id="__codelineno-0-47" name="__codelineno-0-47" href="#__codelineno-0-47"></a><span class="c1">  # pre_deploy_command         = &quot;python manage.py migrate&quot;</span>
 <a id="__codelineno-0-48" name="__codelineno-0-48" href="#__codelineno-0-48"></a>
 <a id="__codelineno-0-49" name="__codelineno-0-49" href="#__codelineno-0-49"></a><span class="c1">  # Cron mode — only allowed when num_replicas across all regions is 1.</span>
 <a id="__codelineno-0-50" name="__codelineno-0-50" href="#__codelineno-0-50"></a><span class="c1">  # cron_schedule = &quot;0 3 * * *&quot;</span>
@@ -1536,7 +1536,7 @@
 <li><code>memory_gb</code> (Number) Amount of memory in GB to allocate (e.g. <code>0.5</code>, <code>1</code>, <code>2</code>). Maps to Railway's container memory limit.</li>
 <li><code>num_replicas</code> (Number) Number of replicas.</li>
 <li><code>overlap_seconds</code> (Number) Number of seconds to keep the old deployment running alongside the new one during a rollout.</li>
-<li><code>pre_deploy_command</code> (List of String) Pre-deploy command(s) to run before starting the service.</li>
+<li><code>pre_deploy_command</code> (String) Shell command run inside the service container before each deploy. Typical use: <code>python manage.py migrate</code>, <code>npx prisma migrate deploy</code>, <code>bundle exec rake db:migrate</code>. Railway's underlying API models this as a list of strings but its dashboard exposes a single command field and its server-side validation rejects lists with more than one entry (<code>Error in preDeployCommand - Invalid input</code>). The provider reflects the dashboard shape so an invalid config fails at plan time rather than apply time.</li>
 <li><code>region</code> (String) Region to deploy the service instance in.</li>
 <li><code>registry_credentials</code> (Attributes) Credentials for a private Docker registry. Required when <code>source_image</code> references a private image. Only available on Railway Pro plan. The <code>password</code> is write-only — it is sent to Railway on create/update but is never returned on read; plan output will not show diffs on the password after the initial apply. <strong>Important:</strong> always source <code>password</code> from a <code>sensitive</code> Terraform variable or a secrets data source (e.g. Vault). Ensure your Terraform state backend uses encryption at rest — the credential is stored in state for the lifetime of the resource. (see <a href="#nestedatt--registry_credentials">below for nested schema</a>)</li>
 <li><code>restart_policy_max_retries</code> (Number) Maximum number of restart retries when <code>restart_policy_type</code> is <code>ON_FAILURE</code>.</li>
