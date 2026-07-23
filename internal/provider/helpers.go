@@ -140,6 +140,33 @@ func retryReadAfterCreateContext(ctx context.Context, timeout time.Duration, f f
 	})
 }
 
+// retryUpdateContext retries a volume update mutation (rename via
+// updateVolume, or mount path move via updateVolumeInstance) against
+// Railway's transient errors: the per-mutation throttle, or the
+// eventual-consistency window where a mutation issued moments after create
+// can see "not found" or "Problem processing request" while the object is
+// still propagating. Used both for the post-create rename in Create (where
+// an unretried failure here left a tainted, prevent_destroy-blocked resource
+// behind) and for renames/mount-path changes in Update (where failures don't
+// taint, but retrying still avoids a needless operator-visible error on a
+// transient blip).
+func retryUpdateContext(ctx context.Context, timeout time.Duration, f func() error) error {
+	return retry.RetryContext(ctx, timeout, func() *retry.RetryError {
+		err := f()
+		if err == nil {
+			return nil
+		}
+		if isNotFound(err) || isRateLimited(err) {
+			return retry.RetryableError(err)
+		}
+		msg := strings.ToLower(err.Error())
+		if strings.Contains(msg, "problem processing request") {
+			return retry.RetryableError(err)
+		}
+		return retry.NonRetryableError(err)
+	})
+}
+
 // isOperationInProgress returns true if the error indicates a Railway
 // "operation is already in progress" conflict. This commonly occurs during
 // concurrent deletes of domain/proxy resources.
