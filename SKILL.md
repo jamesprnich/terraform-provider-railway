@@ -1,6 +1,6 @@
 ---
 name: railway-provider
-description: Deploy and manage Railway infrastructure using the Railway OpenTofu Provider (v0.11.4)
+description: Deploy and manage Railway infrastructure using the Railway OpenTofu Provider (v0.11.5)
 ---
 
 # railway-provider

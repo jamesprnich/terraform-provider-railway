@@ -192,10 +192,18 @@ func (r *VolumeResource) Create(ctx context.Context, req resource.CreateRequest,
 		return
 	}
 
-	// Update name if the user specified one that differs from the server default
+	// Update name if the user specified one that differs from the server
+	// default. Retried across the same transient window as the create and
+	// readback calls above/below: without this, a transient rename failure
+	// left the volume tainted (state was already saved above with the
+	// server-default name) and, combined with prevent_destroy, could wedge
+	// unrelated applies on the next plan.
 	if !plannedName.IsNull() && !plannedName.IsUnknown() && plannedName.ValueString() != volume.Name {
-		_, err = updateVolume(ctx, *r.client, volume.Id, VolumeUpdateInput{
-			Name: plannedName.ValueString(),
+		err = retryUpdateContext(ctx, 60*time.Second, func() error {
+			_, renameErr := updateVolume(ctx, *r.client, volume.Id, VolumeUpdateInput{
+				Name: plannedName.ValueString(),
+			})
+			return renameErr
 		})
 
 		if err != nil {
@@ -265,10 +273,16 @@ func (r *VolumeResource) Update(ctx context.Context, req resource.UpdateRequest,
 		return
 	}
 
-	// Update name if changed
+	// Update name if changed. Retried the same as the post-create rename in
+	// Create — an Update error keeps the prior state (no taint), this just
+	// makes recovery from a transient blip automatic instead of surfacing an
+	// avoidable error to the operator.
 	if data.Name.ValueString() != state.Name.ValueString() {
-		_, err := updateVolume(ctx, *r.client, state.Id.ValueString(), VolumeUpdateInput{
-			Name: data.Name.ValueString(),
+		err := retryUpdateContext(ctx, 60*time.Second, func() error {
+			_, renameErr := updateVolume(ctx, *r.client, state.Id.ValueString(), VolumeUpdateInput{
+				Name: data.Name.ValueString(),
+			})
+			return renameErr
 		})
 
 		if err != nil {
@@ -279,11 +293,14 @@ func (r *VolumeResource) Update(ctx context.Context, req resource.UpdateRequest,
 		tflog.Debug(ctx, "updated volume name")
 	}
 
-	// Update mount path if changed
+	// Update mount path if changed. Same retry rationale as the name update above.
 	if data.MountPath.ValueString() != state.MountPath.ValueString() {
-		_, err := updateVolumeInstance(ctx, *r.client, state.Id.ValueString(), VolumeInstanceUpdateInput{
-			MountPath: data.MountPath.ValueString(),
-			ServiceId: data.ServiceId.ValueString(),
+		err := retryUpdateContext(ctx, 60*time.Second, func() error {
+			_, updateErr := updateVolumeInstance(ctx, *r.client, state.Id.ValueString(), VolumeInstanceUpdateInput{
+				MountPath: data.MountPath.ValueString(),
+				ServiceId: data.ServiceId.ValueString(),
+			})
+			return updateErr
 		})
 
 		if err != nil {
